@@ -5,14 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyecto AR - UTU</title>
 
-  <!-- ========== VERSIONES ESTABLES ========== -->
-  <!-- A-Frame 1.2.0 (compatible con AR.js 3.x) -->
+  <!-- VERSIONES ESTABLES -->
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-
-  <!-- AR.js 3.4.6 (última estable en npm) -->
   <script src="https://unpkg.com/ar.js@3.4.6/aframe/build/aframe-ar.min.js"></script>
-
-  <!-- Necesario para FBX -->
+  <!-- FBXLoader y extras -->
   <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
 
@@ -20,34 +16,30 @@
     body {
       margin: 0;
       overflow: hidden;
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: Arial, sans-serif;
     }
     #panel-info {
       position: absolute;
       top: 20px;
       left: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
+      background: rgba(0,0,0,0.7);
+      color: white;
       padding: 15px 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       z-index: 10;
       min-width: 200px;
       backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255,255,255,0.2);
       pointer-events: none;
       user-select: none;
-      font-size: 14px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
     #panel-info h3 {
       margin: 0 0 8px 0;
       color: #4fc3f7;
-      font-weight: 300;
-      letter-spacing: 1px;
     }
     #panel-info p {
       margin: 4px 0;
-      line-height: 1.6;
+      font-size: 14px;
     }
     #panel-info span {
       font-weight: bold;
@@ -59,29 +51,18 @@
     .estado-perdido {
       color: #ff8a80 !important;
     }
-    .fps-bueno {
-      color: #81c784 !important;
-    }
-    .fps-regular {
-      color: #ffd54f !important;
-    }
-    .fps-malo {
-      color: #ff8a80 !important;
-    }
   </style>
 </head>
 <body>
 
-  <!-- ==================== PANEL DE INFORMACIÓN ==================== -->
   <div id="panel-info">
-    <h3>🎯 Proyecto AR - UTU</h3>
+    <h3>Proyecto AR</h3>
     <p>Marcador: <span id="marcador-id">Ninguno</span></p>
     <p>Modelo: <span id="modelo-id">-</span></p>
     <p>Estado: <span id="estado-id" class="estado-perdido">Buscando...</span></p>
     <p>FPS: <span id="fps-id">0</span></p>
   </div>
 
-  <!-- ==================== ESCENA AR ==================== -->
   <a-scene
     embedded
     vr-mode-ui="enabled:false"
@@ -94,54 +75,42 @@
       canvasSize:640;
     "
   >
-    <!-- ========== ASSETS ========== -->
-    <a-assets>
-      <!-- Dragón GLB para HIRO -->
-      <a-asset-item id="dragon-glb" src="modelos/dragon.glb"></a-asset-item>
-      <!-- (No necesitamos assets para FBX porque se cargan directamente) -->
-    </a-assets>
-
-    <!-- ========== ILUMINACIÓN ========== -->
+    <!-- Iluminación -->
     <a-light type="ambient" intensity="0.8"></a-light>
     <a-light type="directional" intensity="1" position="0 5 2"></a-light>
 
-    <!-- ============================================ -->
-    <!-- MARCADOR HIRO (preset) → Dragón GLB         -->
-    <!-- ============================================ -->
+    <!-- Assets -->
+    <a-assets>
+      <a-asset-item id="dragon-glb" src="modelos/dragon.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- ====================== -->
+    <!-- MARCADOR HIRO (GLB)   -->
+    <!-- ====================== -->
     <a-marker preset="hiro" id="hiro">
       <a-entity
         gltf-model="#dragon-glb"
         position="0 0 0"
-        rotation="0 0 0"
         scale="0.4 0.4 0.4"
-        animation="property: rotation;
-                   to: 0 360 0;
-                   loop: true;
-                   dur: 12000;
-                   easing: linear"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
       ></a-entity>
     </a-marker>
 
-    <!-- ============================================ -->
-    <!-- MARCADOR KANJI (preset) → Dragón FBX       -->
-    <!-- ============================================ -->
+    <!-- ====================== -->
+    <!-- MARCADOR KANJI (FBX)  -->
+    <!-- ====================== -->
     <a-marker preset="kanji" id="kanji">
       <a-entity
         fbx-model="src: url(modelos/dragon.fbx)"
         position="0 0 0"
-        rotation="0 0 0"
         scale="0.08 0.08 0.08"
-        animation="property: rotation;
-                   to: 0 360 0;
-                   loop: true;
-                   dur: 12000;
-                   easing: linear"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
       ></a-entity>
     </a-marker>
 
-    <!-- ============================================ -->
-    <!-- MARCADOR CÓDIGO DE BARRAS 4x4 (ID 0) → Cofre FBX -->
-    <!-- ============================================ -->
+    <!-- ====================== -->
+    <!-- CÓDIGO BARRAS 4x4 (0) -->
+    <!-- ====================== -->
     <a-marker
       type="barcode"
       value="0"
@@ -150,112 +119,73 @@
       <a-entity
         fbx-model="src: url(modelos/cofre.fbx)"
         position="0 0 0"
-        rotation="0 0 0"
         scale="0.02 0.02 0.02"
-        animation="property: rotation;
-                   to: 0 360 0;
-                   loop: true;
-                   dur: 8000;
-                   easing: linear"
       ></a-entity>
     </a-marker>
 
-    <!-- ========== CÁMARA (obligatoria) ========== -->
+    <!-- Cámara -->
     <a-entity camera></a-entity>
   </a-scene>
 
-  <!-- ==================== SCRIPTS DE CONTROL ==================== -->
   <script>
     (function() {
       const scene = document.querySelector('a-scene');
-      const markerIdSpan = document.getElementById('marcador-id');
-      const modeloIdSpan = document.getElementById('modelo-id');
+      const marcadorSpan = document.getElementById('marcador-id');
+      const modeloSpan = document.getElementById('modelo-id');
       const estadoSpan = document.getElementById('estado-id');
       const fpsSpan = document.getElementById('fps-id');
 
-      // --- Mapeo de marcadores a modelos ---
-      const modeloPorMarcador = {
+      // Mapeo de IDs a nombres de modelo (para mostrar)
+      const modeloMap = {
         'hiro': 'Dragón (GLB)',
         'kanji': 'Dragón (FBX)',
         'barcode0': 'Cofre (FBX)'
       };
 
-      // --- Estado del marcador actual ---
-      let marcadorActual = null;
-
-      // --- Evento: marcador encontrado ---
+      // Actualizar panel cuando se encuentra un marcador
       scene.addEventListener('markerFound', (e) => {
         const marker = e.target;
-        const id = marker.id || 'desconocido';
-        marcadorActual = id;
-        markerIdSpan.textContent = id;
-        modeloIdSpan.textContent = modeloPorMarcador[id] || 'Modelo desconocido';
+        const id = marker.id;
+        marcadorSpan.textContent = id || 'desconocido';
+        modeloSpan.textContent = modeloMap[id] || '-';
         estadoSpan.textContent = '✅ Detectado';
         estadoSpan.className = 'estado-detectado';
-        console.log(`🔵 Marcador encontrado: ${id}`);
       });
 
-      // --- Evento: marcador perdido ---
-      scene.addEventListener('markerLost', (e) => {
-        const marker = e.target;
-        const id = marker.id || 'desconocido';
-        if (marcadorActual === id) {
-          marcadorActual = null;
-          markerIdSpan.textContent = 'Ninguno';
-          modeloIdSpan.textContent = '-';
-          estadoSpan.textContent = '🔍 Buscando...';
-          estadoSpan.className = 'estado-perdido';
-          console.log(`🔴 Marcador perdido: ${id}`);
-        }
+      // Actualizar cuando se pierde el marcador
+      scene.addEventListener('markerLost', () => {
+        marcadorSpan.textContent = 'Ninguno';
+        modeloSpan.textContent = '-';
+        estadoSpan.textContent = '🔍 Buscando...';
+        estadoSpan.className = 'estado-perdido';
       });
 
-      // --- Cálculo de FPS (aproximado con requestAnimationFrame) ---
+      // Calcular FPS (aproximado)
       let frameCount = 0;
-      let lastFpsUpdate = performance.now();
+      let lastTime = performance.now();
 
       function updateFPS() {
-        const now = performance.now();
-        const delta = now - lastFpsUpdate;
         frameCount++;
-
-        if (delta >= 1000) {
-          const fps = Math.round(frameCount * 1000 / delta);
-          fpsSpan.textContent = fps;
-
-          // Colorear según rendimiento
-          if (fps >= 30) {
-            fpsSpan.className = 'fps-bueno';
-          } else if (fps >= 15) {
-            fpsSpan.className = 'fps-regular';
-          } else {
-            fpsSpan.className = 'fps-malo';
-          }
-
+        const now = performance.now();
+        if (now - lastTime >= 1000) {
+          fpsSpan.textContent = frameCount;
           frameCount = 0;
-          lastFpsUpdate = now;
+          lastTime = now;
         }
-
         requestAnimationFrame(updateFPS);
       }
+      updateFPS();
 
-      // --- Iniciar el contador de FPS cuando la escena esté lista ---
+      // Mensaje en consola
       scene.addEventListener('loaded', () => {
-        console.log('🚀 Escena AR cargada. Esperando marcadores...');
-        updateFPS();
+        console.log('🔵 Escena AR cargada. Esperando marcadores...');
       });
 
-      // --- Capturar errores de cámara ---
       scene.addEventListener('camera-error', (e) => {
         console.error('❌ Error de cámara:', e.detail);
         estadoSpan.textContent = '⚠️ Error cámara';
         estadoSpan.className = 'estado-perdido';
       });
-
-      // --- Opcional: evento de carga de assets (para depuración) ---
-      scene.addEventListener('asset-loaded', (e) => {
-        console.log('📦 Asset cargado:', e.detail);
-      });
-
     })();
   </script>
 
