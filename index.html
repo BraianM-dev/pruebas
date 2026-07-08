@@ -1,178 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Proyecto AR - UTU</title>
-
-<!-- Versiones estables -->
-<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
-
-<!-- Necesario para muchos FBX -->
-<script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-
-<link rel="stylesheet" href="css/estilos.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyecto AR - UTU</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.7/aframe/build/aframe-ar.js"></script>
+  <style>
+    body { margin:0; overflow:hidden; }
+    #panel-info { position: absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:5px; z-index:10; font-family:sans-serif; }
+  </style>
 </head>
+<body>
+  <div id="panel-info">
+    <h3>Proyecto AR</h3>
+    <p>Marcador: <span id="marcador-id">Ninguno</span></p>
+    <p>Estado: <span id="estado-id">Buscando...</span></p>
+  </div>
 
-<body style="margin:0; overflow:hidden;">
+  <a-scene
+    embedded
+    vr-mode-ui="enabled:false"
+    renderer="antialias:true"
+    arjs="sourceType:webcam; debugUIEnabled:true; detectionMode:mono; matrixCodeType:4x4_bch_13_9_5;"
+  >
+    <a-marker preset="hiro">
+      <a-box color="red" scale="0.2 0.2 0.2"></a-box>
+    </a-marker>
+    <a-entity camera></a-entity>
+  </a-scene>
 
-<div id="panel-info">
+  <script>
+    // Script para actualizar el panel (opcional)
+    const scene = document.querySelector('a-scene');
+    const markerIdSpan = document.getElementById('marcador-id');
+    const estadoSpan = document.getElementById('estado-id');
 
-<h3>Proyecto AR</h3>
-
-<p>Marcador:
-<span id="marcador-id">Ninguno</span>
-</p>
-
-<p>Modelo:
-<span id="modelo-id">-</span>
-</p>
-
-<p>Estado:
-<span id="estado-id">Buscando...</span>
-</p>
-
-<p>FPS:
-<span id="fps-id">0</span>
-</p>
-
-</div>
-
-
-<a-scene
-
-embedded
-
-vr-mode-ui="enabled:false"
-
-renderer="antialias:true"
-
-arjs="
-sourceType:webcam;
-debugUIEnabled:true;
-detectionMode:mono_and_matrix;
-matrixCodeType:4x4_bch_13_9_5;
-">
-
-<a-assets>
-
-<a-asset-item
-id="dragon-glb"
-src="modelos/dragon.glb">
-</a-asset-item>
-
-</a-assets>
-
-<!-- Iluminación -->
-
-<a-light
-type="ambient"
-intensity="0.8">
-</a-light>
-
-<a-light
-type="directional"
-intensity="1"
-position="0 5 2">
-</a-light>
-
-
-<!-- ====================== -->
-<!-- HIRO -->
-<!-- ====================== -->
-
-<a-marker
-preset="hiro"
-id="hiro">
-
-<a-entity
-
-gltf-model="#dragon-glb"
-
-position="0 0 0"
-
-rotation="0 0 0"
-
-scale="0.4 0.4 0.4"
-
-animation="property: rotation;
-to:0 360 0;
-loop:true;
-dur:12000;
-easing:linear">
-
-</a-entity>
-
-</a-marker>
-
-
-<!-- ====================== -->
-<!-- KANJI -->
-<!-- ====================== -->
-
-<a-marker
-preset="kanji"
-id="kanji">
-
-<a-entity
-
-fbx-model="src: url(modelos/dragon.fbx)"
-
-position="0 0 0"
-
-rotation="0 0 0"
-
-scale="0.08 0.08 0.08"
-
-animation="property: rotation;
-to:0 360 0;
-loop:true;
-dur:12000;
-easing:linear">
-
-</a-entity>
-
-</a-marker>
-
-
-<!-- ====================== -->
-<!-- MATRIZ 4x4 -->
-<!-- ====================== -->
-
-<a-marker
-type="barcode"
-value="0"
-id="barcode0">
-
-<a-entity
-
-fbx-model="src: url(modelos/cofre.fbx)"
-
-position="0 0 0"
-
-rotation="0 0 0"
-
-scale="0.02 0.02 0.02">
-
-</a-entity>
-
-</a-marker>
-
-
-
-<a-entity camera></a-entity>
-
-</a-scene>
-
-<script src="js/utilidades.js"></script>
-<script src="js/eventos.js"></script>
-
+    scene.addEventListener('markerFound', (e) => {
+      markerIdSpan.textContent = e.target.id || 'desconocido';
+      estadoSpan.textContent = 'Detectado';
+    });
+    scene.addEventListener('markerLost', (e) => {
+      markerIdSpan.textContent = 'Ninguno';
+      estadoSpan.textContent = 'Buscando...';
+    });
+  </script>
 </body>
 </html>
