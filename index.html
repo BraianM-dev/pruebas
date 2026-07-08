@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto AR - UTU</title>
+    
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+    
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body style="margin: 0; overflow: hidden;">
+
+    <div id="panel-info">
+        <h3>Datos en tiempo real</h3>
+        <p>Marcador: <span id="marcador-id">Ninguno</span></p>
+        <p>Modelo: <span id="modelo-id">-</span></p>
+        <p>Estado: <span id="estado-id">Buscando...</span></p>
+        <p>FPS: <span id="fps-id">0</span></p>
+    </div>
+
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4_bch_13_9_3;" 
+        renderer="logarithmicDepthBuffer: true;">
+
+        <a-assets>
+            <a-asset-item id="dragon-glb" src="modelos/dragon.glb"></a-asset-item>
+            <a-asset-item id="dragon-fbx" src="modelos/dragon.fbx"></a-asset-item>
+            <a-asset-item id="cofre-glb" src="modelos/cofre.fbx"></a-asset-item>
+        </a-assets>
+
+        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+        <a-light type="directional" color="#ffffff" intensity="0.8" position="0 5 0"></a-light>
+
+        <a-marker type="pattern" preset="hiro" id="Hiro" registerevents>
+            <a-entity 
+                gltf-model="#dragon-glb" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0" 
+                animation-mixer>
+            </a-entity>
+        </a-marker>
+
+        <a-marker type="pattern" preset="kanji" id="Kanji" registerevents>
+            <a-entity 
+                fbx-model="#dragon-fbx" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0" 
+                animation-mixer>
+            </a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
+            <a-entity 
+                gltf-model="#cofre-fbx" 
+                scale="1 1 1" 
+                position="0 0 0">
+            </a-entity>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script src="js/utilidades.js"></script>
+    <script src="js/eventos.js"></script>
+</body>
+</html>

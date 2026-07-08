@@ -1,0 +1,39 @@
+/* css/estilos.css */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#panel-info {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background-color: rgba(20, 20, 20, 0.85);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 999; /* Asegura que el panel quede por encima de la cámara */
+    min-width: 220px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+
+#panel-info h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 16px;
+    color: #4CAF50; /* Verde brillante */
+    border-bottom: 1px solid #555;
+    padding-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#panel-info p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+#panel-info span {
+    font-weight: bold;
+    color: #FFD700; /* Amarillo dorado */
+}
