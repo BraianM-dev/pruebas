@@ -11,33 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-
-
-<!-- ==================== PANEL DE INFORMACIÓN ==================== -->
-  <div id="panel-info">
-    <h3>🎯 Proyecto AR - UTU</h3>
-    <p>Marcador: <span id="marcador-id">Ninguno</span></p>
-    <p>Modelo: <span id="modelo-id">-</span></p>
-    <p>Estado: <span id="estado-id" class="estado-perdido">Buscando...</span></p>
-    <p>FPS: <span id="fps-id">0</span></p>
-  </div>
-
-  <!-- ==================== ESCENA AR ==================== -->
-  <a-scene
-    embedded
-    vr-mode-ui="enabled:false"
-    renderer="antialias:true"
-    arjs="
-      sourceType:webcam;
-      debugUIEnabled:true;
-      detectionMode:mono_and_matrix;
-      matrixCodeType:4x4_bch_13_9_5;
-      canvasSize:640;
-    "
-  >
-
-
-    
+  
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
         <a-assets>
             <a-asset-item id="fox" src="modelos/dragon.glb"></a-asset-item>
@@ -63,99 +37,5 @@
 
         <a-entity camera></a-entity>
     </a-scene>
-     <!-- ==================== SCRIPTS DE CONTROL ==================== -->
-  <script>
-    (function() {
-      const scene = document.querySelector('a-scene');
-      const markerIdSpan = document.getElementById('marcador-id');
-      const modeloIdSpan = document.getElementById('modelo-id');
-      const estadoSpan = document.getElementById('estado-id');
-      const fpsSpan = document.getElementById('fps-id');
-
-      // --- Mapeo de marcadores a modelos ---
-      const modeloPorMarcador = {
-        'hiro': 'Dragón (GLB)',
-        'kanji': 'Dragón (FBX)',
-        'barcode0': 'Cofre (FBX)'
-      };
-
-      // --- Estado del marcador actual ---
-      let marcadorActual = null;
-
-      // --- Evento: marcador encontrado ---
-      scene.addEventListener('markerFound', (e) => {
-        const marker = e.target;
-        const id = marker.id || 'desconocido';
-        marcadorActual = id;
-        markerIdSpan.textContent = id;
-        modeloIdSpan.textContent = modeloPorMarcador[id] || 'Modelo desconocido';
-        estadoSpan.textContent = '✅ Detectado';
-        estadoSpan.className = 'estado-detectado';
-        console.log(`🔵 Marcador encontrado: ${id}`);
-      });
-
-      // --- Evento: marcador perdido ---
-      scene.addEventListener('markerLost', (e) => {
-        const marker = e.target;
-        const id = marker.id || 'desconocido';
-        if (marcadorActual === id) {
-          marcadorActual = null;
-          markerIdSpan.textContent = 'Ninguno';
-          modeloIdSpan.textContent = '-';
-          estadoSpan.textContent = '🔍 Buscando...';
-          estadoSpan.className = 'estado-perdido';
-          console.log(`🔴 Marcador perdido: ${id}`);
-        }
-      });
-
-      // --- Cálculo de FPS (aproximado con requestAnimationFrame) ---
-      let frameCount = 0;
-      let lastFpsUpdate = performance.now();
-
-      function updateFPS() {
-        const now = performance.now();
-        const delta = now - lastFpsUpdate;
-        frameCount++;
-
-        if (delta >= 1000) {
-          const fps = Math.round(frameCount * 1000 / delta);
-          fpsSpan.textContent = fps;
-
-          // Colorear según rendimiento
-          if (fps >= 30) {
-            fpsSpan.className = 'fps-bueno';
-          } else if (fps >= 15) {
-            fpsSpan.className = 'fps-regular';
-          } else {
-            fpsSpan.className = 'fps-malo';
-          }
-
-          frameCount = 0;
-          lastFpsUpdate = now;
-        }
-
-        requestAnimationFrame(updateFPS);
-      }
-
-      // --- Iniciar el contador de FPS cuando la escena esté lista ---
-      scene.addEventListener('loaded', () => {
-        console.log('🚀 Escena AR cargada. Esperando marcadores...');
-        updateFPS();
-      });
-
-      // --- Capturar errores de cámara ---
-      scene.addEventListener('camera-error', (e) => {
-        console.error('❌ Error de cámara:', e.detail);
-        estadoSpan.textContent = '⚠️ Error cámara';
-        estadoSpan.className = 'estado-perdido';
-      });
-
-      // --- Opcional: evento de carga de assets (para depuración) ---
-      scene.addEventListener('asset-loaded', (e) => {
-        console.log('📦 Asset cargado:', e.detail);
-      });
-
-    })();
-  </script>
 </body>
 </html>
