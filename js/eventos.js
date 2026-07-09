@@ -13,8 +13,9 @@ AFRAME.registerComponent('registerevents', {
             // Asignamos el nombre del modelo para mostrarlo en el panel
             if(marcadorId === "Hiro") modeloNombre = "dragon.glb";
             if(marcadorId === "Kanji") modeloNombre = "dragon.fbx";
-            if(marcadorId === "Barcode_0") modeloNombre = "cofre.glb";
-
+            if(marcadorId === "Barcode_0") modeloNombre = "mago.glb";
+            if(marcadorId === "Barcode_1") modeloNombre = "mago.fbx";
+            if(marcadorId === "Barcode_2") modeloNombre = "model.fbx";
             // Actualizamos la interfaz usando nuestro archivo de utilidades
             Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
 
