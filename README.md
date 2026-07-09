@@ -22,30 +22,49 @@ En la carpeta `/marcadores` (o imprimiéndolos por tu cuenta) encontrarás los p
 
 * **Hiro:** El marcador clásico de AR.js.
 * **Kanji:** Otro marcador por defecto.
-* **Barcode (4x4 BCH 13,9,3):** Códigos de barras de matriz cuadrada. ¡Podemos tener decenas de estos marcadores diferentes simplemente cambiando un número! Ideal para tableros con muchas casillas o distintos monstruos.
+* **Barcode (4x4 BCH 13,5,5):** Códigos de barras de matriz cuadrada. ¡Podemos tener decenas de estos marcadores diferentes simplemente cambiando un número! Ideal para tableros con muchas casillas o distintos monstruos.
 
-> **Nota:** Si prefieres imprimir marcadores tipo 13,5,5 en lugar de 13,9,3, solo tienes que cambiar el valor `matrixCodeType` en el archivo `index.html`.
+> **Nota:** Si en algún momento preferís usar marcadores tipo `13,9,3` en lugar de `13,5,5`, solo tenés que cambiar el valor `matrixCodeType` en el archivo `index.html`. Eso sí: todos los marcadores barcode impresos deben corresponder al mismo tipo configurado, o la cámara no los va a reconocer.
+
 *** [URL para crear marcadores](https://au.gmented.com/app/marker/marker.php) ***
+
 ---
 
 ## 🚀 Cómo agregar un nuevo modelo al proyecto
 
-Si quieres que aparezca un nuevo modelo cuando la cámara lea el **Barcode número 1**, solo necesitas 3 pasos:
+Si querés que aparezca un nuevo modelo cuando la cámara lea el **Barcode número 1**, necesitás 4 pasos:
 
 **1. Sube tu modelo:**
+
 Guarda tu archivo (ej: `pocima.glb`) en la carpeta `/modelos/`.
 
 **2. Precarga el modelo en `index.html`:**
+
 Dentro de la etiqueta `<a-assets>`, agrega:
 
+```html
 <a-asset-item id="pocima-glb" src="modelos/pocima.glb"></a-asset-item>
+```
 
 **3. Agrega el nuevo marcador:**
-Debajo del último marcador en index.html, escribe:
 
+Debajo del último marcador en `index.html`, escribe:
 
+```html
 <a-marker type="barcode" value="1" id="Barcode_1" registerevents>
     <a-entity gltf-model="#pocima-glb" scale="1 1 1" position="0 0 0"></a-entity>
 </a-marker>
+```
 
-¡Y listo! Cuando actualices la página, la cámara reconocerá el Barcode 1 y mostrará la pócima.
+**4. Avisale al panel de información (`js/eventos.js`):**
+
+Sin este paso el modelo va a aparecer en la escena 3D, pero el panel va a seguir mostrando "Desconocido" en lugar del nombre real. Dentro de `registerevents`, agregá una línea nueva junto a las que ya existen:
+
+```javascript
+if(marcadorId === "Hiro") modeloNombre = "dragon.glb";
+if(marcadorId === "Kanji") modeloNombre = "dragon.fbx";
+if(marcadorId === "Barcode_0") modeloNombre = "cofre.glb";
+if(marcadorId === "Barcode_1") modeloNombre = "pocima.glb"; // ← línea nueva
+```
+
+¡Y listo! Cuando actualices la página, la cámara reconocerá el Barcode 1, mostrará la pócima y el panel indicará correctamente qué modelo fue detectado.
