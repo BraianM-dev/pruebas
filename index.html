@@ -37,6 +37,7 @@
         <a-assets>
             <a-asset-item id="modelo-dragon-glb" src="modelos/dragon.glb"></a-asset-item>
             <a-asset-item id="modelo-mago-glb" src="modelos/mago.glb"></a-asset-item>
+            <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
         </a-assets>
 
         <!-- Marcador de patrón: Hiro -->
@@ -78,6 +79,16 @@
             </a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 0 -->
+        <a-marker type="barcode" value="2" id="Barcode_2" registerevents>
+            <a-entity
+                gltf-model="#modelo-model-glb"
+                position="0 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer>
+            </a-entity>
+        </a-marker>
+        
         <a-entity camera></a-entity>
     </a-scene>
 </body>
