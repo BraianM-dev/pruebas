@@ -13,6 +13,7 @@
 
     <!-- Nuestros propios archivos -->
     <link rel="stylesheet" href="css/estilos.css">
+    <script src="js/conexion.js" defer></script>
     <script src="js/utilidades.js" defer></script>
     <script src="js/eventos.js" defer></script>
 </head>
@@ -26,7 +27,9 @@
         <p>Estado: <span id="estado-id">Buscando...</span></p>
         <p>FPS: <span id="fps-id">0</span></p>
     </div>
-
+    <!-- Panel para el texto del Dungeon Master -->
+    <div id="panel-historia" style="position:fixed; bottom:0; left:0; right:0; max-height:30%; overflow-y:auto; background:rgba(0,0,0,0.7); color:#fff; padding:10px; font-family:sans-serif;"></div>
+    
     <a-scene
         embedded
         arjs="sourceType: webcam;
@@ -88,6 +91,19 @@
                 rotation="-90 0 0" 
                 scale="6 6 6" 
                 animation-mixer>
+            </a-entity>
+        </a-marker>
+
+                <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
+        <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
+            <a-entity
+                id="objeto-Barcode_3"
+                fbx-model="src: url(modelos/mago.fbx)"
+                position="0 0 0"
+                rotation="-90 0 0" 
+                scale="0.01 0.01 0.01"
+                visible="false"
+                animation-mixer="clip: *; loop: repeat">
             </a-entity>
         </a-marker>
         
