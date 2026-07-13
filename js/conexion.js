@@ -1,26 +1,23 @@
 // js/conexion.js
-// Toda la comunicación de red vive acá, separada del resto.
-
 const Conexion = {
     socket: null,
 
-    // wss si la página es https (GitHub Pages), ws si estás probando en local
-    urlGateway: (location.protocol === "https:" ? "wss://" : "ws://") + "TU_IP_O_DOMINIO:8000/ws",
+    // Apunta a localhost para las pruebas en la misma computadora.
+    // Si usas el celular en la misma red WiFi, cambia 'localhost' por tu IP privada (ej. 192.168.1.50)
+    urlGateway: (location.protocol === "https:" ? "wss://" : "ws://") + "localhost:8000/ws",
 
     conectarWS: function () {
         this.socket = new WebSocket(this.urlGateway);
 
-        this.socket.onopen = () => console.log("Conectado al gateway");
+        this.socket.onopen = () => console.log("Conectado al gateway en: " + this.urlGateway);
 
         this.socket.onmessage = (evento) => {
             const mensaje = JSON.parse(evento.data);
-            // Ejemplo esperado: {accion:"mostrar", marcador:"Barcode_0", modelo:"#modelo-mago-glb"}
-            //                    {accion:"ocultar", marcador:"Barcode_0"}
             Conexion.aplicarComando(mensaje);
         };
 
         this.socket.onclose = () => {
-            console.log("Desconectado, reintentando en 3s...");
+            console.log("Conexión perdida con el gateway. Reintentando en 3s...");
             setTimeout(() => this.conectarWS(), 3000);
         };
     },
@@ -30,27 +27,37 @@ const Conexion = {
         if (!entidad) return;
 
         if (msg.accion === "mostrar") {
-            if (msg.modelo) entidad.setAttribute("gltf-model", msg.modelo);
+            if (msg.modelo) {
+                // Manejo dinámico según el tipo de formato del modelo 3D
+                if (msg.tipoModelo === "fbx") {
+                    entidad.setAttribute("fbx-model", "src: url(" + msg.modelo + ")");
+                } else {
+                    entidad.setAttribute("gltf-model", msg.modelo);
+                }
+            }
             entidad.setAttribute("visible", "true");
+            console.log(`Mostrando marcador: ${msg.marcador}`);
         }
+        
         if (msg.accion === "ocultar") {
             entidad.setAttribute("visible", "false");
+            console.log(`Ocultando marcador: ${msg.marcador}`);
         }
     },
 
-    // Lo llama eventos.js cuando la cámara ve o pierde un marcador
     enviarEvento: function (tipo, marcadorId) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({ tipo: tipo, marcador: marcadorId }));
         }
     },
 
-    // SSE: narración del Dungeon Master en vivo
     conectarSSE: function () {
-        const fuente = new EventSource(
-            (location.protocol === "https:" ? "https://" : "http://") + "TU_IP_O_DOMINIO:8000/historia"
-        );
+        // Vincula dinámicamente con el host actual para pruebas locales fluidas
+        const host = location.hostname === "" ? "localhost" : location.hostname;
+        const fuente = new EventSource("http://" + host + ":8000/historia");
         const panel = document.getElementById("panel-historia");
+
+        if (!panel) return;
 
         fuente.onmessage = (evento) => {
             panel.innerText += evento.data;
@@ -58,8 +65,6 @@ const Conexion = {
         };
     }
 };
-
-window.addEventListener("load", () => {
-    Conexion.conectarWS();
-    Conexion.conectarSSE();
-});
+// Esto le da la orden de iniciar las conexiones apenas lee el archivo
+Conexion.conectarWS();
+Conexion.conectarSSE();
