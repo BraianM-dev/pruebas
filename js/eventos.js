@@ -17,9 +17,10 @@ AFRAME.registerComponent('registerevents', {
             if(marcadorId === "Barcode_1") modeloNombre = "mago.fbx";
             if(marcadorId === "Barcode_2") modeloNombre = "model.fbx";
             // Actualizamos la interfaz usando nuestro archivo de utilidades
-            // Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
-            Utilidades.marcadorEncontrado(marcadorId, "esperando servidor...");
-            Conexion.enviarEvento("marcador_detectado", marcadorId);
+            Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
+            /* Utilidades.marcadorEncontrado(marcadorId, "esperando servidor...");
+            Conexion.enviarEvento("marcador_detectado", marcadorId); */
+            
             /* -----------------------------------------------------------------
                GANCHO PARA PRÓXIMAS CLASES (Hardware & IoT)
                Aquí, en el futuro, los estudiantes agregarán las peticiones fetch
@@ -32,7 +33,7 @@ AFRAME.registerComponent('registerevents', {
         // EVENTO: Cuando el marcador sale del campo de visión
         marcador.addEventListener('markerLost', function() {
             Utilidades.marcadorPerdido();
-            Conexion.enviarEvento("marcador_perdido", marcador.id);
+            // Conexion.enviarEvento("marcador_perdido", marcador.id);
             // Aquí en el futuro se podrá enviar la orden de apagar LEDs o detener motores.
         });
     }
