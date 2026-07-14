@@ -136,13 +136,13 @@
         </a-marker>
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 4 Particulas -->
         <a-marker type="barcode" value="4" id="Barcode_4" registerevents>        
-            <a-box
-                color="red"
-                position="0 0.5 0"
-                width="0.5"
-                height="0.5"
-                depth="0.5">
-            </a-box>
+            <a-entity
+                position="0 0 -3"
+                particle-system="
+                preset: snow;
+                particleCount: 1000;
+                color: red;">
+            </a-entity>
         </a-marker>    
                 <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
