@@ -154,6 +154,13 @@
                 width="2"
                 height="1.2">
             </a-video>
+            <a-circle
+                id="btnPlay"
+                radius="0.2"
+                color="green"
+                position="0 1.2 0"
+                look-at="[camera]">
+            </a-circle>
         </a-marker>    
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 6 Video MP4 desde URL -->
         <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
@@ -181,4 +188,12 @@
         <a-entity camera></a-entity>
     </a-scene>
 </body>
+    <script>
+        document.getElementById("btnPlay").addEventListener("click", () => {
+        if(video.paused)
+            video.play();
+        else
+            video.pause();
+    });
+    </script>
 </html>
