@@ -76,21 +76,21 @@
         </a-marker>
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 1 -->
         <a-marker type="barcode" value="1" id="Barcode_1" registerevents>
+            <a-text
+                value="Mago"
+                position="0 1.2 0"
+                look-at="[camera]"
+                align="center"
+                color="yellow"
+                width="2">
+            </a-text>   
             <a-entity
                 fbx-model="src: url(modelos/mago.fbx)"
                 position="0 0 0"
                 rotation="-90 0 0" 
                 scale="0.01 0.01 0.01"
                 animation-mixer="clip: *; loop: repeat">
-            </a-entity>
-            <a-text
-                value="Mago"
-                position="0 1 0"
-                look-at="[camera]"
-                align="center"
-                color="yellow"
-                width="2">
-            </a-text>            
+            </a-entity>         
         </a-marker>
 
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 2 -->
