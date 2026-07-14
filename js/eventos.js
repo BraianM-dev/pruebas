@@ -16,6 +16,9 @@ AFRAME.registerComponent('registerevents', {
             if(marcadorId === "Barcode_0") modeloNombre = "mago.glb";
             if(marcadorId === "Barcode_1") modeloNombre = "mago.fbx";
             if(marcadorId === "Barcode_2") modeloNombre = "model.fbx";
+            if(marcadorId === "Barcode_3") modeloNombre = "fuego.gif";
+            if(marcadorId === "Barcode_4") modeloNombre = "imagen.png";
+            if(marcadorId === "Barcode_5") modeloNombre = "video.mp4";
             // Actualizamos la interfaz usando nuestro archivo de utilidades
             Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
             /* Utilidades.marcadorEncontrado(marcadorId, "esperando servidor...");
