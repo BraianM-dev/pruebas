@@ -12,7 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <!-- Requerido para seguir la camara! -->
     <script src="https://unpkg.com/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
-
+    <!-- Requerido para que el gif funcione -->
+    <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
     <!-- Nuestros propios archivos -->
     <link rel="stylesheet" href="css/estilos.css">
     <!-- <script src="js/conexion.js" defer></script> -->
@@ -123,10 +124,10 @@
 
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
-           <a-plane
-                color="red"
-                width="2"
-                height="0.1">
+            <a-plane
+                material="shader:gif; src:url(modelos/fuego.gif)"
+                width="1"
+                height="1">
             </a-plane>
         </a-marker>
 
