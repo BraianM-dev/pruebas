@@ -137,18 +137,13 @@
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 4 Particulas -->
         <a-marker type="barcode" value="4" id="Barcode_4" registerevents>       
             <!-- Fuego -->
-            <a-entity
-                id="fuego"
-                position="-0.8 0 0"
+        <a-entity
+                position="0 0 -3"
                 particle-system="
-                    preset: dust;
-                    color: #ff0000,#ff6600,#ffff00;
-                    particleCount: 250;
-                    size: 1;
-                    velocityValue: 0 2 0;
-                    accelerationValue: 0 0.2 0;
-                    maxAge: 1.5;">
-            </a-entity>       
+                preset: snow;
+                particleCount: 1000;
+                color: red;">
+        </a-entity>     
         </a-marker>
                 <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
