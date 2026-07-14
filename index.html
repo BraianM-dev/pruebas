@@ -14,6 +14,8 @@
     <script src="https://unpkg.com/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
     <!-- Requerido para que el gif funcione -->
     <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
+     <!-- Requerido para los extras, las particulas -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
     <!-- Nuestros propios archivos -->
     <link rel="stylesheet" href="css/estilos.css">
     <!-- <script src="js/conexion.js" defer></script> -->
@@ -132,7 +134,90 @@
                 height="1">
             </a-plane>
         </a-marker>
-
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 4 Particulas -->
+        <a-marker type="barcode" value="4" id="Barcode_4" registerevents>
+        
+            <!-- Fuego -->
+            <a-entity
+                id="fuego"
+                position="-0.8 0 0"
+                particle-system="
+                    preset: dust;
+                    color: #ff0000,#ff6600,#ffff00;
+                    particleCount: 250;
+                    size: 0.25;
+                    velocityValue: 0 2 0;
+                    accelerationValue: 0 0.2 0;
+                    maxAge: 1.5;">
+            </a-entity>
+        
+            <!-- Humo -->
+            <a-entity
+                id="humo"
+                position="-0.3 0.3 0"
+                particle-system="
+                    preset: dust;
+                    color: #222,#666,#999;
+                    particleCount: 200;
+                    size: 0.4;
+                    velocityValue: 0 1 0;
+                    accelerationValue: 0 0.1 0;
+                    maxAge: 4;">
+            </a-entity>
+        
+            <!-- Magia -->
+            <a-entity
+                id="magia"
+                position="0 0.5 0"
+                particle-system="
+                    preset: snow;
+                    color: #00ffff,#8800ff,#ffffff;
+                    particleCount: 300;
+                    size: 0.08;
+                    velocityValue: 0 0.4 0;
+                    maxAge: 2;">
+            </a-entity>
+        
+            <!-- Nieve -->
+            <a-entity
+                id="nieve"
+                position="0.4 2 0"
+                particle-system="
+                    preset: snow;
+                    color: white;
+                    particleCount: 500;
+                    size: 0.07;
+                    velocityValue: 0 -1 0;
+                    maxAge: 5;">
+            </a-entity>
+        
+            <!-- Lluvia -->
+            <a-entity
+                id="lluvia"
+                position="0.8 2 0"
+                particle-system="
+                    preset: rain;
+                    particleCount: 700;
+                    size: 0.03;
+                    velocityValue: 0 -8 0;
+                    color: #66ccff;">
+            </a-entity>
+        
+            <!-- Chispas -->
+            <a-entity
+                id="chispas"
+                position="0 0.2 0"
+                particle-system="
+                    preset: dust;
+                    color: yellow,orange,white;
+                    particleCount: 150;
+                    size: 0.05;
+                    velocityValue: 0 4 0;
+                    accelerationValue: 0 -3 0;
+                    maxAge: 0.6;">
+            </a-entity>
+        
+        </a-marker>
                 <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
             <a-entity
