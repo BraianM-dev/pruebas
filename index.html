@@ -73,17 +73,27 @@
                 scale="0.5 0.5 0.5"
                 animation-mixer>
             </a-entity>
+            <a-plane
+                position="0 1.2 -0.01"
+                rotation="-90 0 0"
+                width="2.8"
+                height="0.5"
+                color="black"
+                opacity="0.7">
+            </a-plane>
+    
+            <a-text
+                value="Nivel 1\nBosque Oscuro"
+                position="0 1.2 0"
+                rotation="-90 0 0"
+                align="center"
+                color="white"
+                width="2.5">
+            </a-text>
         </a-marker>
+        
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 1 -->
         <a-marker type="barcode" value="1" id="Barcode_1" registerevents>
-            <a-text
-                value="Mago"
-                position="0 1.2 0"
-                look-at="[camera]"
-                align="center"
-                color="yellow"
-                width="2">
-            </a-text>   
             <a-entity
                 fbx-model="src: url(modelos/mago.fbx)"
                 position="0 0 0"
@@ -91,6 +101,14 @@
                 scale="0.01 0.01 0.01"
                 animation-mixer="clip: *; loop: repeat">
             </a-entity>         
+            <a-text
+                value="Mago"
+                position="0 1 0"
+                look-at="[camera]"
+                align="center"
+                color="yellow"
+                width="2">
+            </a-text>  
         </a-marker>
 
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 2 -->
