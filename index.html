@@ -45,7 +45,7 @@
             <a-asset-item id="modelo-mago-glb" src="modelos/mago.glb"></a-asset-item>
             <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
             <img id="imgDragon" src="modelos/demo.png">
-            <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" loop muted playsinline crossorigin="anonymous"></video>
+            <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
         </a-assets>
 
@@ -187,13 +187,13 @@
         
         <a-entity camera></a-entity>
     </a-scene>
+<script>
+document.getElementById("btnPlay").addEventListener("click", () => {
+    if(video.paused)
+        video.play();
+    else
+        video.pause();
+});
+</script>
 </body>
-    <script>
-        document.getElementById("btnPlay").addEventListener("click", () => {
-        if(video.paused)
-            video.play();
-        else
-            video.pause();
-    });
-    </script>
 </html>
