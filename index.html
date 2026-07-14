@@ -46,6 +46,7 @@
             <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
             <a-assets><img id="imgDragon" src="modelos/demo.png"></a-assets>
             <a-assets><video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" loop muted playsinline crossorigin="anonymous"></video></a-assets>
+            <a-assets><video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video></a-assets>
         </a-assets>
 
         <!-- Marcador de patrón: Hiro -->
@@ -152,8 +153,22 @@
                 rotation="0 0 0"
                 width="2"
                 height="1.125">
-            </a-video>        
+            </a-video> 
+            <a-plane
+                material="src:#videoEjemplo"
+                width="2"
+                height="1.2">
+            </a-plane>
         </a-marker>    
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 6 Video MP4 desde URL -->
+        <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
+            <a-video
+                src="#videoEjemplo"
+                position="0 0.5 0"
+                width="2"
+                height="1.2">
+            </a-video>
+        </a-marker>
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
             <a-entity
