@@ -38,7 +38,8 @@
         arjs="sourceType: webcam;
               debugUIEnabled: false;
               detectionMode: mono_and_matrix;
-              matrixCodeType: 4x4_BCH_13_5_5;">
+              matrixCodeType: 4x4_BCH_13_5_5;
+              trackingMethod:best;">
 
         <a-assets>
             <a-asset-item id="modelo-dragon-glb" src="modelos/dragon.glb"></a-asset-item>
@@ -97,7 +98,7 @@
         </a-marker>
         
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 1 -->
-        <a-marker type="barcode" value="1" id="Barcode_1" registerevents>
+        <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity
                 fbx-model="src: url(modelos/mago.fbx)"
                 position="0 0 0"
