@@ -246,7 +246,12 @@
         <a-entity camera></a-entity>
     </a-scene>
     <script>
-        document.addEventListener("click", () => Tablero.play(), { once: true });
+        document.addEventListener("click", () => {
+            if (Tablero.paused) {
+                Tablero.play();
+            }
+            Tablero.muted = !Tablero.muted;
+        });
     </script>
 </body>
 </html>
