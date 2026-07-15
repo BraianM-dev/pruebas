@@ -48,7 +48,7 @@
             <img id="imgDragon" src="modelos/demo.png">
             <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
-             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" muted controls autoplay loop playsinline crossorigin="anonymous"></video>
+             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
         </a-assets>
@@ -245,5 +245,8 @@
         </a-marker> -->
         <a-entity camera></a-entity>
     </a-scene>
+    <script>
+        document.addEventListener("click", () => Tablero.play(), { once: true });
+    </script>
 </body>
 </html>
