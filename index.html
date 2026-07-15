@@ -188,29 +188,48 @@
             </a-video>
         </a-marker>  
         <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
-
-            <!-- Plano 1 -->
+        <!-- Árbol 1 -->
+        <a-entity position="-0.8 0 -0.3">        
             <a-plane
                 src="#arbol1"
                 transparent="true"
                 alpha-test="0.5"
-                position="0 0.6 0"
                 width="0.8"
-                height="1.2"
-                rotation="0 0 0">
-            </a-plane>
-        
-            <!-- Plano 2 -->
-            <a-plane
-                src="#arbol1"
-                transparent="true"
-                alpha-test="0.5"
-                position="0 0.6 0"
-                width="0.8"
-                height="1.2"
+                height="1.3"
+                position="0 0.65 0"
                 rotation="0 45 0">
             </a-plane>
-
+            <a-plane
+                src="#arbol1"
+                transparent="true"
+                alpha-test="0.5"
+                width="0.8"
+                height="1.3"
+                position="0 0.65 0"
+                rotation="0 -45 0">
+            </a-plane>
+        </a-entity>
+        <!-- Árbol 2 -->
+        <a-entity position="0.9 0 0.5">
+            <a-plane
+                src="#arbol2"
+                transparent="true"
+                alpha-test="0.5"
+                width="0.7"
+                height="1.1"
+                position="0 0.55 0"
+                rotation="0 45 0">
+            </a-plane>
+            <a-plane
+                src="#arbol2"
+                transparent="true"
+                alpha-test="0.5"
+                width="0.7"
+                height="1.1"
+                position="0 0.55 0"
+                rotation="0 -45 0">
+            </a-plane>     
+        </a-entity>
         </a-marker>
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
@@ -224,7 +243,6 @@
                 animation-mixer="clip: *; loop: repeat">
             </a-entity>
         </a-marker> -->
-        
         <a-entity camera></a-entity>
     </a-scene>
 </body>
