@@ -49,8 +49,8 @@
             <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
              <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
-            <img id="arbol1" src="img/arbol1.png">
-            <img id="arbol2" src="img/arbol2.png">
+            <img id="arbol1" src="modelos/arbol1.png">
+            <img id="arbol2" src="modelos/arbol2.png">
         </a-assets>
 
         <!-- Marcador de patrón: Hiro -->
@@ -190,7 +190,7 @@
         <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
 
             <!-- Plano 1 -->
-            <a-image
+            <a-plane
                 src="#arbol1"
                 transparent="true"
                 alpha-test="0.5"
@@ -198,10 +198,10 @@
                 width="0.8"
                 height="1.2"
                 rotation="-45 0 0">
-            </a-image>
+            </a-plane>
         
             <!-- Plano 2 -->
-            <a-image
+            <a-plane
                 src="#arbol1"
                 transparent="true"
                 alpha-test="0.5"
@@ -209,7 +209,7 @@
                 width="0.8"
                 height="1.2"
                 rotation="-45 90 0">
-            </a-image>
+            </a-plane>
 
         </a-marker>
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
