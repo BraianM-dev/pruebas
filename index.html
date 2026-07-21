@@ -51,6 +51,8 @@
              <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
+            <a-asset-item id="modelo-desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
+            <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
         </a-assets>
 
         <!-- Marcador de patrón: Hiro -->
@@ -177,7 +179,7 @@
                 height="1.2">
             </a-video>
         </a-marker>
-         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 6 Video MP4 desde URL -->
+         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 7 Video MP4 desde URL -->
         <a-marker type="barcode" value="7" id="Barcode_7" registerevents>
             <a-video
                 src="#Tablero"
@@ -187,6 +189,7 @@
                 height="2">
             </a-video>
         </a-marker>  
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8 Árboles -->
         <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
         <!-- Árbol 1 -->
         <a-entity position="-0.8 0 -0.3">        
@@ -230,6 +233,24 @@
                 rotation="0 -45 0">
             </a-plane>     
         </a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 9 -->
+        <a-marker type="barcode" value="9" id="Barcode_9" registerevents>
+            <a-entity
+                gltf-model="#modelo-naturaleza-glb"
+                position="0 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer>
+            </a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 10 -->
+        <a-marker type="barcode" value="10" id="Barcode_10" registerevents>
+            <a-entity
+                gltf-model="#modelo-desierto-glb"
+                position="0 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer>
+            </a-entity>
         </a-marker>
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
