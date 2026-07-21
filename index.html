@@ -245,10 +245,13 @@
             </a-entity>
         </a-marker>
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 10 -->
+        <!-- Posición del modelo: X (izquierda/derecha) Y (arriba/abajo) Z (adelante/atrás) -->
+        <!-- Rotación del modelo en grados: X Y Z -->
+        <!-- Escala del modelo: X (ancho) Y (alto) Z (profundidad) -->
         <a-marker type="barcode" value="10" id="Barcode_10" registerevents>
             <a-entity
                 gltf-model="#desierto-glb"
-                position="-10 0 0"
+                position="0 -10 0"
                 rotation="-90 0 0"
                 scale="1 1 1"
                 animation-mixer>
