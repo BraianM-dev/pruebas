@@ -51,8 +51,8 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
-            <a-asset-item id="modelo-desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
+            <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
         </a-assets>
 
         <!-- Marcador de patrón: Hiro -->
@@ -239,7 +239,7 @@
             <a-entity
                 gltf-model="#modelo-naturaleza-glb"
                 position="0 0 0"
-                rotation="-90 10 0"
+                rotation="-90 5 0"
                 scale="2 2 2"
                 animation-mixer>
             </a-entity>
@@ -247,9 +247,10 @@
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 10 -->
         <a-marker type="barcode" value="10" id="Barcode_10" registerevents>
             <a-entity
-                gltf-model="#modelo-desierto-glb"
+                gltf-model="#desierto-glb"
                 position="0 0 0"
-                scale="0.5 0.5 0.5"
+                rotation="-90 0 0"
+                scale="1 1 1"
                 animation-mixer>
             </a-entity>
         </a-marker>
