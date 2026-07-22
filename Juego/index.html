@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 Mi Primer Juego RPG - Proyecto Educativo</title>
+
+    <!-- 
+    ================================================================
+    PROYECTO EDUCATIVO - HTML + CSS + JavaScript Básico
+    Para estudiantes de 1ro de Bachillerato
+
+    ESTRUCTURA DIDÁCTICA:
+    ┌─────────────────────────────────────────┐
+    │  PARTE 1: PANEL DE JUGADORES (HTML)     │
+    ├─────────────────────────────────────────┤
+    │  PARTE 2: CÁMARA AR (iframe)            │
+    ├─────────────────────────────────────────┤
+    │  PARTE 3: PANEL DE ENEMIGOS (HTML)      │
+    ├─────────────────────────────────────────┤
+    │  PARTE 4: NARRACIÓN (JavaScript)        │
+    ├─────────────────────────────────────────┤
+    │  PARTE 5: ACCIONES (JavaScript)         │
+    └─────────────────────────────────────────┘
+    ================================================================
+    -->
+
+    <style>
+        /* ============================================================
+           CSS BÁSICO - Lo primero que veremos en clase
+           ============================================================
+
+           CSS sirve para darle ESTILO (colores, tamaños, posiciones)
+           a las etiquetas HTML.
+
+           Sintaxis básica:
+           selector { propiedad: valor; }
+        */
+
+        /* === RESET: quitar márgenes por defecto del navegador === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* === VARIABLES: definimos colores reutilizables === */
+        :root {
+            --fondo-oscuro: #1a1a2e;
+            --fondo-panel: #16213e;
+            --dorado: #c9a84c;
+            --texto: #f0e6d0;
+            --verde: #4CAF50;
+            --rojo: #e94560;
+        }
+
+        /* === BODY: el cuerpo de la página === */
+        body {
+            background-color: var(--fondo-oscuro);
+            color: var(--texto);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            height: 100vh;          /* Altura = 100% de la pantalla */
+            display: flex;
+            flex-direction: column; /* Elementos uno debajo del otro */
+        }
+
+        /* ============================================================
+           PARTE 1: ESTRUCTURA PRINCIPAL (3 columnas)
+           ============================================================
+           Usamos FLEXBOX para poner 3 elementos en fila:
+           [Panel Izq] [Cámara AR] [Panel Der]
+        */
+        #zona-superior {
+            display: flex;
+            flex: 1;                /* Ocupa todo el espacio disponible */
+            gap: 10px;              /* Espacio entre columnas */
+            padding: 10px;
+        }
+
+        /* === PANELES LATERALES === */
+        .panel {
+            width: 220px;           /* Ancho fijo */
+            background: var(--fondo-panel);
+            border: 2px solid var(--dorado);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;       /* Scroll si hay mucho contenido */
+        }
+
+        .panel h2 {
+            color: var(--dorado);
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--dorado);
+            padding-bottom: 5px;
+        }
+
+        /* === IFRAME: aquí va la cámara AR === */
+        #camara-ar {
+            flex: 1;                /* Ocupa el espacio restante */
+            border: 2px solid var(--dorado);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #camara-ar iframe {
+            width: 100%;
+            height: 100%;
+            border: none;           /* Sin borde alrededor del iframe */
+        }
+
+        /* ============================================================
+           PARTE 2: TARJETAS DE PERSONAJE
+           ============================================================
+           Cada personaje es una "tarjeta" con borde, fondo y texto.
+        */
+        .tarjeta {
+            background: #0f3460;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .tarjeta:hover {
+            border-color: var(--dorado);
+        }
+
+        .tarjeta.activa {
+            border-color: var(--verde);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+        }
+
+        .tarjeta h3 {
+            color: var(--dorado);
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+
+        .tarjeta .clase {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        /* Barra de vida: un div dentro de otro div */
+        .vida-fondo {
+            background: #333;
+            border-radius: 5px;
+            height: 16px;
+            overflow: hidden;
+        }
+
+        .vida-barra {
+            height: 100%;
+            background: linear-gradient(90deg, #2e7d32, var(--verde));
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.7rem;
+            line-height: 16px;
+            color: white;
+            transition: width 0.5s; /* Animación suave */
+        }
+
+        /* ============================================================
+           PARTE 3: ZONA DE NARRACIÓN
+           ============================================================
+        */
+        #zona-narracion {
+            height: 150px;
+            background: var(--fondo-panel);
+            border-top: 2px solid var(--dorado);
+            padding: 10px 15px;
+            overflow-y: auto;
+        }
+
+        #zona-narracion h3 {
+            color: var(--dorado);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .mensaje-narrador {
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid var(--dorado);
+            border-radius: 0 6px 6px 0;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* ============================================================
+           PARTE 4: BARRA DE ACCIONES
+           ============================================================
+        */
+        #barra-acciones {
+            height: 55px;
+            background: #0f3460;
+            border-top: 1px solid #444;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+        }
+
+        button {
+            background: #333;
+            color: var(--texto);
+            border: 1px solid #555;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: #444;
+            border-color: var(--dorado);
+        }
+
+        button.principal {
+            background: var(--dorado);
+            color: #1a1a2e;
+            border-color: var(--dorado);
+            font-weight: bold;
+        }
+
+        #resultado-dado {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--dorado);
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Separador visual */
+        .separador {
+            width: 1px;
+            height: 25px;
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         HTML - Estructura de la página
+         ============================================================
+         Las etiquetas HTML son como "cajas" que contienen contenido.
+
+         <div> = caja genérica (division)
+         <h2> = título de nivel 2
+         <p> = párrafo
+         <iframe> = ventana que muestra otra página web
+         <button> = botón clickeable
+    -->
+
+    <!-- ZONA SUPERIOR: 3 columnas -->
+    <div id="zona-superior">
+
+        <!-- === PANEL IZQUIERDO: Jugadores === -->
+        <div class="panel" id="panel-jugadores">
+            <h2>⚔️ Héroes</h2>
+
+            <!-- Tarjeta del Mago -->
+            <div class="tarjeta activa" onclick="seleccionarJugador(0)">
+                <h3>🧙 El Gran Mago</h3>
+                <p class="clase">Mago · Nivel 3</p>
+                <div class="vida-fondo">
+                    <div class="vida-barra" style="width: 90%">45/50 HP</div>
+                </div>
+            </div>
+
+            <!-- Tarjeta del Guerrero -->
+            <div class="tarjeta" onclick="seleccionarJugador(1)">
+                <h3>⚔️ Guerrero de Acero</h3>
+                <p class="clase">Guerrero · Nivel 4</p>
+                <div class="vida-fondo">
+                    <div class="vida-barra" style="width: 92%">60/65 HP</div>
+                </div>
+            </div>
+
+            <!-- Tarjeta de la Arquera -->
+            <div class="tarjeta" onclick="seleccionarJugador(2)">
+                <h3>🏹 Luna Sombra</h3>
+                <p class="clase">Arquera · Nivel 3</p>
+                <div class="vida-fondo">
+                    <div class="vida-barra" style="width: 85%">38/45 HP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === CÁMARA AR (embebida con iframe) === -->
+        <!-- 
+             iframe = "marco interno" que muestra otra página web
+             src = la página que queremos mostrar (nuestra cámara AR)
+             Esto permite separar la AR del resto de la interfaz.
+        -->
+        <div id="camara-ar">
+            <iframe src="./index.html" title="Camara de Realidad Aumentada">
+                Tu navegador no soporta iframes.
+            </iframe>
+        </div>
+
+        <!-- === PANEL DERECHO: Enemigos === -->
+        <div class="panel" id="panel-enemigos">
+            <h2>👹 Enemigos</h2>
+
+            <div class="tarjeta">
+                <h3>🐉 Dragón de Eldoria</h3>
+                <p class="clase">Jefe · Nivel 8</p>
+                <div class="vida-fondo">
+                    <div class="vida-barra" style="width: 100%; background: linear-gradient(90deg, #c62828, var(--rojo))">
+                        500/500 HP
+                    </div>
+                </div>
+            </div>
+
+            <div class="tarjeta">
+                <h3>🛡️ Guardián del Portal</h3>
+                <p class="clase">Élite · Nivel 6</p>
+                <div class="vida-fondo">
+                    <div class="vida-barra" style="width: 100%; background: linear-gradient(90deg, #c62828, var(--rojo))">
+                        120/120 HP
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZONA DE NARRACIÓN -->
+    <div id="zona-narracion">
+        <h3>📜 Narrador</h3>
+        <div id="historial-narracion">
+            <div class="mensaje-narrador">
+                🌟 <strong>Bienvenidos, aventureros.</strong> El antiguo calabozo ha despertado. 
+                Acercad los marcadores a la cámara para descubrir sus secretos...
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DE ACCIONES -->
+    <div id="barra-acciones">
+        <button class="principal" onclick="tirarDado()">🎲 Tirar D20</button>
+        <span id="resultado-dado">-</span>
+
+        <div class="separador"></div>
+
+        <button onclick="atacar()">⚔️ Atacar</button>
+        <button onclick="curar()">💚 Curar</button>
+        <button onclick="nuevaHistoria()">📖 Nueva Historia</button>
+
+        <div class="separador"></div>
+
+        <button onclick="limpiarNarracion()">🗑️ Limpiar</button>
+    </div>
+
+    <!-- ============================================================
+         JAVASCRIPT - La lógica del juego (programación)
+         ============================================================
+         JavaScript le da "vida" a la página. Sin JS, los botones no hacen nada.
+
+         Conceptos básicos que veremos:
+         - Variables: let nombre = valor;
+         - Funciones: function nombre() { ... }
+         - Arrays: let lista = ["a", "b", "c"];
+         - Objetos: let personaje = { nombre: "Mago", vida: 50 };
+    -->
+    <script>
+        // ---------- VARIABLES DEL JUEGO ----------
+        let jugadorActivo = 0;  // 0 = Mago, 1 = Guerrero, 2 = Arquera
+
+        // Array de historias predefinidas (nuestro "fallback" o respaldo)
+        const historias = [
+            "🕯️ Avanzáis con cuidado por el corredor. Las paredes de piedra gotean humedad y el eco de vuestras pisadas suena demasiado fuerte.",
+            "🏛️ Llegáis a una sala circular con columnas de mármol negro. En el centro, una fuente seca contiene huesos de criaturas extrañas.",
+            "💎 Un destello azul capta vuestra atención. Entre las grietas del suelo, un cristal de mana pulsa con energía.",
+            "🌿 Un jardín subterraneo se abre ante vosotros. Hongos luminosos iluminan flores que nunca habíais visto.",
+            "🔥 ¡Una trampa! El suelo cede bajo vuestros pies y flechas surcan el aire desde las paredes.",
+            "📦 Encontráis un cofre antiguo. Al abrirlo, descubrís 50 monedas de oro y una poción roja brillante.",
+            "🐺 Un aullido resuena en la oscuridad. Algo se mueve entre las sombras... y no parece amistoso."
+        ];
+
+        // ---------- FUNCIONES DEL JUEGO ----------
+
+        /**
+         * Tirar un dado de 20 caras (D20)
+         * Math.random() da un número entre 0 y 1
+         * Multiplicamos por 20 y sumamos 1 para obtener 1-20
+         */
+        function tirarDado() {
+            let resultado = Math.floor(Math.random() * 20) + 1;
+
+            // Mostrar en la pantalla
+            let elemento = document.getElementById('resultado-dado');
+            elemento.textContent = resultado;
+
+            // Cambiar color según el resultado
+            if (resultado === 20) {
+                elemento.style.color = '#4CAF50';  // Verde = crítico
+                narrar(`🎲 ¡CRÍTICO! ${resultado} - ¡Éxito rotundo!`);
+            } else if (resultado >= 15) {
+                elemento.style.color = '#4CAF50';
+                narrar(`🎲 Buena tirada: ${resultado}`);
+            } else if (resultado >= 8) {
+                elemento.style.color = '#c9a84c';  // Dorado = normal
+                narrar(`🎲 Tirada normal: ${resultado}`);
+            } else {
+                elemento.style.color = '#e94560';  // Rojo = malo
+                narrar(`🎲 Mala suerte: ${resultado}`);
+            }
+
+            // Animación: hacer el número grande y volver a tamaño normal
+            elemento.style.transform = 'scale(1.5)';
+            setTimeout(() => {
+                elemento.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        /**
+         * Simular un ataque
+         */
+        function atacar() {
+            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
+            let nombre = nombres[jugadorActivo];
+            let dano = Math.floor(Math.random() * 10) + 5;
+            narrar(`⚔️ <strong>${nombre}</strong> ataca e inflige <strong>${dano}</strong> puntos de daño.`);
+        }
+
+        /**
+         * Simular una curación
+         */
+        function curar() {
+            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
+            let nombre = nombres[jugadorActivo];
+            let curacion = Math.floor(Math.random() * 8) + 3;
+            narrar(`💚 <strong>${nombre}</strong> se cura <strong>${curacion}</strong> puntos de vida.`);
+        }
+
+        /**
+         * Elegir una historia aleatoria
+         */
+        function nuevaHistoria() {
+            let indice = Math.floor(Math.random() * historias.length);
+            narrar(historias[indice]);
+        }
+
+        /**
+         * Agregar un mensaje al panel de narración
+         * @param {string} texto - El mensaje a mostrar
+         */
+        function narrar(texto) {
+            let panel = document.getElementById('historial-narracion');
+
+            // Crear un nuevo div con el mensaje
+            let mensaje = document.createElement('div');
+            mensaje.className = 'mensaje-narrador';
+            mensaje.innerHTML = texto;
+
+            // Agregarlo al final del panel
+            panel.appendChild(mensaje);
+
+            // Hacer scroll automático hacia abajo
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        /**
+         * Cambiar el jugador activo
+         * @param {number} indice - 0, 1 o 2
+         */
+        function seleccionarJugador(indice) {
+            jugadorActivo = indice;
+
+            // Quitar la clase "activa" de todas las tarjetas
+            let tarjetas = document.querySelectorAll('.tarjeta');
+            tarjetas.forEach(t => t.classList.remove('activa'));
+
+            // Agregar la clase "activa" a la tarjeta clickeada
+            tarjetas[indice].classList.add('activa');
+
+            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
+            narrar(`🎭 Turno de <strong>${nombres[indice]}</strong>`);
+        }
+
+        /**
+         * Limpiar el historial de narración
+         */
+        function limpiarNarracion() {
+            let panel = document.getElementById('historial-narracion');
+            panel.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
