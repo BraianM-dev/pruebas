@@ -75,6 +75,7 @@
             flex: 1;                /* Ocupa todo el espacio disponible */
             gap: 10px;              /* Espacio entre columnas */
             padding: 10px;
+            min-height: 0;          /* Para que flex funcione bien en todos los navegadores */
         }
 
         /* === PANELES LATERALES === */
@@ -85,6 +86,7 @@
             border-radius: 10px;
             padding: 15px;
             overflow-y: auto;       /* Scroll si hay mucho contenido */
+            flex-shrink: 0;         /* Evita que se encojan en escritorio */
         }
 
         .panel h2 {
@@ -102,6 +104,7 @@
             border: 2px solid var(--dorado);
             border-radius: 10px;
             overflow: hidden;
+            min-height: 200px;      /* Altura mínima en escritorio */
         }
 
         #camara-ar iframe {
@@ -204,6 +207,7 @@
             align-items: center;
             padding: 0 15px;
             gap: 10px;
+            flex-wrap: wrap;       /* Permite que los botones bajen a otra línea en móvil */
         }
 
         button {
@@ -214,6 +218,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
+            white-space: nowrap;   /* Evita que el texto se parta */
         }
 
         button:hover {
@@ -234,6 +239,7 @@
             color: var(--dorado);
             min-width: 30px;
             text-align: center;
+            transition: transform 0.2s;
         }
 
         /* Separador visual */
@@ -241,6 +247,134 @@
             width: 1px;
             height: 25px;
             background: #444;
+            flex-shrink: 0;
+        }
+
+        /* ============================================================
+           📱 RESPONSIVE: Adaptación para móviles y tablets
+           ============================================================
+           Las "media queries" permiten cambiar los estilos según el
+           tamaño de la pantalla. Aquí reordenamos los elementos para
+           que se vean bien en dispositivos pequeños.
+        ============================================================ */
+        @media (max-width: 768px) {
+            /* La zona superior se apila verticalmente (una columna) */
+            #zona-superior {
+                flex-direction: column;
+                height: auto;
+                gap: 8px;
+                padding: 8px;
+            }
+
+            /* Paneles laterales: ocupan todo el ancho y altura limitada */
+            .panel {
+                width: 100%;
+                max-height: 180px;   /* Altura máxima con scroll */
+                padding: 10px;
+                flex-shrink: 1;      /* Permite que se encojan */
+            }
+
+            .panel h2 {
+                font-size: 1rem;
+                margin-bottom: 6px;
+            }
+
+            /* La cámara AR tendrá una altura fija para que se vea bien */
+            #camara-ar {
+                flex: none;          /* No se estira */
+                height: 300px;
+                min-height: unset;
+                order: -1;           /* La ponemos primero (opcional) */
+            }
+
+            /* Tarjetas más compactas */
+            .tarjeta {
+                padding: 8px;
+                margin-bottom: 6px;
+            }
+
+            .tarjeta h3 {
+                font-size: 0.85rem;
+            }
+
+            .tarjeta .clase {
+                font-size: 0.7rem;
+            }
+
+            .vida-fondo {
+                height: 14px;
+            }
+
+            .vida-barra {
+                font-size: 0.6rem;
+                line-height: 14px;
+            }
+
+            /* Zona de narración más pequeña */
+            #zona-narracion {
+                height: 120px;
+                padding: 8px 12px;
+            }
+
+            #zona-narracion h3 {
+                font-size: 0.8rem;
+            }
+
+            .mensaje-narrador {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+
+            /* Barra de acciones: altura automática y botones más pequeños */
+            #barra-acciones {
+                height: auto;
+                padding: 8px 10px;
+                gap: 6px;
+                justify-content: center; /* Centra los botones */
+            }
+
+            button {
+                font-size: 0.75rem;
+                padding: 5px 10px;
+            }
+
+            #resultado-dado {
+                font-size: 1.1rem;
+                min-width: 24px;
+            }
+
+            .separador {
+                height: 20px;
+            }
+        }
+
+        /* Para pantallas muy pequeñas (menos de 480px) */
+        @media (max-width: 480px) {
+            .panel {
+                max-height: 140px;
+                padding: 6px;
+            }
+
+            #camara-ar {
+                height: 200px;
+            }
+
+            #zona-narracion {
+                height: 100px;
+            }
+
+            button {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+            }
+
+            #barra-acciones {
+                gap: 4px;
+            }
+
+            .tarjeta {
+                padding: 5px;
+            }
         }
     </style>
 </head>
