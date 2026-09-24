@@ -1,4 +1,6 @@
 # 🐉 Proyecto Educativo: Realidad Aumentada & Hardware
+
+> **Sprint 2:** la versión evaluable «Calabozos & Código: La Cripta del Algoritmo» está en [`oa/`](oa/README.md). En GitHub Pages: `https://braianm-dev.github.io/pruebas/oa/`.
 **Destinado a estudiantes de UTU.**
 
 Este proyecto es una plantilla de Realidad Aumentada (AR) diseñada para ejecutarse en el navegador. En el transcurso del semestre lo expandiremos para conectarlo con placas **micro:bit**, **ESP32** y crear un juego interactivo de tablero (tipo Calabozos y Dragones).
