@@ -68,6 +68,7 @@ function updateBars() {
   byId("active-hero-label").textContent = game.heroes[game.hero].name;
   byId("xp-value").textContent = game.xp;
   byId("runes-value").textContent = game.unlocked.length;
+  byId("campaign-completion").hidden = game.unlocked.length < 5;
   byId("potion-count").textContent = String(game.potions).padStart(2, "0");
   document.querySelectorAll("[data-relic]").forEach(card => {
     const awake = game.unlocked.includes(card.dataset.relic);
@@ -143,7 +144,6 @@ function explore() {
   const text = fallbackLines[Math.floor(Math.random() * fallbackLines.length)];
   addStory(text, "PISTA");
   toast("Pista encontrada · +10 XP");
-  if (!game.unlocked.includes("html")) awaken("html", false);
   updateBars();
 }
 
@@ -152,6 +152,10 @@ function awaken(name, award = true) {
   game.unlocked.push(name);
   if (award) game.xp += 50;
   updateBars();
+  if (game.unlocked.length === 5) {
+    addStory("¡Las cinco runas se encienden! El portal de la cripta se abre y la compañía puede compartir cómo resolvió la misión.", "MISIÓN");
+    toast("Misión completa · portal abierto");
+  }
 }
 
 const challenges = {
@@ -223,13 +227,13 @@ function startAr() {
   byId("ar-status").classList.add("is-live");
   byId("ar-status").innerHTML = "<i></i> CÁMARA ACTIVADA";
   byId("marker-state").textContent = "Permite el acceso y apunta a un marcador compatible.";
-  awaken("conexion", false);
 }
 
 function handleMarker(event) {
   if (event.origin !== location.origin || event.data?.type !== "calabozos-ar") return;
   const { action, marker, name } = event.data;
   if (action === "found") {
+    awaken("conexion", false);
     byId("marker-label").textContent = `${name || "Marcador"} · ${marker}`;
     byId("marker-state").textContent = `Marcador detectado: ${marker}`;
     byId("marker-dot").style.background = "var(--jade)";
