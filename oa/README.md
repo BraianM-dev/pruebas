@@ -1,24 +1,32 @@
-# Sprint 2 · Calabozos & Código
+# Calabozos & Código · Sprint 2
 
-Objeto de aprendizaje gamificado que funciona como sitio estático y añade integraciones opcionales.
+`index.html` presenta el diseño del OA con narrativa, mapa de perfiles motivacionales, decisiones visuales y las fotografías del mockup físico aportadas para este proyecto. Su hoja visual está separada en `styles.css`.
 
-## Uso básico
-Abre `oa/index.html` desde GitHub Pages. A cambia opción, B valida y Enter avanza. El progreso se conserva en el navegador.
+La experiencia jugable está en [`../Juego/`](../Juego/), una ampliación del RPG que ya existe en el repositorio. Allí se combinan el tablero, héroes, enemigos, D20, cámara AR, desafíos de código, micro:bit y el narrador local.
 
-## micro:bit por USB
-1. Carga `microbit_control.py` con el editor Python de micro:bit.
-2. Conecta la placa y abre la web en Chrome/Edge mediante HTTPS.
-3. Pulsa **Conectar micro:bit** y selecciona el puerto.
-4. A cambia opción, B valida y A+B avanza.
+## Publicación
+
+- Diseño del OA: `https://braianm-dev.github.io/pruebas/oa/`
+- Juego: `https://braianm-dev.github.io/pruebas/Juego/`
 
 ## Dungeon Master local con Ollama
+
+La página publicada tiene relatos de respaldo. Para usar el modelo local, desde la raíz del repositorio abre dos terminales:
+
 ```bash
 ollama pull llama3.2
 pip install fastapi uvicorn httpx
-cd oa
-uvicorn gateway_oa:app --host 0.0.0.0 --port 8000
+uvicorn oa.gateway_oa:app --host 0.0.0.0 --port 8000
 ```
-El sitio intenta acceder a `localhost:8000`. Si el navegador bloquea el acceso desde HTTPS, sirve también `oa` localmente con `python -m http.server 5500`.
 
-## ESP32-C3 Super Mini
-Es una extensión opcional como puente Wi-Fi/UART. La versión base usa micro:bit por USB para reducir puntos de falla. Una etapa posterior puede enviar los mismos comandos `A`, `B` y `AB` por UART o WebSocket.
+En la segunda terminal:
+
+```bash
+python -m http.server 5500 --bind 0.0.0.0
+```
+
+En el mismo equipo, abre `http://localhost:5500/Juego/`. Si otro equipo de la red jugará, abre `http://IP-DEL-EQUIPO:5500/Juego/` y la API usará el mismo nombre de host en el puerto 8000. Ollama usa `llama3.2` por defecto; define `OLLAMA_MODEL` para elegir otro modelo instalado. Sin Ollama, la aplicación entrega una narración de respaldo y continúa.
+
+## Hardware
+
+Las instrucciones de carga de micro:bit, canales de radio y cableado opcional del ESP32-C3 están en [`../Juego/hardware/README.md`](../Juego/hardware/README.md). La actividad conserva teclado y botones web si no hay placas disponibles.

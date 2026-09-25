@@ -1,6 +1,6 @@
 # 🐉 Proyecto Educativo: Realidad Aumentada & Hardware
 
-> **Sprint 2:** la versión evaluable «Calabozos & Código: La Cripta del Algoritmo» está en [`oa/`](oa/README.md). En GitHub Pages: `https://braianm-dev.github.io/pruebas/oa/`.
+> **Sprint 2:** el diseño narrativo, mapa de jugadores y mockup fotográfico del tablero láser están en [`oa/`](oa/README.md). La aventura jugable basada en el RPG y la cámara AR originales está en [`Juego/`](Juego/). Publicación: `https://braianm-dev.github.io/pruebas/oa/` y `https://braianm-dev.github.io/pruebas/Juego/`.
 **Destinado a estudiantes de UTU.**
 
 Este proyecto es una plantilla de Realidad Aumentada (AR) diseñada para ejecutarse en el navegador. En el transcurso del semestre lo expandiremos para conectarlo con placas **micro:bit**, **ESP32** y crear un juego interactivo de tablero (tipo Calabozos y Dragones).
