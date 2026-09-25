@@ -1,43 +1,43 @@
-// js/eventos.js
-// Este archivo detecta cuándo un marcador entra o sale de la pantalla.
+// Detecta los marcadores AR y comunica los hallazgos al juego contenedor.
+const NOMBRES_MARCADORES = {
+    Hiro: "Dragón de Eldoria",
+    Kanji: "Dragón alternativo",
+    Barcode_0: "Mago de la cripta",
+    Barcode_1: "Mago de la cripta",
+    Barcode_2: "Artefacto antiguo",
+    Barcode_3: "Runa de fuego",
+    Barcode_4: "Imagen del dragón",
+    Barcode_5: "Escena animada",
+    Barcode_6: "Escena de video",
+    Barcode_7: "Mapa de la mazmorra",
+    Barcode_8: "Bosque de la cripta",
+    Barcode_9: "Terreno natural",
+    Barcode_10: "Desierto antiguo",
+    Barcode_11: "Guerrero de la compañía"
+};
 
-AFRAME.registerComponent('registerevents', {
+function publicarAlJuego(action, marker) {
+    if (window.parent === window) return;
+    window.parent.postMessage({
+        type: "calabozos-ar",
+        action: action,
+        marker: marker,
+        name: NOMBRES_MARCADORES[marker] || "Descubrimiento de la cripta"
+    }, window.location.origin);
+}
+
+AFRAME.registerComponent("registerevents", {
     init: function () {
-        var marcador = this.el; // El elemento HTML del marcador actual
-
-        // EVENTO: Cuando el marcador entra en el campo de visión
-        marcador.addEventListener('markerFound', function() {
+        var marcador = this.el;
+        marcador.addEventListener("markerFound", function () {
             var marcadorId = marcador.id;
-            var modeloNombre = "Desconocido";
-
-            // Asignamos el nombre del modelo para mostrarlo en el panel
-            if(marcadorId === "Hiro") modeloNombre = "dragon.glb";
-            if(marcadorId === "Kanji") modeloNombre = "dragon.fbx";
-            if(marcadorId === "Barcode_0") modeloNombre = "mago.glb";
-            if(marcadorId === "Barcode_1") modeloNombre = "mago.fbx";
-            if(marcadorId === "Barcode_2") modeloNombre = "model.fbx";
-            if(marcadorId === "Barcode_3") modeloNombre = "fuego.gif";
-            if(marcadorId === "Barcode_4") modeloNombre = "imagen.png";
-            if(marcadorId === "Barcode_5") modeloNombre = "video.mp4";
-            // Actualizamos la interfaz usando nuestro archivo de utilidades
-            Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
-            /* Utilidades.marcadorEncontrado(marcadorId, "esperando servidor...");
-            Conexion.enviarEvento("marcador_detectado", marcadorId); */
-            
-            /* -----------------------------------------------------------------
-               GANCHO PARA PRÓXIMAS CLASES (Hardware & IoT)
-               Aquí, en el futuro, los estudiantes agregarán las peticiones fetch
-               para comunicarse con el ESP32 o enviar datos por serial/bluetooth 
-               a la placa micro:bit cuando aparezca un marcador en el juego.
-               ----------------------------------------------------------------- */
-               // ejemplo: fetch('http://IP_DEL_ESP32/marcador?id=' + marcadorId);
+            var modeloNombre = NOMBRES_MARCADORES[marcadorId] || "Modelo de la cripta";
+            if (window.Utilidades) Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
+            publicarAlJuego("found", marcadorId);
         });
-
-        // EVENTO: Cuando el marcador sale del campo de visión
-        marcador.addEventListener('markerLost', function() {
-            Utilidades.marcadorPerdido();
-            // Conexion.enviarEvento("marcador_perdido", marcador.id);
-            // Aquí en el futuro se podrá enviar la orden de apagar LEDs o detener motores.
+        marcador.addEventListener("markerLost", function () {
+            if (window.Utilidades) Utilidades.marcadorPerdido();
+            publicarAlJuego("lost", marcador.id);
         });
     }
 });

@@ -4,6 +4,26 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.volver-juego {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    padding: 8px 12px;
+    border: 1px solid rgba(214, 163, 84, .75);
+    border-radius: 4px;
+    background: rgba(16, 19, 17, .92);
+    color: #f1cc85;
+    font: 600 12px/1.2 'Segoe UI', sans-serif;
+    text-decoration: none;
+}
+
+.volver-juego:hover,
+.volver-juego:focus-visible {
+    background: #30291e;
+    color: #fff;
+}
+
 /* ─── PANEL DE INFO AR ─── */
 #panel-info {
     position: absolute;

@@ -1,632 +1,151 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 Mi Primer Juego RPG - Proyecto Educativo</title>
-
-    <!-- 
-    ================================================================
-    PROYECTO EDUCATIVO - HTML + CSS + JavaScript Básico
-    Para estudiantes de 1ro de Bachillerato
-
-    ESTRUCTURA DIDÁCTICA:
-    ┌─────────────────────────────────────────┐
-    │  PARTE 1: PANEL DE JUGADORES (HTML)     │
-    ├─────────────────────────────────────────┤
-    │  PARTE 2: CÁMARA AR (iframe)            │
-    ├─────────────────────────────────────────┤
-    │  PARTE 3: PANEL DE ENEMIGOS (HTML)      │
-    ├─────────────────────────────────────────┤
-    │  PARTE 4: NARRACIÓN (JavaScript)        │
-    ├─────────────────────────────────────────┤
-    │  PARTE 5: ACCIONES (JavaScript)         │
-    └─────────────────────────────────────────┘
-    ================================================================
-    -->
-
-    <style>
-        /* ============================================================
-           CSS BÁSICO - Lo primero que veremos en clase
-           ============================================================
-
-           CSS sirve para darle ESTILO (colores, tamaños, posiciones)
-           a las etiquetas HTML.
-
-           Sintaxis básica:
-           selector { propiedad: valor; }
-        */
-
-        /* === RESET: quitar márgenes por defecto del navegador === */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* === VARIABLES: definimos colores reutilizables === */
-        :root {
-            --fondo-oscuro: #1a1a2e;
-            --fondo-panel: #16213e;
-            --dorado: #c9a84c;
-            --texto: #f0e6d0;
-            --verde: #4CAF50;
-            --rojo: #e94560;
-        }
-
-        /* === BODY: el cuerpo de la página === */
-        body {
-            background-color: var(--fondo-oscuro);
-            color: var(--texto);
-            font-family: 'Segoe UI', Arial, sans-serif;
-            height: 100vh;          /* Altura = 100% de la pantalla */
-            display: flex;
-            flex-direction: column; /* Elementos uno debajo del otro */
-        }
-
-        /* ============================================================
-           PARTE 1: ESTRUCTURA PRINCIPAL (3 columnas)
-           ============================================================
-           Usamos FLEXBOX para poner 3 elementos en fila:
-           [Panel Izq] [Cámara AR] [Panel Der]
-        */
-        #zona-superior {
-            display: flex;
-            flex: 1;                /* Ocupa todo el espacio disponible */
-            gap: 10px;              /* Espacio entre columnas */
-            padding: 10px;
-            min-height: 0;          /* Para que flex funcione bien en todos los navegadores */
-        }
-
-        /* === PANELES LATERALES === */
-        .panel {
-            width: 220px;           /* Ancho fijo */
-            background: var(--fondo-panel);
-            border: 2px solid var(--dorado);
-            border-radius: 10px;
-            padding: 15px;
-            overflow-y: auto;       /* Scroll si hay mucho contenido */
-            flex-shrink: 0;         /* Evita que se encojan en escritorio */
-        }
-
-        .panel h2 {
-            color: var(--dorado);
-            text-align: center;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--dorado);
-            padding-bottom: 5px;
-        }
-
-        /* === IFRAME: aquí va la cámara AR === */
-        #camara-ar {
-            flex: 1;                /* Ocupa el espacio restante */
-            border: 2px solid var(--dorado);
-            border-radius: 10px;
-            overflow: hidden;
-            min-height: 200px;      /* Altura mínima en escritorio */
-        }
-
-        #camara-ar iframe {
-            width: 100%;
-            height: 100%;
-            border: none;           /* Sin borde alrededor del iframe */
-        }
-
-        /* ============================================================
-           PARTE 2: TARJETAS DE PERSONAJE
-           ============================================================
-           Cada personaje es una "tarjeta" con borde, fondo y texto.
-        */
-        .tarjeta {
-            background: #0f3460;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-
-        .tarjeta:hover {
-            border-color: var(--dorado);
-        }
-
-        .tarjeta.activa {
-            border-color: var(--verde);
-            box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
-        }
-
-        .tarjeta h3 {
-            color: var(--dorado);
-            font-size: 0.95rem;
-            margin-bottom: 5px;
-        }
-
-        .tarjeta .clase {
-            font-size: 0.75rem;
-            color: #888;
-            margin-bottom: 8px;
-        }
-
-        /* Barra de vida: un div dentro de otro div */
-        .vida-fondo {
-            background: #333;
-            border-radius: 5px;
-            height: 16px;
-            overflow: hidden;
-        }
-
-        .vida-barra {
-            height: 100%;
-            background: linear-gradient(90deg, #2e7d32, var(--verde));
-            border-radius: 5px;
-            text-align: center;
-            font-size: 0.7rem;
-            line-height: 16px;
-            color: white;
-            transition: width 0.5s; /* Animación suave */
-        }
-
-        /* ============================================================
-           PARTE 3: ZONA DE NARRACIÓN
-           ============================================================
-        */
-        #zona-narracion {
-            height: 150px;
-            background: var(--fondo-panel);
-            border-top: 2px solid var(--dorado);
-            padding: 10px 15px;
-            overflow-y: auto;
-        }
-
-        #zona-narracion h3 {
-            color: var(--dorado);
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .mensaje-narrador {
-            padding: 6px 10px;
-            margin-bottom: 6px;
-            background: rgba(255,255,255,0.05);
-            border-left: 3px solid var(--dorado);
-            border-radius: 0 6px 6px 0;
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-
-        /* ============================================================
-           PARTE 4: BARRA DE ACCIONES
-           ============================================================
-        */
-        #barra-acciones {
-            height: 55px;
-            background: #0f3460;
-            border-top: 1px solid #444;
-            display: flex;
-            align-items: center;
-            padding: 0 15px;
-            gap: 10px;
-            flex-wrap: wrap;       /* Permite que los botones bajen a otra línea en móvil */
-        }
-
-        button {
-            background: #333;
-            color: var(--texto);
-            border: 1px solid #555;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            white-space: nowrap;   /* Evita que el texto se parta */
-        }
-
-        button:hover {
-            background: #444;
-            border-color: var(--dorado);
-        }
-
-        button.principal {
-            background: var(--dorado);
-            color: #1a1a2e;
-            border-color: var(--dorado);
-            font-weight: bold;
-        }
-
-        #resultado-dado {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--dorado);
-            min-width: 30px;
-            text-align: center;
-            transition: transform 0.2s;
-        }
-
-        /* Separador visual */
-        .separador {
-            width: 1px;
-            height: 25px;
-            background: #444;
-            flex-shrink: 0;
-        }
-
-        /* ============================================================
-           📱 RESPONSIVE: Adaptación para móviles y tablets
-           ============================================================
-           Las "media queries" permiten cambiar los estilos según el
-           tamaño de la pantalla. Aquí reordenamos los elementos para
-           que se vean bien en dispositivos pequeños.
-        ============================================================ */
-        @media (max-width: 768px) {
-            /* La zona superior se apila verticalmente (una columna) */
-            #zona-superior {
-                flex-direction: column;
-                height: auto;
-                gap: 8px;
-                padding: 8px;
-            }
-
-            /* Paneles laterales: ocupan todo el ancho y altura limitada */
-            .panel {
-                width: 100%;
-                max-height: 180px;   /* Altura máxima con scroll */
-                padding: 10px;
-                flex-shrink: 1;      /* Permite que se encojan */
-            }
-
-            .panel h2 {
-                font-size: 1rem;
-                margin-bottom: 6px;
-            }
-
-            /* La cámara AR tendrá una altura fija para que se vea bien */
-            #camara-ar {
-                flex: none;          /* No se estira */
-                height: 300px;
-                min-height: unset;
-                order: -1;           /* La ponemos primero (opcional) */
-            }
-
-            /* Tarjetas más compactas */
-            .tarjeta {
-                padding: 8px;
-                margin-bottom: 6px;
-            }
-
-            .tarjeta h3 {
-                font-size: 0.85rem;
-            }
-
-            .tarjeta .clase {
-                font-size: 0.7rem;
-            }
-
-            .vida-fondo {
-                height: 14px;
-            }
-
-            .vida-barra {
-                font-size: 0.6rem;
-                line-height: 14px;
-            }
-
-            /* Zona de narración más pequeña */
-            #zona-narracion {
-                height: 120px;
-                padding: 8px 12px;
-            }
-
-            #zona-narracion h3 {
-                font-size: 0.8rem;
-            }
-
-            .mensaje-narrador {
-                font-size: 0.8rem;
-                padding: 4px 8px;
-            }
-
-            /* Barra de acciones: altura automática y botones más pequeños */
-            #barra-acciones {
-                height: auto;
-                padding: 8px 10px;
-                gap: 6px;
-                justify-content: center; /* Centra los botones */
-            }
-
-            button {
-                font-size: 0.75rem;
-                padding: 5px 10px;
-            }
-
-            #resultado-dado {
-                font-size: 1.1rem;
-                min-width: 24px;
-            }
-
-            .separador {
-                height: 20px;
-            }
-        }
-
-        /* Para pantallas muy pequeñas (menos de 480px) */
-        @media (max-width: 480px) {
-            .panel {
-                max-height: 140px;
-                padding: 6px;
-            }
-
-            #camara-ar {
-                height: 200px;
-            }
-
-            #zona-narracion {
-                height: 100px;
-            }
-
-            button {
-                font-size: 0.7rem;
-                padding: 4px 8px;
-            }
-
-            #barra-acciones {
-                gap: 4px;
-            }
-
-            .tarjeta {
-                padding: 5px;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101311">
+  <meta name="description" content="Una aventura educativa de Calabozos & Código con tablero láser, realidad aumentada, micro:bit y un Dungeon Master local.">
+  <title>Calabozos & Código — La cripta despertó</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="game.js" defer></script>
+  <script src="microbit.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#aventura">Saltar a la aventura</a>
+  <header class="topbar" id="inicio">
+    <a class="brand" href="#inicio" aria-label="Calabozos y Código, inicio">
+      <img src="assets/logo-calabozos-codigo.png" alt="" width="64" height="72">
+      <span>Calabozos <i>&amp;</i> Código<small>EXPLORA · DECIDE · CONECTA</small></span>
+    </a>
+    <nav aria-label="Secciones del juego">
+      <a href="#aventura">Aventura</a><a href="#compania">Compañía</a><a href="#reliquias">Reliquias</a><a href="#artefacto">Tablero físico</a>
+    </nav>
+    <button class="icon-button" id="btn-contraste" type="button" aria-pressed="false" title="Alternar alto contraste">◐ <span>Contraste</span></button>
+  </header>
 
-    <!-- ============================================================
-         HTML - Estructura de la página
-         ============================================================
-         Las etiquetas HTML son como "cajas" que contienen contenido.
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span> Campaña educativa · Capítulo 01</p>
+        <h1 id="hero-title">La cripta<br><em>despertó.</em></h1>
+        <p class="hero-lead">Una señal atraviesa la madera, la placa y la pantalla. El Dragón de Eldoria custodia el Código Fuente. Reúne a tu compañía, despierta las runas y escribe el desenlace.</p>
+        <div class="hero-actions"><a class="button button-gold" href="#aventura">Entrar a la cripta <span aria-hidden="true">↘</span></a><button class="button button-quiet" id="btn-relato-intro" type="button">Invocar al Dungeon Master</button></div>
+        <div class="hero-metrics" aria-label="Objetivo de campaña"><div><b>05</b><span>reliquias</span></div><div><b>01</b><span>compañía</span></div><div><b>∞</b><span>decisiones</span></div></div>
+      </div>
+      <figure class="hero-art"><img src="assets/grabado-laser.jpeg" alt="Proceso real de grabado láser del tablero Calabozos y Código"><figcaption><span class="live-mark"></span> Del taller a la aventura <small>Prototipo físico · tablero MDF grabado a láser</small></figcaption></figure>
+      <div class="hero-seal" aria-hidden="true"><span>CC</span><small>CAMPAÑA<br>01</small></div>
+    </section>
 
-         <div> = caja genérica (division)
-         <h2> = título de nivel 2
-         <p> = párrafo
-         <iframe> = ventana que muestra otra página web
-         <button> = botón clickeable
-    -->
-
-    <!-- ZONA SUPERIOR: 3 columnas -->
-    <div id="zona-superior">
-
-        <!-- === PANEL IZQUIERDO: Jugadores === -->
-        <div class="panel" id="panel-jugadores">
-            <h2>⚔️ Héroes</h2>
-
-            <!-- Tarjeta del Mago -->
-            <div class="tarjeta activa" onclick="seleccionarJugador(0)">
-                <h3>🧙 El Gran Mago</h3>
-                <p class="clase">Mago · Nivel 3</p>
-                <div class="vida-fondo">
-                    <div class="vida-barra" style="width: 90%">45/50 HP</div>
-                </div>
-            </div>
-
-            <!-- Tarjeta del Guerrero -->
-            <div class="tarjeta" onclick="seleccionarJugador(1)">
-                <h3>⚔️ Guerrero de Acero</h3>
-                <p class="clase">Guerrero · Nivel 4</p>
-                <div class="vida-fondo">
-                    <div class="vida-barra" style="width: 92%">60/65 HP</div>
-                </div>
-            </div>
-
-            <!-- Tarjeta de la Arquera -->
-            <div class="tarjeta" onclick="seleccionarJugador(2)">
-                <h3>🏹 Luna Sombra</h3>
-                <p class="clase">Arquera · Nivel 3</p>
-                <div class="vida-fondo">
-                    <div class="vida-barra" style="width: 85%">38/45 HP</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- === CÁMARA AR (embebida con iframe) === -->
-        <!-- 
-             iframe = "marco interno" que muestra otra página web
-             src = la página que queremos mostrar (nuestra cámara AR)
-             Esto permite separar la AR del resto de la interfaz.
-        -->
-        <div id="camara-ar">
-            <iframe src="../index.html" title="Camara de Realidad Aumentada">
-                
-                Tu navegador no soporta iframes.
-            </iframe>
-        </div>
-
-        <!-- === PANEL DERECHO: Enemigos === -->
-        <div class="panel" id="panel-enemigos">
-            <h2>👹 Enemigos</h2>
-
-            <div class="tarjeta">
-                <h3>🐉 Dragón de Eldoria</h3>
-                <p class="clase">Jefe · Nivel 8</p>
-                <div class="vida-fondo">
-                    <div class="vida-barra" style="width: 100%; background: linear-gradient(90deg, #c62828, var(--rojo))">
-                        500/500 HP
-                    </div>
-                </div>
-            </div>
-
-            <div class="tarjeta">
-                <h3>🛡️ Guardián del Portal</h3>
-                <p class="clase">Élite · Nivel 6</p>
-                <div class="vida-fondo">
-                    <div class="vida-barra" style="width: 100%; background: linear-gradient(90deg, #c62828, var(--rojo))">
-                        120/120 HP
-                    </div>
-                </div>
-            </div>
-        </div>
+    <section class="campaign-strip" aria-label="Estado de campaña">
+      <div class="campaign-name"><span class="sigil-mini">✦</span><span><small>EXPEDICIÓN ACTUAL</small><strong>La Cripta del Algoritmo</strong></span></div>
+      <div class="campaign-stat"><small>EXPERIENCIA</small><strong><span id="xp-value">0</span> XP</strong></div>
+      <div class="campaign-stat"><small>RUNAS DESPERTADAS</small><strong><span id="runes-value">0</span> / 5</strong></div>
+      <div class="campaign-stat connection-stat"><small>ENLACE DE HARDWARE</small><strong><span class="status-dot" id="hardware-dot"></span><span id="hardware-label">MODO DE MESA</span></strong></div>
+      <button class="campaign-reset" id="btn-reset-campaign" type="button">Nueva expedición ↻</button>
+    </section>
+    <div class="campaign-completion content-width" id="campaign-completion" role="status" hidden>
+      <span class="panel-kicker">MISIÓN COMPLETA</span>
+      <strong>Las cinco runas responden: el portal está abierto.</strong>
+      <span>Comparte con la compañía una decisión que les permitió avanzar.</span>
     </div>
 
-    <!-- ZONA DE NARRACIÓN -->
-    <div id="zona-narracion">
-        <h3>📜 Narrador</h3>
-        <div id="historial-narracion">
-            <div class="mensaje-narrador">
-                🌟 <strong>Bienvenidos, aventureros.</strong> El antiguo calabozo ha despertado. 
-                Acercad los marcadores a la cámara para descubrir sus secretos...
+    <section class="game-section content-width" id="aventura">
+      <div class="section-heading"><div><p class="eyebrow">La mesa de juego</p><h2>Tu compañía, tu aventura.</h2></div><p>Elige héroe y objetivo. La cámara, el tablero y los controles físicos pueden sumarse cuando estén listos.</p></div>
+      <div class="game-grid">
+        <aside class="side-panel party-panel" id="compania" aria-labelledby="party-heading">
+          <div class="panel-heading"><div><span class="panel-kicker">01 / COMPAÑÍA</span><h3 id="party-heading">Aventureros</h3></div><span class="count-pill">03</span></div>
+          <div class="party-list">
+            <button class="hero-card is-active" type="button" data-hero="0" aria-pressed="true">
+              <span class="hero-avatar mage" aria-hidden="true">✧</span><span class="hero-info"><b>El Gran Mago</b><small>Sabio de las Runas · NIV. 03</small><span class="health-track"><i style="width:90%"></i></span><small class="health-label">45 / 50 PV</small></span><span class="active-mark" aria-hidden="true">✦</span>
+            </button>
+            <button class="hero-card" type="button" data-hero="1" aria-pressed="false">
+              <span class="hero-avatar warrior" aria-hidden="true">⚔</span><span class="hero-info"><b>Guerrero de Acero</b><small>Vanguardia · NIV. 04</small><span class="health-track"><i style="width:92%"></i></span><small class="health-label">60 / 65 PV</small></span><span class="active-mark" aria-hidden="true">✦</span>
+            </button>
+            <button class="hero-card" type="button" data-hero="2" aria-pressed="false">
+              <span class="hero-avatar archer" aria-hidden="true">➶</span><span class="hero-info"><b>Luna Sombra</b><small>Exploradora · NIV. 03</small><span class="health-track"><i style="width:84%"></i></span><small class="health-label">38 / 45 PV</small></span><span class="active-mark" aria-hidden="true">✦</span>
+            </button>
+          </div>
+          <div class="party-note"><span aria-hidden="true">✧</span><p>Turno de <strong id="active-hero-label">El Gran Mago</strong>. La victoria depende de la compañía, no de un héroe solitario.</p></div>
+          <div class="party-footer"><span>VÍNCULO DE COMPAÑÍA</span><b>COOPERATIVO</b></div>
+        </aside>
+
+        <section class="arena-panel" aria-labelledby="arena-title">
+          <div class="arena-topline"><span class="panel-kicker">02 / PORTAL DE REALIDAD AUMENTADA</span><span class="camera-status" id="ar-status"><i></i> CÁMARA EN ESPERA</span></div>
+          <div class="arena-stage" id="arena-stage">
+            <div class="ar-placeholder" id="ar-placeholder">
+              <div class="portal-rings" aria-hidden="true"><span></span><span></span><span></span><b>CC</b></div>
+              <p class="eyebrow">EL TABLERO ES LA PUERTA</p><h3 id="arena-title">Despierta la visión.</h3>
+              <p>Activa la cámara y acerca un marcador compatible. El modelo aparecerá sobre la mesa; la compañía y el narrador siguen aquí.</p>
+              <button class="button button-gold" id="btn-load-ar" type="button">Abrir cámara AR</button>
+              <small>Permite el acceso a la cámara cuando el navegador lo solicite.</small>
             </div>
-        </div>
-    </div>
+            <iframe id="ar-frame" title="Vista de realidad aumentada de Calabozos y Código" allow="camera; fullscreen; accelerometer; gyroscope" allowfullscreen hidden></iframe>
+            <div class="ar-caption"><span>VISTA DE MESA</span><strong id="marker-label">Sin marcador detectado</strong><span class="ar-coordinate">X · Y · Z</span></div>
+          </div>
+          <div class="arena-footer"><span><i class="status-dot" id="marker-dot"></i><span id="marker-state">La cámara se activa a pedido.</span></span><a href="../index.html" target="_blank" rel="noopener">Abrir AR en pantalla completa ↗</a></div>
+        </section>
 
-    <!-- BARRA DE ACCIONES -->
-    <div id="barra-acciones">
-        <button class="principal" onclick="tirarDado()">🎲 Tirar D20</button>
-        <span id="resultado-dado">-</span>
+        <aside class="side-panel threats-panel" aria-labelledby="threat-heading">
+          <div class="panel-heading"><div><span class="panel-kicker">03 / AMENAZAS</span><h3 id="threat-heading">Enemigos</h3></div><span class="count-pill danger-count">02</span></div>
+          <button class="threat-card is-target" data-enemy="0" type="button" aria-pressed="true"><span class="threat-icon dragon-icon" aria-hidden="true">♜</span><span class="threat-info"><b>Dragón de Eldoria</b><small>JEFE · NIVEL 08</small><span class="health-track enemy-track"><i style="width:100%"></i></span><small class="health-label">500 / 500 PV</small></span><span class="target-mark">OBJETIVO</span></button>
+          <button class="threat-card" data-enemy="1" type="button" aria-pressed="false"><span class="threat-icon guardian-icon" aria-hidden="true">⬟</span><span class="threat-info"><b>Guardián del Portal</b><small>ÉLITE · NIVEL 06</small><span class="health-track enemy-track"><i style="width:100%"></i></span><small class="health-label">120 / 120 PV</small></span><span class="target-mark">OBJETIVO</span></button>
+          <div class="threat-hint"><span>!</span><p>Selecciona un enemigo para fijar el objetivo del próximo ataque.</p></div>
+        </aside>
+      </div>
 
-        <div class="separador"></div>
+      <div class="action-deck" aria-label="Acciones de la compañía">
+        <div class="deck-label"><span class="panel-kicker">TU TURNO</span><strong>¿Qué hará la compañía?</strong></div>
+        <button id="btn-roll" class="action-button die-button" type="button"><span class="die-icon" aria-hidden="true">D20</span><span><b>Lanzar dado</b><small>Prueba de destino</small></span></button>
+        <button id="btn-attack" class="action-button" type="button"><span class="action-icon">⚔</span><span><b>Atacar</b><small>Usa el D20</small></span></button>
+        <button id="btn-heal" class="action-button" type="button"><span class="action-icon heal-icon">✚</span><span><b>Curar</b><small><span id="potion-count">02</span> pociones</small></span></button>
+        <button id="btn-explore" class="action-button" type="button"><span class="action-icon explore-icon">⌖</span><span><b>Explorar</b><small>Buscar una pista</small></span></button>
+        <div class="die-result" aria-live="polite"><span>ÚLTIMA TIRADA</span><strong id="d20-result">—</strong><small id="d20-outcome">El destino espera.</small></div>
+      </div>
 
-        <button onclick="atacar()">⚔️ Atacar</button>
-        <button onclick="curar()">💚 Curar</button>
-        <button onclick="nuevaHistoria()">📖 Nueva Historia</button>
+      <section class="narrator-panel" aria-labelledby="narrator-title">
+        <div class="narrator-emblem" aria-hidden="true"><img src="assets/logo-calabozos-codigo.png" alt=""></div>
+        <div class="narrator-content"><div class="narrator-heading"><div><span class="panel-kicker">04 / VOZ DE LA CRIPTA</span><h3 id="narrator-title">El Dungeon Master</h3></div><span class="ai-badge"><i></i><span id="dm-mode">NARRADOR LOCAL · LISTO</span></span></div><div class="story-log" id="story-log" role="log" aria-live="polite" aria-relevant="additions text"><p class="story-entry"><span class="story-time">DM</span><span>Una vibración recorre el tablero. «Aventureros, el dragón despertó. Las runas no se abrirán por fuerza: observen, colaboren y descifren el lenguaje de la cripta».</span></p></div><form id="dm-form" class="dm-form"><label class="visually-hidden" for="dm-input">Escribe una acción para el Dungeon Master</label><input id="dm-input" name="accion" maxlength="240" placeholder="Describe la acción de tu compañía…" autocomplete="off"><button type="submit" class="button button-gold">Narrar <span aria-hidden="true">↗</span></button></form><p class="dm-note">Ollama corre en tu equipo: el relato se genera localmente. Sin servidor, la aventura continúa con respuestas de respaldo.</p></div>
+      </section>
+    </section>
 
-        <div class="separador"></div>
+    <section class="relic-section content-width" id="reliquias">
+      <div class="section-heading"><div><p class="eyebrow">El mapa grabado en la madera</p><h2>Cinco runas. Un solo portal.</h2></div><p>El mapa de la web reproduce las insignias del tablero: cada símbolo señala una parte del sistema y un reto de la campaña.</p></div>
+      <div class="relic-grid">
+        <article class="relic-card relic-html" data-relic="html"><span class="relic-number">01</span><span class="relic-glyph">&lt;/&gt;</span><span class="relic-label">RUNA DE ESTRUCTURA</span><h3>HTML</h3><p>Da forma a la aventura: títulos, contenido y regiones semánticas.</p><button class="text-action" data-relic-action="html">Descifrar la runa <span>↗</span></button><span class="relic-state">BLOQUEADA</span></article>
+        <article class="relic-card relic-css" data-relic="css"><span class="relic-number">02</span><span class="relic-glyph">{ }</span><span class="relic-label">RUNA DE ESTILO</span><h3>CSS</h3><p>Define la atmósfera, el contraste, el espacio y la adaptación a cada pantalla.</p><button class="text-action" data-relic-action="css">Descifrar la runa <span>↗</span></button><span class="relic-state">BLOQUEADA</span></article>
+        <article class="relic-card relic-js" data-relic="js"><span class="relic-number">03</span><span class="relic-glyph">JS</span><span class="relic-label">RUNA DE INTERACCIÓN</span><h3>JavaScript</h3><p>Escucha eventos, toma decisiones y actualiza el estado del juego.</p><button class="text-action" data-relic-action="js">Descifrar la runa <span>↗</span></button><span class="relic-state">BLOQUEADA</span></article>
+        <article class="relic-card relic-ai" data-relic="ia"><span class="relic-number">04</span><span class="relic-glyph">✧</span><span class="relic-label">RUNAS DEL NARRADOR</span><h3>IA local</h3><p>Un modelo Ollama interpreta la escena y narra sin enviar la conversación a la nube.</p><button class="text-action" data-relic-action="ia">Despertar al DM <span>↗</span></button><span class="relic-state">BLOQUEADA</span></article>
+        <article class="relic-card relic-iot" data-relic="conexion"><span class="relic-number">05</span><span class="relic-glyph">⌁</span><span class="relic-label">RUNAS DE ENLACE</span><h3>Conectividad</h3><p>La micro:bit lleva decisiones físicas al juego. El ESP32-C3 puede ampliar el puente.</p><button class="text-action" data-relic-action="conexion">Conectar el hardware <span>↗</span></button><span class="relic-state">BLOQUEADA</span></article>
+      </div>
+      <div class="relic-challenge" id="relic-challenge" hidden aria-live="polite"><div class="challenge-header"><span class="challenge-seal" id="challenge-seal">01</span><div><p class="panel-kicker" id="challenge-kicker">PRUEBA DE RUNA</p><h3 id="challenge-title">—</h3></div><button id="btn-close-challenge" type="button" class="icon-button" aria-label="Cerrar desafío">×</button></div><p id="challenge-prompt"></p><div id="challenge-options" class="challenge-options"></div><p id="challenge-feedback" class="challenge-feedback" role="status"></p></div>
+    </section>
 
-        <button onclick="limpiarNarracion()">🗑️ Limpiar</button>
-    </div>
+    <section class="player-types content-width" aria-labelledby="profiles-heading">
+      <div class="section-heading"><div><p class="eyebrow">Una mesa para todos</p><h2 id="profiles-heading">Cada jugador encuentra su senda.</h2></div><p>La aventura no premia un único estilo: cada perfil aporta algo que el resto necesita.</p></div>
+      <div class="profile-grid"><article><span>✦ 01</span><h3>Conseguidor</h3><p>Desbloquea las cinco runas, gana experiencia y completa la misión.</p></article><article><span>⌖ 02</span><h3>Explorador</h3><p>Investiga marcadores, pide pistas y descubre rutas o detalles ocultos.</p></article><article><span>◉ 03</span><h3>Socializador</h3><p>Forma una compañía, acuerda decisiones y comparte el control del tablero.</p></article><article><span>✚ 04</span><h3>Filántropo</h3><p>Ayuda al equipo con curaciones, explicaciones y pistas entre pares.</p></article></div>
+    </section>
 
-    <!-- ============================================================
-         JAVASCRIPT - La lógica del juego (programación)
-         ============================================================
-         JavaScript le da "vida" a la página. Sin JS, los botones no hacen nada.
+    <section class="artifact-section content-width" id="artefacto">
+      <div class="section-heading"><div><p class="eyebrow">Mockup material · prototipo en MDF</p><h2>El tablero existe fuera de la pantalla.</h2></div><p>La interfaz digital toma su lenguaje visual del objeto tangible. El tablero es el mockup físico del OA: las placas, runas, controles y zonas de juego ya están diseñados sobre madera.</p></div>
+      <div class="artifact-gallery">
+        <figure class="artifact-main"><img src="assets/diseno-tablero.jpeg" alt="Diseño de la tapa grabada de Calabozos y Código con dragón, micro:bit, runas HTML, CSS, JavaScript, IA y conectividad"><figcaption><b>La tapa de la campaña</b><span>Dragón, micro:bit y cinco insignias tecnológicas.</span></figcaption></figure>
+        <figure><img src="assets/terreno-mazmorra.jpeg" alt="Detalle del tablero modular con casillas de calabozo y elementos de terreno"><figcaption><b>Terreno de exploración</b><span>Casillas y rutas para construir cada expedición.</span></figcaption></figure>
+        <figure><img src="assets/tablero-modular.jpeg" alt="Vista del tablero modular en proceso de fabricación láser"><figcaption><b>Fabricación por módulos</b><span>La mazmorra se expande pieza a pieza.</span></figcaption></figure>
+      </div>
+      <div class="artifact-caption"><span class="status-dot"></span> Mockup basado en el tablero y las fotografías del proceso aportadas por el autor.</div>
+    </section>
 
-         Conceptos básicos que veremos:
-         - Variables: let nombre = valor;
-         - Funciones: function nombre() { ... }
-         - Arrays: let lista = ["a", "b", "c"];
-         - Objetos: let personaje = { nombre: "Mago", vida: 50 };
-    -->
-    <script>
-        // ---------- VARIABLES DEL JUEGO ----------
-        let jugadorActivo = 0;  // 0 = Mago, 1 = Guerrero, 2 = Arquera
+    <section class="hardware-section content-width" id="hardware">
+      <div class="section-heading"><div><p class="eyebrow">El puente entre madera y código</p><h2>Conecta tu placa.</h2></div><p>Empieza con micro:bit por USB. Si quieres extender el alcance, usa el ESP32-C3 Super Mini como puente Wi-Fi/UART.</p></div>
+      <div class="hardware-grid">
+        <article class="hardware-card"><span class="hardware-index">A</span><div><h3>micro:bit por USB</h3><p>A cambia héroe · B ataca · A+B lanza el D20 · agitar explora. El teclado y los botones de la web siguen disponibles.</p></div><button id="btn-connect-microbit" class="button button-line" type="button">Conectar placa</button><span class="hardware-status" id="serial-status" role="status">No conectada</span></article>
+        <article class="hardware-card"><span class="hardware-index wifi-index">B</span><div><h3>ESP32-C3 opcional</h3><p>Comparte eventos por Wi-Fi en la misma red local. Introduce la dirección del puente; el firmware de ejemplo está en la carpeta <code>Juego/hardware</code>.</p><div class="endpoint-row"><label class="visually-hidden" for="esp32-url">Dirección del ESP32-C3</label><input id="esp32-url" value="http://192.168.4.1" inputmode="url"><button id="btn-connect-esp32" class="button button-line" type="button">Enlazar</button></div></div><span class="hardware-status" id="esp32-status" role="status">Puente desconectado</span></article>
+      </div>
+      <p class="security-note">El narrador corre localmente con Ollama. La cámara y las placas requieren autorización del navegador; si un componente opcional falta, la aventura no se detiene.</p>
+    </section>
+  </main>
 
-        // Array de historias predefinidas (nuestro "fallback" o respaldo)
-        const historias = [
-            "🕯️ Avanzáis con cuidado por el corredor. Las paredes de piedra gotean humedad y el eco de vuestras pisadas suena demasiado fuerte.",
-            "🏛️ Llegáis a una sala circular con columnas de mármol negro. En el centro, una fuente seca contiene huesos de criaturas extrañas.",
-            "💎 Un destello azul capta vuestra atención. Entre las grietas del suelo, un cristal de mana pulsa con energía.",
-            "🌿 Un jardín subterraneo se abre ante vosotros. Hongos luminosos iluminan flores que nunca habíais visto.",
-            "🔥 ¡Una trampa! El suelo cede bajo vuestros pies y flechas surcan el aire desde las paredes.",
-            "📦 Encontráis un cofre antiguo. Al abrirlo, descubrís 50 monedas de oro y una poción roja brillante.",
-            "🐺 Un aullido resuena en la oscuridad. Algo se mueve entre las sombras... y no parece amistoso."
-        ];
-
-        // ---------- FUNCIONES DEL JUEGO ----------
-
-        /**
-         * Tirar un dado de 20 caras (D20)
-         * Math.random() da un número entre 0 y 1
-         * Multiplicamos por 20 y sumamos 1 para obtener 1-20
-         */
-        function tirarDado() {
-            let resultado = Math.floor(Math.random() * 20) + 1;
-
-            // Mostrar en la pantalla
-            let elemento = document.getElementById('resultado-dado');
-            elemento.textContent = resultado;
-
-            // Cambiar color según el resultado
-            if (resultado === 20) {
-                elemento.style.color = '#4CAF50';  // Verde = crítico
-                narrar(`🎲 ¡CRÍTICO! ${resultado} - ¡Éxito rotundo!`);
-            } else if (resultado >= 15) {
-                elemento.style.color = '#4CAF50';
-                narrar(`🎲 Buena tirada: ${resultado}`);
-            } else if (resultado >= 8) {
-                elemento.style.color = '#c9a84c';  // Dorado = normal
-                narrar(`🎲 Tirada normal: ${resultado}`);
-            } else {
-                elemento.style.color = '#e94560';  // Rojo = malo
-                narrar(`🎲 Mala suerte: ${resultado}`);
-            }
-
-            // Animación: hacer el número grande y volver a tamaño normal
-            elemento.style.transform = 'scale(1.5)';
-            setTimeout(() => {
-                elemento.style.transform = 'scale(1)';
-            }, 200);
-        }
-
-        /**
-         * Simular un ataque
-         */
-        function atacar() {
-            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
-            let nombre = nombres[jugadorActivo];
-            let dano = Math.floor(Math.random() * 10) + 5;
-            narrar(`⚔️ <strong>${nombre}</strong> ataca e inflige <strong>${dano}</strong> puntos de daño.`);
-        }
-
-        /**
-         * Simular una curación
-         */
-        function curar() {
-            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
-            let nombre = nombres[jugadorActivo];
-            let curacion = Math.floor(Math.random() * 8) + 3;
-            narrar(`💚 <strong>${nombre}</strong> se cura <strong>${curacion}</strong> puntos de vida.`);
-        }
-
-        /**
-         * Elegir una historia aleatoria
-         */
-        function nuevaHistoria() {
-            let indice = Math.floor(Math.random() * historias.length);
-            narrar(historias[indice]);
-        }
-
-        /**
-         * Agregar un mensaje al panel de narración
-         * @param {string} texto - El mensaje a mostrar
-         */
-        function narrar(texto) {
-            let panel = document.getElementById('historial-narracion');
-
-            // Crear un nuevo div con el mensaje
-            let mensaje = document.createElement('div');
-            mensaje.className = 'mensaje-narrador';
-            mensaje.innerHTML = texto;
-
-            // Agregarlo al final del panel
-            panel.appendChild(mensaje);
-
-            // Hacer scroll automático hacia abajo
-            panel.scrollTop = panel.scrollHeight;
-        }
-
-        /**
-         * Cambiar el jugador activo
-         * @param {number} indice - 0, 1 o 2
-         */
-        function seleccionarJugador(indice) {
-            jugadorActivo = indice;
-
-            // Quitar la clase "activa" de todas las tarjetas
-            let tarjetas = document.querySelectorAll('.tarjeta');
-            tarjetas.forEach(t => t.classList.remove('activa'));
-
-            // Agregar la clase "activa" a la tarjeta clickeada
-            tarjetas[indice].classList.add('activa');
-
-            let nombres = ["El Gran Mago", "Guerrero de Acero", "Luna Sombra"];
-            narrar(`🎭 Turno de <strong>${nombres[indice]}</strong>`);
-        }
-
-        /**
-         * Limpiar el historial de narración
-         */
-        function limpiarNarracion() {
-            let panel = document.getElementById('historial-narracion');
-            panel.innerHTML = '';
-        }
-    </script>
+  <footer class="site-footer"><a href="#inicio" class="footer-brand">CALABOZOS &amp; CÓDIGO</a><p>Diseñado y desarrollado por Braian Mosqueira · Repositorio bajo licencia MIT</p><div><a href="../index.html">Vista AR independiente</a><a href="../oa/">Diseño del OA</a></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
