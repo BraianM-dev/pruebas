@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ollama Network Scanner & Chat 💬</title>
+    <title>Dungeon Master Gateway · Ollama y micro:bit</title>
     <style>
         :root {
             --primary: #007bff;
             --primary-hover: #0056b3;
+            --success: #198754;
+            --danger: #dc3545;
             --bg-body: #f4f6f9;
             --bg-card: #ffffff;
             --text-dark: #333333;
@@ -92,15 +94,32 @@
             outline: none;
         }
 
-        .manual-box {
+        .connection-panel,
+        .gateway-panel {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            padding: 10px 20px;
+            gap: 10px;
+            padding: 12px 20px;
             background: #f8f9fa;
             border-bottom: 1px solid var(--border);
         }
-        .manual-box input {
+        .connection-panel label,
+        .gateway-panel label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #495057;
+        }
+        .connection-row,
+        .gateway-row {
+            display: flex;
+            flex: 1 1 100%;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .connection-panel input,
+        .gateway-panel input,
+        .gateway-panel select {
             flex: 1 1 200px;
             padding: 8px 10px;
             border: 1px solid var(--border);
@@ -108,14 +127,66 @@
             font-size: 16px;
             outline: none;
         }
-        .manual-box button {
+        .connection-panel button,
+        .gateway-panel button {
             padding: 8px 14px;
             font-size: 14px;
             background: #6c757d;
         }
-        .manual-box button:hover { background: #545b62; }
-        #btn-detener { background: #dc3545; }
-        #btn-detener:hover { background: #b02a37; }
+        .connection-panel button:hover,
+        .gateway-panel button:hover { background: #545b62; }
+        #btn-conectar-ollama, #btn-conectar-microbit, #btn-enviar-radio { background: var(--primary); }
+        #btn-conectar-ollama:hover, #btn-conectar-microbit:hover, #btn-enviar-radio:hover { background: var(--primary-hover); }
+        #btn-desconectar-microbit { background: var(--danger); }
+        #btn-desconectar-microbit:hover { background: #b02a37; }
+        .connection-help {
+            flex: 1 1 100%;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .gateway-panel { background: #f0f7ff; }
+        .gateway-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1 1 100%;
+            font-weight: 700;
+            color: #174a7a;
+        }
+        .gateway-status {
+            display: inline-flex;
+            padding: 3px 8px;
+            border-radius: 99px;
+            background: #e9ecef;
+            color: #495057;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .gateway-status.online { background: #d1e7dd; color: #0f5132; }
+        .gateway-status.error { background: #f8d7da; color: #842029; }
+
+        .game-state-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            flex: 1 1 100%;
+        }
+        .state-card {
+            min-width: 0;
+            padding: 8px 10px;
+            border: 1px solid #cfe2ff;
+            border-radius: 7px;
+            background: white;
+        }
+        .state-card small { display: block; color: #6c757d; font-weight: 700; }
+        .state-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .activity-line {
+            flex: 1 1 100%;
+            min-height: 20px;
+            color: #495057;
+            font-size: 13px;
+        }
 
         .chat-area {
             flex-grow: 1;
@@ -245,6 +316,8 @@
             .header { padding: 12px; font-size: 16px; }
             .header-actions { gap: 5px; }
             #btn-scan, #btn-nueva-aventura { padding: 7px 8px; font-size: 12px; }
+            .game-state-grid { grid-template-columns: 1fr; }
+            .connection-panel, .gateway-panel { padding: 10px 12px; }
         }
     </style>
 </head>
@@ -252,10 +325,10 @@
 
     <div class="container">
         <div class="header">
-            <span>Ollama Scanner & Chat 💬</span>
+            <span>Dungeon Master · Ollama 💬</span>
             <div class="header-actions">
                 <button id="btn-nueva-aventura" type="button" onclick="iniciarNuevaAventura()">Nueva aventura</button>
-                <button id="btn-scan" type="button" onclick="iniciarEscaneoRed(false)">Forzar Escaneo</button>
+                <button id="btn-scan" type="button" onclick="buscarOllamaRapido()">Búsqueda rápida</button>
             </div>
         </div>
 
@@ -268,22 +341,48 @@
             </div>
         </div>
 
-        <div class="manual-box">
-            <input type="text" id="ip-manual" placeholder="IP o nombre (ej: 192.168.1.50 o mi-pc.local)" autocapitalize="off" autocorrect="off" spellcheck="false">
-            <button onclick="probarIpManual()">Probar</button>
-            <button onclick="iniciarEscaneoRed(true)">Escaneo profundo</button>
-            <button id="btn-detener" onclick="detenerEscaneo()">Detener</button>
-        </div>
+        <section class="connection-panel" aria-label="Conexión local con Ollama">
+            <div class="connection-row">
+                <label for="ip-manual">Servidor Ollama</label>
+                <input type="text" id="ip-manual" placeholder="192.168.1.20 o mi-pc.local" autocapitalize="off" autocorrect="off" spellcheck="false">
+                <button id="btn-conectar-ollama" type="button" onclick="conectarManualOptimizado()">Conectar</button>
+                <button id="btn-busqueda-rapida" type="button" onclick="buscarOllamaRapido()">Buscar</button>
+            </div>
+            <div class="connection-help">Primero se prueba el último servidor usado; la búsqueda rápida consulta solo candidatos frecuentes y no barre redes completas.</div>
+        </section>
 
-        <details class="diag" open>
+        <section class="gateway-panel" aria-label="Gateway micro:bit">
+            <div class="gateway-title">Gateway micro:bit por USB <span id="microbit-status" class="gateway-status">Sin conectar</span></div>
+            <div class="gateway-row">
+                <button id="btn-conectar-microbit" type="button" onclick="conectarMicrobit()">Conectar micro:bit</button>
+                <button id="btn-desconectar-microbit" type="button" onclick="desconectarMicrobit()" disabled>Desconectar</button>
+                <label for="radio-destino">Destino</label>
+                <input id="radio-destino" value="ALL" maxlength="8" aria-label="Destino de radio">
+                <label for="radio-orden">Orden</label>
+                <select id="radio-orden" aria-label="Orden de radio">
+                    <option value="T">Turno</option>
+                    <option value="R">Pedir dado</option>
+                    <option value="V">Vida</option>
+                    <option value="E">Evento</option>
+                </select>
+                <input id="radio-valor" value="1" maxlength="8" inputmode="numeric" aria-label="Valor de radio">
+                <button id="btn-enviar-radio" type="button" onclick="enviarOrdenRadioDesdeUI()" disabled>Enviar radio</button>
+            </div>
+            <div class="game-state-grid" aria-live="polite">
+                <div class="state-card"><small>Jugadores detectados</small><strong id="estado-jugadores">0</strong></div>
+                <div class="state-card"><small>Último dado</small><strong id="estado-dado">—</strong></div>
+                <div class="state-card"><small>Turno / salida</small><strong id="estado-turno">—</strong></div>
+            </div>
+            <div id="actividad-gateway" class="activity-line">Conectá el micro:bit receptor por USB para habilitar radio.</div>
+        </section>
+
+        <details class="diag">
             <summary>Diagnóstico (qué se está probando)</summary>
             <div id="stats-line">Sin actividad todavía.</div>
             <textarea id="log" readonly></textarea>
         </details>
 
-        <div class="chat-area" id="chat-box">
-            <div class="msg ai">¡Hola! En cuanto localice una instancia activa de Ollama en tu dispositivo o en la red local, activaré la caja de texto y listaré los modelos disponibles para chatear.</div>
-        </div>
+        <div class="chat-area" id="chat-box" aria-live="polite"></div>
 
         <div class="input-area">
             <input type="text" id="user-input" placeholder="Esperando conexión con Ollama..." disabled onkeypress="evaluarEnter(event)">
@@ -295,20 +394,18 @@
         /* ============================================================
            CONFIGURACIÓN
            ============================================================ */
-        const PUERTO_OLLAMA     = 11434;
-        const CONCURRENCIA      = 80;    // peticiones simultáneas
-        const TIMEOUT_OLLAMA_MS = 1200;  // margen por IP al buscar Ollama
-        const TIMEOUT_ANCLA_MS  = 900;   // margen al sondear "¿hay alguien aquí?"
+        const PUERTO_OLLAMA = 11434;
+        const TIMEOUT_CONEXION_MS = 1800;
+        const TIMEOUT_BUSQUEDA_MS = 650;
+        const CONCURRENCIA_BUSQUEDA = 8;
+        const CLAVE_OLLAMA_LOCAL = "calabozos-y-codigo.ollama-url.v2";
+        const CLAVE_GATEWAY_LOCAL = "calabozos-y-codigo.gateway.v1";
 
-        /* Subredes /24 más frecuentes en routers domésticos y de oficina.
-           Solo se usan para PRIORIZAR; el descubrimiento real no depende de esta lista. */
-        const PREFIJOS_COMUNES = [
-            "192.168.1", "192.168.0", "192.168.100", "192.168.2", "192.168.10",
-            "192.168.8", "192.168.50", "192.168.68", "192.168.178", "192.168.88",
-            "192.168.254", "192.168.3", "192.168.4", "192.168.43", "172.20.10",
-            "10.0.0", "10.0.1", "10.1.1", "10.10.10", "10.10.0", "10.0.2",
-            "172.16.0", "172.16.1", "172.17.0", "172.31.0"
-        ];
+        /* Búsqueda deliberadamente pequeña: no congestiona el navegador ni la red.
+           Un servidor encontrado se guarda y se intenta primero en próximos usos. */
+        const PREFIJOS_RAPIDOS = ["192.168.1", "192.168.0", "192.168.100", "10.0.0", "10.0.1"];
+        const HOSTS_RAPIDOS = [2, 10, 20, 50, 100, 101, 200, 254];
+        const GRUPO_RADIO_GATEWAY = 99;
 
         /* ============================================================
            PERSONAJE: DUNGEON MASTER DE «CALABOZOS Y CÓDIGO»
@@ -369,6 +466,42 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
             return "partida-" + Date.now() + "-" + Math.random().toString(16).slice(2);
         }
 
+        function crearEstadoJuegoVacio() {
+            return {
+                ultimoDado: null,
+                turno: "",
+                ultimaSalida: "",
+                ultimoEvento: "",
+                jugadores: {}
+            };
+        }
+
+        function normalizarEstadoJuego(estado) {
+            const seguro = crearEstadoJuegoVacio();
+            if (!estado || typeof estado !== "object") return seguro;
+            seguro.ultimoDado = estado.ultimoDado && typeof estado.ultimoDado === "object" ? {
+                jugador: textoLimitado(estado.ultimoDado.jugador, 12),
+                valor: Number.isFinite(Number(estado.ultimoDado.valor)) ? Number(estado.ultimoDado.valor) : null,
+                fecha: typeof estado.ultimoDado.fecha === "string" ? estado.ultimoDado.fecha : ""
+            } : null;
+            seguro.turno = textoLimitado(estado.turno, 40);
+            seguro.ultimaSalida = textoLimitado(estado.ultimaSalida, 80);
+            seguro.ultimoEvento = textoLimitado(estado.ultimoEvento, 160);
+
+            if (estado.jugadores && typeof estado.jugadores === "object") {
+                Object.entries(estado.jugadores).slice(0, 20).forEach(([id, jugador]) => {
+                    const clave = textoLimitado(id, 12).toUpperCase();
+                    if (!/^[A-Z0-9_-]{1,12}$/.test(clave)) return;
+                    seguro.jugadores[clave] = {
+                        ultimaConexion: typeof jugador.ultimaConexion === "string" ? jugador.ultimaConexion : "",
+                        ultimoDado: Number.isFinite(Number(jugador.ultimoDado)) ? Number(jugador.ultimoDado) : null,
+                        ultimoEvento: textoLimitado(jugador.ultimoEvento, 80)
+                    };
+                });
+            }
+            return seguro;
+        }
+
         function crearPartidaVacia() {
             const ahora = new Date().toISOString();
             return {
@@ -379,7 +512,8 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
                 modelo: "",
                 resumen: "",
                 mensajesResumidos: 0,
-                historial: []
+                historial: [],
+                estadoJuego: crearEstadoJuegoVacio()
             };
         }
 
@@ -423,7 +557,8 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
                     modelo: textoLimitado(guardada.modelo, 200),
                     resumen: textoLimitado(guardada.resumen, MAX_CARACTERES_RESUMEN),
                     mensajesResumidos: indiceSeguro,
-                    historial: historialSeguro
+                    historial: historialSeguro,
+                    estadoJuego: normalizarEstadoJuego(guardada.estadoJuego)
                 };
             } catch (error) {
                 console.warn("No fue posible restaurar la memoria local de la partida.", error);
@@ -458,23 +593,20 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
         }
 
         function tipoVisualMensaje(mensaje) {
-            if (mensaje.tipo === "evento") return "system";
             return mensaje.role === "assistant" ? "ai" : "user";
         }
 
         function restaurarPartidaEnPantalla() {
-            if (!historial.length) return;
             chatBox.replaceChildren();
-            historial.forEach(mensaje => {
-                const prefijo = mensaje.tipo === "evento" ? "🎲 Evento verificado: " : "";
-                agregarMensaje(prefijo + mensaje.content, tipoVisualMensaje(mensaje));
+            historial.filter(mensaje => mensaje.tipo !== "evento").forEach(mensaje => {
+                agregarMensaje(mensaje.content, tipoVisualMensaje(mensaje));
             });
-            imprimirMensajeSistema("♻️ Aventura restaurada desde la memoria local de este navegador.");
+            actualizarVistaEstadoJuego();
         }
 
         function iniciarNuevaAventura() {
             if (generandoRespuesta) {
-                imprimirMensajeSistema("⏳ Espera a que termine la respuesta actual antes de iniciar otra aventura.");
+                actualizarActividadGateway("Esperá a que termine la respuesta actual antes de iniciar otra aventura.");
                 return;
             }
             if (historial.length && !window.confirm("Se reemplazará la memoria local de esta aventura. ¿Iniciar una partida nueva?")) {
@@ -485,18 +617,19 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
             historial = partida.historial;
             guardarPartidaLocal();
             chatBox.replaceChildren();
-            imprimirMensajeSistema("🗺️ Nueva aventura iniciada. Cuando Ollama esté conectado, presenta al grupo y abre la primera escena.");
+            actualizarVistaEstadoJuego();
+            actualizarActividadGateway("Nueva aventura lista.");
         }
 
-        /* Punto de integración para la futura capa micro:bit / Apps Script.
-           Ejemplo: registrarEventoJuego("Luz obtuvo 16 en la tirada de sigilo"); */
-        function registrarEventoJuego(detalle) {
+        /* Punto de integración para micro:bit / Apps Script. No agrega carteles al chat:
+           los eventos quedan persistidos para el modelo y en el estado compacto del juego. */
+        function registrarEventoJuego(detalle, opciones = {}) {
             const contenido = textoLimitado(detalle, MAX_CARACTERES_POR_MENSAJE);
             if (!contenido) return false;
             const evento = { role: "user", content: contenido, tipo: "evento", fecha: new Date().toISOString() };
             historial.push(evento);
             guardarPartidaLocal();
-            agregarMensaje("🎲 Evento verificado: " + contenido, "system");
+            if (opciones.actividad !== false) actualizarActividadGateway(contenido);
             return true;
         }
         window.registrarEventoJuego = registrarEventoJuego;
@@ -574,7 +707,11 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
         let generandoRespuesta = false;
         let partida = cargarPartidaLocal();
         let historial = partida.historial;
-        let idEscaneo = 0; // permite cancelar un escaneo en curso
+        let idBusqueda = 0;
+        let microbitPort = null;
+        let lectorMicrobit = null;
+        let colaSerie = Promise.resolve();
+        let serialAbierto = false;
 
         const chatBox         = document.getElementById("chat-box");
         const userInput       = document.getElementById("user-input");
@@ -586,6 +723,17 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
         const ipManual        = document.getElementById("ip-manual");
         const logEl           = document.getElementById("log");
         const statsEl         = document.getElementById("stats-line");
+        const microbitStatus  = document.getElementById("microbit-status");
+        const btnMicrobit     = document.getElementById("btn-conectar-microbit");
+        const btnDesconectarMicrobit = document.getElementById("btn-desconectar-microbit");
+        const btnEnviarRadio  = document.getElementById("btn-enviar-radio");
+        const radioDestino    = document.getElementById("radio-destino");
+        const radioOrden      = document.getElementById("radio-orden");
+        const radioValor      = document.getElementById("radio-valor");
+        const estadoJugadores = document.getElementById("estado-jugadores");
+        const estadoDado      = document.getElementById("estado-dado");
+        const estadoTurno     = document.getElementById("estado-turno");
+        const actividadGateway = document.getElementById("actividad-gateway");
 
         selectModels.addEventListener("change", () => {
             partida.modelo = selectModels.value;
@@ -628,14 +776,15 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
 
         window.addEventListener("DOMContentLoaded", () => {
             restaurarPartidaEnPantalla();
-            iniciarEscaneoRed(false);
+            prepararGatewayMicrobit();
+            iniciarConexionAutomatica();
         });
 
         /* ============================================================
            UTILIDADES DE UI
            ============================================================ */
-        function actualizarEstado(html, claseBadge, textoBadge) {
-            statusText.innerHTML = html;
+        function actualizarEstado(texto, claseBadge, textoBadge) {
+            statusText.textContent = texto;
             badgeEstado.className = "badge " + claseBadge;
             badgeEstado.textContent = textoBadge;
         }
@@ -649,14 +798,6 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
             if (activa) userInput.focus();
         }
 
-        function imprimirMensajeSistema(html) {
-            const div = document.createElement("div");
-            div.className = "msg system";
-            div.innerHTML = html;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
         function agregarMensaje(texto, tipo) {
             const div = document.createElement("div");
             div.className = "msg " + tipo;
@@ -666,375 +807,558 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
             return div;
         }
 
+        /* La búsqueda de Ollama se implementa en «CONEXIÓN LIGERA CON
+           OLLAMA» más abajo. No se ejecuta ningún barrido completo de
+           subredes ni sondeos WebRTC. */
         /* ============================================================
-           HERRAMIENTAS DE RED
+           CONEXIÓN LIGERA CON OLLAMA
+           ------------------------------------------------------------
+           Estas funciones sustituyen cualquier escaneo completo de red.
+           No recorren subredes completas: primero usan la URL guardada
+           y la búsqueda manual consulta solo 40 direcciones frecuentes,
+           con como máximo ocho peticiones simultáneas y timeout corto.
            ============================================================ */
-        function esIpPrivada(ip) {
-            return /^10\./.test(ip) ||
-                   /^192\.168\./.test(ip) ||
-                   /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
+        function urlsUnicas(urls) {
+            return [...new Set(urls.filter(Boolean))];
         }
 
-        function prefijoDe(ip) {
-            const m = ip.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/);
-            return m ? m[1] : null;
-        }
+        function normalizarUrlOllama(valor) {
+            const texto = String(valor || "").trim().replace(/\/+$/, "");
+            if (!texto) return null;
 
-        /* Pool de tareas con concurrencia limitada y cancelable */
-        async function ejecutarEnParalelo(items, concurrencia, tarea, miId) {
-            let indice = 0;
-            async function trabajador() {
-                while (true) {
-                    if (miId !== idEscaneo || urlActivaOllama) return;
-                    const k = indice++;
-                    if (k >= items.length) return;
-                    await tarea(items[k], k);
-                }
-            }
-            await Promise.all(Array.from({ length: Math.min(concurrencia, items.length) }, trabajador));
-        }
-
-        /* Intenta averiguar la IP local del dispositivo vía WebRTC.
-           En iOS/WebKit suele devolver nombres .local ocultos: si falla, no pasa nada. */
-        function obtenerIpsLocalesWebRTC() {
-            return new Promise(resolve => {
-                const ips = new Set();
-                let pc, terminado = false;
-
-                const terminar = () => {
-                    if (terminado) return;
-                    terminado = true;
-                    clearTimeout(temporizador);
-                    try { pc && pc.close(); } catch (e) {}
-                    resolve([...ips]);
-                };
-                const temporizador = setTimeout(terminar, 1200);
-
-                try {
-                    pc = new RTCPeerConnection({ iceServers: [] });
-                    pc.createDataChannel("");
-                    pc.onicecandidate = ev => {
-                        if (!ev.candidate) { terminar(); return; }
-                        const m = ev.candidate.candidate.match(/(\d{1,3}(?:\.\d{1,3}){3})/);
-                        if (m && esIpPrivada(m[1])) ips.add(m[1]);
-                    };
-                    pc.createOffer().then(o => pc.setLocalDescription(o)).catch(terminar);
-                } catch (e) {
-                    terminar();
-                }
-            });
-        }
-
-        /* ¿Responde ALGO en esa IP/puerto? Un host existente contesta (o rechaza) en
-           milisegundos; uno inexistente solo agota el tiempo. */
-        async function hostVivo(ip, puerto, timeoutMs) {
-            const c = new AbortController();
-            const t = setTimeout(() => c.abort(), timeoutMs);
-            const t0 = performance.now();
             try {
-                await fetch(`http://${ip}:${puerto}/`, { mode: "no-cors", cache: "no-store", signal: c.signal });
-                registrar("ok", ip, performance.now() - t0);
-                return true;
-            } catch (e) {
-                if (e.name === "AbortError") {
-                    registrar("abort", ip, performance.now() - t0);
-                    return false;
-                }
-                registrar("err", ip, performance.now() - t0, e);
-                return true;
-            } finally {
-                clearTimeout(t);
+                const conEsquema = /^https?:\/\//i.test(texto) ? texto : "http://" + texto;
+                const url = new URL(conEsquema);
+                if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+                if (!url.hostname) return null;
+                if (!url.port) url.port = String(PUERTO_OLLAMA);
+                return url.origin;
+            } catch (error) {
+                return null;
             }
         }
 
-        /* Fase de descubrimiento de subredes: sondea las "anclas" (.1 y .254 de cada
-           /24 candidato) y devuelve los prefijos donde algo respondió. */
-        function generarPrefijosCandidatos(profundo) {
-            const prefijos = [];
-            for (let c = 0; c <= 255; c++) prefijos.push(`192.168.${c}`);
-            for (let b = 16; b <= 31; b++) {
-                const terceros = profundo ? Array.from({ length: 256 }, (_, i) => i) : [0, 1, 2, 10, 16, 20, 100];
-                for (const t of terceros) prefijos.push(`172.${b}.${t}`);
-            }
-            prefijos.push("172.20.10");
-            for (let a = 0; a <= 255; a++) {
-                const terceros = profundo ? Array.from({ length: 256 }, (_, i) => i) : [0, 1];
-                for (const t of terceros) prefijos.push(`10.${a}.${t}`);
-            }
-            return [...new Set(prefijos)];
-        }
-
-        async function descubrirSubredesActivas(profundo, miId) {
-            const prefijos = generarPrefijosCandidatos(profundo);
-            const tareas = [];
-            for (const p of prefijos) {
-                tareas.push({ p, ip: `${p}.1` });
-                tareas.push({ p, ip: `${p}.254` });
-            }
-
-            const activos = new Set();
-            let hechos = 0;
-            await ejecutarEnParalelo(tareas, CONCURRENCIA + 40, async (t) => {
-                if (await hostVivo(t.ip, 80, TIMEOUT_ANCLA_MS)) activos.add(t.p);
-                hechos++;
-                if (hechos % 100 === 0 && miId === idEscaneo) {
-                    actualizarEstado(`Buscando redes activas... ${hechos}/${tareas.length}`, "badge-scan", "ESCANEO");
-                }
-            }, miId);
-
-            /* Si casi todo "responde", el navegador está rechazando instantáneamente
-               (permiso de red local pendiente, etc.): el resultado no sirve. */
-            if (activos.size > prefijos.length * 0.4 || activos.size > 80) {
-                log(`⚠ ${activos.size} de ${prefijos.length} redes "respondieron": el navegador rechaza de inmediato, resultado descartado.`);
-                return [];
-            }
-            return [...activos];
-        }
-
-        /* ============================================================
-           ESCANEO PRINCIPAL
-           ============================================================ */
-        function detenerEscaneo() {
-            idEscaneo++;
-            if (!urlActivaOllama) {
-                actualizarEstado("Escaneo detenido.", "badge-error", "DETENIDO");
+        function leerOllamaGuardado() {
+            try {
+                return normalizarUrlOllama(localStorage.getItem(CLAVE_OLLAMA_LOCAL));
+            } catch (error) {
+                return null;
             }
         }
 
-        async function iniciarEscaneoRed(profundo) {
-            const miId = ++idEscaneo;
+        function guardarOllamaUsado(urlBase) {
+            try {
+                localStorage.setItem(CLAVE_OLLAMA_LOCAL, urlBase);
+            } catch (error) {
+                log("No se pudo guardar el servidor de Ollama elegido.");
+            }
+        }
+
+        function candidatosConexionInicial() {
+            const candidatos = [];
+            const desdeQuery = new URLSearchParams(location.search).get("ollama");
+            candidatos.push(normalizarUrlOllama(desdeQuery));
+            candidatos.push(leerOllamaGuardado());
+            candidatos.push(normalizarUrlOllama(ipManual.value));
+
+            /* Sirve tanto al ejecutar la página localmente como cuando Ollama
+               está en la misma PC que Chrome. */
+            candidatos.push(`http://localhost:${PUERTO_OLLAMA}`);
+            candidatos.push(`http://127.0.0.1:${PUERTO_OLLAMA}`);
+            if (location.protocol === "http:" && location.hostname) {
+                candidatos.push(normalizarUrlOllama(`${location.hostname}:${PUERTO_OLLAMA}`));
+            }
+            return urlsUnicas(candidatos);
+        }
+
+        function candidatosBusquedaRapida() {
+            const candidatos = [...candidatosConexionInicial()];
+            PREFIJOS_RAPIDOS.forEach(prefijo => {
+                HOSTS_RAPIDOS.forEach(host => {
+                    candidatos.push(`http://${prefijo}.${host}:${PUERTO_OLLAMA}`);
+                });
+            });
+            return urlsUnicas(candidatos);
+        }
+
+        function prepararConexionOllama() {
             urlActivaOllama = null;
-            /* Reconectar o reescanear no reinicia la aventura. */
             ajustarInterfaz(false);
             selectorModelos.style.display = "none";
-            userInput.placeholder = "Escaneando red local...";
-            hostsQueRechazan.clear();
-            actualizarEstado("Preparando escaneo...", "badge-scan", "ESCANEO");
-            imprimirMensajeSistema(
-                (profundo ? "Escaneo <strong>profundo</strong> iniciado. " : "Escaneo iniciado. ") +
-                "Abre «Diagnóstico» para ver qué se está probando."
-            );
-            logEl.value = "";
-            log(`Inicio (${profundo ? "profundo" : "normal"}) · página: ${location.protocol}//${location.host || "(archivo local)"} · online=${navigator.onLine}`);
-            log(`Navegador: ${navigator.userAgent}`);
-
-            /* --- Paso 1: candidatos directos (host de la página y equipo local) --- */
-            const directos = [];
-            const host = location.hostname;
-            if (location.protocol.startsWith("http") && host) directos.push(`http://${host}:${PUERTO_OLLAMA}`);
-            directos.push(`http://localhost:${PUERTO_OLLAMA}`, `http://127.0.0.1:${PUERTO_OLLAMA}`);
-            nuevaFase("Directos (host de la página y localhost)");
-            log("Probando: " + [...new Set(directos)].join(", "));
-            await Promise.all([...new Set(directos)].map(u => testearInstanciaOllama(u, miId)));
-            cerrarFase();
-            if (urlActivaOllama || miId !== idEscaneo) return;
-
-            /* --- Paso 2: subred propia vía WebRTC (si el navegador lo permite) --- */
-            actualizarEstado("Detectando tu red...", "badge-scan", "ESCANEO");
-            const prioritarios = [];
-            const agregarPrefijo = (p) => { if (p && !prioritarios.includes(p)) prioritarios.push(p); };
-
-            agregarPrefijo(prefijoDe(host));
-            const ipsLocales = await obtenerIpsLocalesWebRTC();
-            log("WebRTC: " + (ipsLocales.length ? ipsLocales.join(", ") : "sin IP visible (normal en iOS)"));
-            ipsLocales.forEach(ip => agregarPrefijo(prefijoDe(ip)));
-            if (miId !== idEscaneo) return;
-
-            /* --- Paso 3: descubrir qué redes /24 están activas (gateways) --- */
-            nuevaFase("Sondeo de gateways (puerto 80)");
-            const activos = await descubrirSubredesActivas(profundo, miId);
-            cerrarFase();
-            log("Redes con actividad: " + (activos.length ? activos.slice(0, 15).join(", ") + (activos.length > 15 ? ` … (+${activos.length - 15})` : "") : "ninguna detectada"));
-            if (urlActivaOllama || miId !== idEscaneo) return;
-
-            const rango = (p) => { const i = PREFIJOS_COMUNES.indexOf(p); return i === -1 ? 999 : i; };
-            activos.sort((a, b) => rango(a) - rango(b));
-            activos.forEach(agregarPrefijo);
-            PREFIJOS_COMUNES.forEach(agregarPrefijo); // respaldo si lo anterior no dio resultado
-
-            /* --- Paso 4: barrer cada red, una tras otra, en orden de probabilidad --- */
-            for (let n = 0; n < prioritarios.length; n++) {
-                if (urlActivaOllama || miId !== idEscaneo) return;
-                const prefijo = prioritarios[n];
-                actualizarEstado(
-                    `Buscando Ollama en <strong>${prefijo}.0/24</strong> (red ${n + 1}/${prioritarios.length})`,
-                    "badge-scan", "ESCANEO"
-                );
-
-                const ips = [];
-                for (let i = 1; i <= 254; i++) ips.push(`http://${prefijo}.${i}:${PUERTO_OLLAMA}`);
-                nuevaFase(`Barrido ${prefijo}.0/24`);
-                await ejecutarEnParalelo(ips, CONCURRENCIA, (u) => testearInstanciaOllama(u, miId), miId);
-                cerrarFase();
-            }
-
-            if (miId !== idEscaneo || urlActivaOllama) return;
-
-            actualizarEstado("Ollama no encontrado en la red.", "badge-error", "ERROR");
-            userInput.placeholder = "Ollama inaccesible.";
-            imprimirMensajeSistema(
-                "❌ No se encontró ninguna instancia.<br>" +
-                "1) En la computadora inicia Ollama así:<br><code>OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS=* ollama serve</code><br>" +
-                "2) Prueba «Escaneo profundo», o escribe la IP / nombre (ej: <code>mi-pc.local</code>) y pulsa «Probar»."
-            );
+            selectModels.replaceChildren();
         }
 
-        /* Devuelve true si encontró Ollama en esa URL */
-        async function testearInstanciaOllama(urlBase, miId) {
-            if (urlActivaOllama || miId !== idEscaneo) return false;
-
+        async function consultarOllama(urlBase, timeoutMs) {
             const controlador = new AbortController();
-            const idTiempo = setTimeout(() => controlador.abort(), TIMEOUT_OLLAMA_MS);
-            const t0 = performance.now();
-
+            const temporizador = setTimeout(() => controlador.abort(), timeoutMs);
             try {
                 const respuesta = await fetch(`${urlBase}/api/tags`, {
                     method: "GET",
+                    cache: "no-store",
                     signal: controlador.signal
                 });
-
-                if (respuesta.ok && !urlActivaOllama && miId === idEscaneo) {
-                    clearTimeout(idTiempo);
-                    registrar("ok", urlBase, performance.now() - t0);
-                    log(`✅ Respuesta de Ollama en ${urlBase} (${Math.round(performance.now() - t0)} ms)`);
-                    urlActivaOllama = urlBase;
-                    const datos = await respuesta.json();
-                    procesarInstanciaEncontrada(urlBase, datos.models || []);
-                    return true;
-                }
-            } catch (e) {
-                /* Fallo esperado en la gran mayoría de IPs: solo se contabiliza */
-                if (e.name === "AbortError") registrar("abort", urlBase, performance.now() - t0);
-                else {
-                    registrar("err", urlBase, performance.now() - t0, e);
-                    avisarHostRechaza(urlBase);
-                }
+                if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+                const datos = await respuesta.json();
+                return Array.isArray(datos.models) ? datos.models : [];
             } finally {
-                clearTimeout(idTiempo);
-            }
-            return false;
-        }
-
-        const hostsQueRechazan = new Set();
-
-        async function avisarHostRechaza(urlBase, manual = false) {
-            if (!manual && (/\/\/(localhost|127\.)/.test(urlBase) || hostsQueRechazan.has(urlBase))) return;
-            hostsQueRechazan.add(urlBase);
-            const ip = urlBase.replace(/^https?:\/\//, "").replace(/:\d+$/, "");
-
-            /* Con no-cors el navegador no exige permiso del servidor: si aun así la
-               petición llega, el equipo SÍ responde y el fallo es de CORS. */
-            let alcanzable = false;
-            const c = new AbortController();
-            const t = setTimeout(() => c.abort(), 2500);
-            try {
-                await fetch(`${urlBase}/api/tags`, { mode: "no-cors", cache: "no-store", signal: c.signal });
-                alcanzable = true;
-            } catch (e) {
-                /* no alcanzable ni sin CORS */
-            } finally {
-                clearTimeout(t);
-            }
-
-            if (alcanzable) {
-                log(`🔎 ${ip} SÍ responde, pero el navegador bloquea leer la respuesta (CORS).`);
-                if (manual || hostsQueRechazan.size <= 3) {
-                    imprimirMensajeSistema(
-                        `⚠️ <strong>${ip}</strong> responde, pero el navegador bloquea la respuesta por <strong>CORS</strong> ` +
-                        `(una página abierta como archivo local tiene origen «null»). En la PC reinicia Ollama con ` +
-                        `<code>OLLAMA_ORIGINS=*</code> (además de <code>OLLAMA_HOST=0.0.0.0</code>).`
-                    );
-                }
-            } else if (manual) {
-                log(`🔎 Ni siquiera la petición sin CORS llegó a ${ip}.`);
-                imprimirMensajeSistema(
-                    `⚠️ El navegador no deja ni enviar la petición a <strong>${ip}</strong> desde esta página. ` +
-                    `Prueba sirviendo el HTML por HTTP desde la PC (<code>python3 -m http.server 8000</code>) y ábrelo desde el iPhone.`
-                );
-            } else {
-                log(`🔎 ${ip} responde, pero el puerto ${PUERTO_OLLAMA} está cerrado o rechazado.`);
-                if (hostsQueRechazan.size <= 3) {
-                    imprimirMensajeSistema(
-                        `🔎 Hay un equipo activo en <strong>${ip}</strong> que rechaza el puerto ${PUERTO_OLLAMA}. ` +
-                        `Si es tu PC, Ollama no está escuchando en la red (falta <code>OLLAMA_HOST=0.0.0.0</code>) o el firewall lo bloquea.`
-                    );
-                }
+                clearTimeout(temporizador);
             }
         }
 
-        async function probarIpManual() {
-            let valor = ipManual.value.trim();
-            if (!valor) return;
+        function activarOllamaLigero(urlBase, modelos) {
+            urlActivaOllama = urlBase;
+            ipManual.value = urlBase.replace(/^https?:\/\//, "");
+            guardarOllamaUsado(urlBase);
+            actualizarEstado(`Ollama conectado: ${urlBase}`, "badge-success", "ONLINE");
+            log(`Ollama disponible en ${urlBase}.`);
 
-            if (!/^https?:\/\//i.test(valor)) valor = "http://" + valor;
-            if (!/:\d+$/.test(valor)) valor += ":" + PUERTO_OLLAMA;
-
-            const miId = ++idEscaneo; // cancela cualquier barrido en curso
-            urlActivaOllama = null;
-            /* Una prueba manual tampoco borra el contexto de juego. */
-            ajustarInterfaz(false);
-            selectorModelos.style.display = "none";
-            actualizarEstado(`Probando <strong>${valor}</strong>...`, "badge-scan", "PROBANDO");
-
-            /* En una prueba manual damos más margen (puede ser un nombre .local) */
-            const ok = await testearManual(valor, miId);
-            if (!ok && miId === idEscaneo) {
-                actualizarEstado(`Sin respuesta en ${valor}`, "badge-error", "ERROR");
-                imprimirMensajeSistema(
-                    `❌ No hubo respuesta en <strong>${valor}</strong>. Verifica que Ollama esté con <code>OLLAMA_HOST=0.0.0.0</code> y que estés en la misma red.`
-                );
-            }
-        }
-
-        async function testearManual(urlBase, miId) {
-            const controlador = new AbortController();
-            const idTiempo = setTimeout(() => controlador.abort(), 5000);
-            const t0 = performance.now();
-            log(`Prueba manual: ${urlBase}/api/tags`);
-            try {
-                const respuesta = await fetch(`${urlBase}/api/tags`, { signal: controlador.signal });
-                if (respuesta.ok && miId === idEscaneo) {
-                    urlActivaOllama = urlBase;
-                    const datos = await respuesta.json();
-                    procesarInstanciaEncontrada(urlBase, datos.models || []);
-                    return true;
-                }
-            } catch (e) {
-                log(`Prueba manual falló tras ${Math.round(performance.now() - t0)} ms → ${e.name}: ${e.message}`);
-                if (e.name !== "AbortError") await avisarHostRechaza(urlBase, true);
-            } finally {
-                clearTimeout(idTiempo);
-            }
-            return false;
-        }
-
-        function procesarInstanciaEncontrada(urlBase, modelos) {
-            actualizarEstado(`Conectado a <strong>${urlBase}</strong>`, "badge-success", "ONLINE");
-            imprimirMensajeSistema(`✅ Instancia de Ollama encontrada en <strong>${urlBase}</strong>`);
-
-            if (!modelos || modelos.length === 0) {
-                imprimirMensajeSistema(
-                    "⚠️ La instancia responde pero no tiene modelos instalados. Ejecuta por ejemplo:<br><code>ollama pull llama3.2</code>"
-                );
+            selectModels.replaceChildren();
+            if (!modelos.length) {
+                selectorModelos.style.display = "none";
                 ajustarInterfaz(false);
+                actualizarEstado("Ollama responde, pero no tiene modelos instalados.", "badge-error", "SIN MODELO");
                 return;
             }
 
-            selectModels.innerHTML = "";
-            modelos.forEach(m => {
-                const opt = document.createElement("option");
-                opt.value = m.name;
-                opt.textContent = m.name;
-                selectModels.appendChild(opt);
+            modelos.forEach(modelo => {
+                const opcion = document.createElement("option");
+                opcion.value = modelo.name;
+                opcion.textContent = modelo.name;
+                selectModels.appendChild(opcion);
             });
-            if (partida.modelo && modelos.some(m => m.name === partida.modelo)) {
+            if (partida.modelo && modelos.some(modelo => modelo.name === partida.modelo)) {
                 selectModels.value = partida.modelo;
             }
             selectorModelos.style.display = "flex";
-
             ajustarInterfaz(true);
             guardarPartidaLocal();
-            imprimirMensajeSistema(`📦 ${modelos.length} modelo(s) disponible(s). Selecciona uno y escribe tu primer mensaje.`);
+        }
+
+        async function intentarConexionOllama(urlBase, timeoutMs, token) {
+            if (!urlBase || token !== idBusqueda || urlActivaOllama) return false;
+            const inicio = performance.now();
+            try {
+                const modelos = await consultarOllama(urlBase, timeoutMs);
+                if (token !== idBusqueda || urlActivaOllama) return false;
+                registrar("ok", urlBase, performance.now() - inicio);
+                activarOllamaLigero(urlBase, modelos);
+                return true;
+            } catch (error) {
+                if (token === idBusqueda) {
+                    registrar(error && error.name === "AbortError" ? "abort" : "err", urlBase, performance.now() - inicio, error);
+                    log(`${urlBase} no respondió (${Math.round(performance.now() - inicio)} ms).`);
+                }
+                return false;
+            }
+        }
+
+        async function ejecutarConLimite(items, limite, tarea) {
+            let indice = 0;
+            async function trabajador() {
+                while (indice < items.length) {
+                    const actual = indice++;
+                    await tarea(items[actual], actual);
+                }
+            }
+            const cantidad = Math.min(limite, items.length);
+            await Promise.all(Array.from({ length: cantidad }, trabajador));
+        }
+
+        async function iniciarConexionAutomatica() {
+            const token = ++idBusqueda;
+            prepararConexionOllama();
+            const candidatos = candidatosConexionInicial();
+            if (!candidatos.length) {
+                actualizarEstado("Indicá la IP de Ollama o usá Buscar.", "badge-error", "SIN CONEXIÓN");
+                return;
+            }
+
+            nuevaFase("Conexión inicial");
+            actualizarEstado("Probando el último servidor de Ollama...", "badge-scan", "CONECTANDO");
+            await ejecutarConLimite(candidatos, 2, url => intentarConexionOllama(url, TIMEOUT_CONEXION_MS, token));
+            if (token === idBusqueda) cerrarFase();
+
+            if (token === idBusqueda && !urlActivaOllama) {
+                actualizarEstado("Sin conexión. Indicá una IP o usá Buscar.", "badge-error", "SIN CONEXIÓN");
+            }
+        }
+
+        async function conectarManualOptimizado() {
+            const urlBase = normalizarUrlOllama(ipManual.value);
+            if (!urlBase) {
+                actualizarEstado("Escribí una IP o nombre de servidor válido.", "badge-error", "REVISAR IP");
+                return;
+            }
+
+            const token = ++idBusqueda;
+            prepararConexionOllama();
+            nuevaFase("Conexión manual");
+            actualizarEstado(`Conectando a ${urlBase}...`, "badge-scan", "CONECTANDO");
+            const ok = await intentarConexionOllama(urlBase, Math.max(TIMEOUT_CONEXION_MS, 3500), token);
+            if (token === idBusqueda) cerrarFase();
+
+            if (!ok && token === idBusqueda) {
+                actualizarEstado(`No se pudo conectar a ${urlBase}. Probá otra IP o Buscar.`, "badge-error", "SIN CONEXIÓN");
+            }
+        }
+
+        async function buscarOllamaRapido() {
+            const token = ++idBusqueda;
+            prepararConexionOllama();
+            const candidatos = candidatosBusquedaRapida();
+            nuevaFase(`Búsqueda rápida (${candidatos.length} candidatos)`);
+            actualizarEstado("Buscando Ollama en candidatos frecuentes...", "badge-scan", "BUSCANDO");
+            log(`Búsqueda rápida: ${candidatos.length} destinos, máximo ${CONCURRENCIA_BUSQUEDA} a la vez.`);
+
+            await ejecutarConLimite(candidatos, CONCURRENCIA_BUSQUEDA, async urlBase => {
+                if (token !== idBusqueda || urlActivaOllama) return;
+                await intentarConexionOllama(urlBase, TIMEOUT_BUSQUEDA_MS, token);
+            });
+            if (token === idBusqueda) cerrarFase();
+
+            if (token === idBusqueda && !urlActivaOllama) {
+                actualizarEstado("No se encontró Ollama. Conectate con la IP manual.", "badge-error", "SIN CONEXIÓN");
+            }
+        }
+
+        /* ============================================================
+           GATEWAY micro:bit: Web Serial <-> radio
+           ------------------------------------------------------------
+           Protocolo del navegador al gateway USB:
+             TX|DESTINO|ORDEN|VALOR
+           Protocolo recibido desde el gateway USB:
+             RX|JUGADOR|CODIGO|VALOR
+           El firmware incluido usa HB (presencia), D (dado), A (acción)
+           y E (evento). Cada evento queda en memoria local, no como
+           cartel dentro del chat.
+           ============================================================ */
+        const VENTANA_PRESENCIA_JUGADOR_MS = 90000;
+
+        function obtenerEstadoJuego() {
+            if (!partida.estadoJuego || typeof partida.estadoJuego !== "object") {
+                partida.estadoJuego = crearEstadoJuegoVacio();
+            }
+            return partida.estadoJuego;
+        }
+
+        function normalizarIdRadio(valor) {
+            const id = textoLimitado(valor, 12).toUpperCase();
+            return /^[A-Z0-9_-]{1,12}$/.test(id) ? id : "";
+        }
+
+        function textoRadioSeguro(valor, maximo = 80) {
+            return textoLimitado(valor, maximo).replace(/[|\r\n]/g, "");
+        }
+
+        function limpiarLineaSerie(valor, maximo = 200) {
+            /* Una trama conserva sus |; solo se eliminan delimitadores físicos
+               y caracteres de control que podrían partir el protocolo. */
+            return String(valor || "").replace(/[\r\n\u0000]/g, "").trim().slice(0, maximo);
+        }
+
+        function jugadoresActivos() {
+            const ahora = Date.now();
+            return Object.entries(obtenerEstadoJuego().jugadores).filter(([, jugador]) => {
+                const marca = Date.parse(jugador.ultimaConexion || "");
+                return Number.isFinite(marca) && ahora - marca <= VENTANA_PRESENCIA_JUGADOR_MS;
+            });
+        }
+
+        function actualizarVistaEstadoJuego() {
+            const estado = obtenerEstadoJuego();
+            const activos = jugadoresActivos();
+            estadoJugadores.textContent = String(activos.length);
+            estadoDado.textContent = estado.ultimoDado && Number.isFinite(Number(estado.ultimoDado.valor))
+                ? `${estado.ultimoDado.jugador || "Jugador"}: ${estado.ultimoDado.valor}`
+                : "—";
+            estadoTurno.textContent = estado.turno || estado.ultimaSalida || "—";
+        }
+
+        function actualizarActividadGateway(texto) {
+            actividadGateway.textContent = textoLimitado(texto, 180) || "Gateway listo.";
+        }
+
+        function actualizarEstadoMicrobit(texto, clase = "") {
+            microbitStatus.textContent = texto;
+            microbitStatus.className = "gateway-status" + (clase ? " " + clase : "");
+        }
+
+        function actualizarControlesMicrobit() {
+            btnMicrobit.disabled = serialAbierto || !("serial" in navigator);
+            btnDesconectarMicrobit.disabled = !serialAbierto;
+            btnEnviarRadio.disabled = !serialAbierto;
+        }
+
+        function guardarPreferenciasGateway() {
+            try {
+                localStorage.setItem(CLAVE_GATEWAY_LOCAL, JSON.stringify({
+                    destino: normalizarIdRadio(radioDestino.value) || "ALL",
+                    orden: radioOrden.value,
+                    valor: textoRadioSeguro(radioValor.value, 32)
+                }));
+            } catch (error) {
+                log("No se pudieron guardar las preferencias del gateway.");
+            }
+        }
+
+        function restaurarPreferenciasGateway() {
+            try {
+                const datos = JSON.parse(localStorage.getItem(CLAVE_GATEWAY_LOCAL) || "{}");
+                if (datos && typeof datos === "object") {
+                    radioDestino.value = normalizarIdRadio(datos.destino) || "ALL";
+                    if (["T", "R", "V", "E"].includes(datos.orden)) radioOrden.value = datos.orden;
+                    if (textoRadioSeguro(datos.valor, 32)) radioValor.value = textoRadioSeguro(datos.valor, 32);
+                }
+            } catch (error) {
+                /* Preferencias opcionales; se conservan los valores de la interfaz. */
+            }
+        }
+
+        function prepararGatewayMicrobit() {
+            restaurarPreferenciasGateway();
+            actualizarVistaEstadoJuego();
+            actualizarControlesMicrobit();
+
+            [radioDestino, radioOrden, radioValor].forEach(control => {
+                control.addEventListener("change", guardarPreferenciasGateway);
+            });
+
+            if (!("serial" in navigator)) {
+                actualizarEstadoMicrobit("No disponible", "error");
+                actualizarActividadGateway("Web Serial no está disponible en este navegador. El gateway se conecta desde Chrome o Edge de la PC docente.");
+                return;
+            }
+
+            navigator.serial.addEventListener("disconnect", evento => {
+                if (evento.target === microbitPort) {
+                    finalizarConexionMicrobit("Micro:bit desconectado.", "error");
+                }
+            });
+            navigator.serial.addEventListener("connect", () => {
+                if (!serialAbierto) actualizarActividadGateway("Se detectó un puerto USB. Elegilo con «Conectar micro:bit»." );
+            });
+            setInterval(actualizarVistaEstadoJuego, 15000);
+        }
+
+        async function conectarMicrobit() {
+            if (!("serial" in navigator)) return;
+            try {
+                actualizarEstadoMicrobit("Seleccionando…");
+                const puerto = await navigator.serial.requestPort();
+                await abrirPuertoMicrobit(puerto);
+            } catch (error) {
+                if (error && error.name !== "NotFoundError") {
+                    actualizarEstadoMicrobit("Error", "error");
+                    actualizarActividadGateway("No se pudo abrir el micro:bit: " + textoRadioSeguro(error.message, 100));
+                    log("Error de Web Serial: " + error.message);
+                } else {
+                    actualizarEstadoMicrobit("Sin conectar");
+                }
+                actualizarControlesMicrobit();
+            }
+        }
+
+        async function abrirPuertoMicrobit(puerto) {
+            if (serialAbierto) await desconectarMicrobit();
+            try {
+                microbitPort = puerto;
+                await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+                serialAbierto = true;
+                actualizarEstadoMicrobit("Conectado", "online");
+                actualizarActividadGateway("Gateway USB conectado. Esperando radio de los jugadores.");
+                actualizarControlesMicrobit();
+                log("Gateway micro:bit conectado por Web Serial.");
+                leerPuertoMicrobit(microbitPort);
+                await enviarAlGateway(`WEB|HELLO|${GRUPO_RADIO_GATEWAY}`);
+            } catch (error) {
+                try { if (microbitPort) await microbitPort.close(); } catch (cierreError) {}
+                finalizarConexionMicrobit("No se pudo abrir el gateway.", "error");
+                throw error;
+            }
+        }
+
+        async function leerPuertoMicrobit(puerto) {
+            const lector = puerto.readable.getReader();
+            lectorMicrobit = lector;
+            const decodificador = new TextDecoder();
+            let acumulado = "";
+            try {
+                while (serialAbierto && microbitPort === puerto) {
+                    const { value, done } = await lector.read();
+                    if (done) break;
+                    acumulado += decodificador.decode(value, { stream: true });
+                    const lineas = acumulado.split(/\r?\n/);
+                    acumulado = lineas.pop();
+                    lineas.forEach(procesarLineaMicrobit);
+                }
+            } catch (error) {
+                if (serialAbierto && microbitPort === puerto) {
+                    log("Lectura del gateway interrumpida: " + error.message);
+                    finalizarConexionMicrobit("Gateway desconectado.", "error");
+                }
+            } finally {
+                try { lector.releaseLock(); } catch (error) {}
+                if (lectorMicrobit === lector) lectorMicrobit = null;
+            }
+        }
+
+        async function enviarAlGateway(linea) {
+            if (!serialAbierto || !microbitPort || !microbitPort.writable) {
+                throw new Error("El gateway micro:bit no está conectado.");
+            }
+            const mensaje = limpiarLineaSerie(linea, 180);
+            if (!mensaje) throw new Error("La orden de radio está vacía.");
+
+            colaSerie = colaSerie.catch(() => undefined).then(async () => {
+                const escritor = microbitPort.writable.getWriter();
+                try {
+                    await escritor.write(new TextEncoder().encode(mensaje + "\n"));
+                } finally {
+                    escritor.releaseLock();
+                }
+            });
+            return colaSerie;
+        }
+
+        function finalizarConexionMicrobit(mensaje, clase = "") {
+            serialAbierto = false;
+            microbitPort = null;
+            lectorMicrobit = null;
+            actualizarEstadoMicrobit(mensaje, clase);
+            actualizarActividadGateway(mensaje);
+            actualizarControlesMicrobit();
+        }
+
+        async function desconectarMicrobit() {
+            const puerto = microbitPort;
+            if (!puerto) return;
+            try {
+                if (lectorMicrobit) await lectorMicrobit.cancel();
+            } catch (error) {}
+            try {
+                await colaSerie;
+            } catch (error) {}
+            try {
+                if (puerto.readable || puerto.writable) await puerto.close();
+            } catch (error) {
+                log("No fue posible cerrar el puerto micro:bit: " + error.message);
+            } finally {
+                finalizarConexionMicrobit("Sin conectar");
+            }
+        }
+
+        function registrarJugadorRadio(id, codigo, valor) {
+            const estado = obtenerEstadoJuego();
+            const ahora = new Date().toISOString();
+            const jugador = estado.jugadores[id] || { ultimaConexion: "", ultimoDado: null, ultimoEvento: "" };
+            jugador.ultimaConexion = ahora;
+            jugador.ultimoEvento = `${codigo}:${valor}`.slice(0, 80);
+            estado.jugadores[id] = jugador;
+
+            const ids = Object.keys(estado.jugadores);
+            if (ids.length > 20) {
+                ids.sort((a, b) => Date.parse(estado.jugadores[a].ultimaConexion) - Date.parse(estado.jugadores[b].ultimaConexion));
+                ids.slice(0, ids.length - 20).forEach(clave => delete estado.jugadores[clave]);
+            }
+            return jugador;
+        }
+
+        function procesarEventoRadio(campos) {
+            const jugadorId = normalizarIdRadio(campos[0]);
+            const codigo = textoRadioSeguro(campos[1], 8).toUpperCase();
+            const valor = textoRadioSeguro(campos.slice(2).join("|"), 80);
+            if (!jugadorId || !codigo) {
+                log("Trama radio descartada: " + campos.join("|"));
+                return;
+            }
+
+            const estado = obtenerEstadoJuego();
+            const jugador = registrarJugadorRadio(jugadorId, codigo, valor);
+            if (codigo === "HB") {
+                actualizarActividadGateway(`${jugadorId} está conectado por radio.`);
+            } else if (codigo === "D") {
+                const dado = Number(valor);
+                if (!Number.isInteger(dado) || dado < 0 || dado > 99) {
+                    actualizarActividadGateway(`${jugadorId} envió un dado inválido.`);
+                } else {
+                    jugador.ultimoDado = dado;
+                    estado.ultimoDado = { jugador: jugadorId, valor: dado, fecha: new Date().toISOString() };
+                    estado.ultimoEvento = `${jugadorId} obtuvo ${dado} en el dado.`;
+                    registrarEventoJuego(estado.ultimoEvento, { actividad: false });
+                    actualizarActividadGateway(estado.ultimoEvento);
+                }
+            } else if (codigo === "A") {
+                estado.ultimoEvento = `${jugadorId} eligió la opción ${valor || "?"}.`;
+                registrarEventoJuego(estado.ultimoEvento, { actividad: false });
+                actualizarActividadGateway(estado.ultimoEvento);
+            } else if (codigo === "E") {
+                estado.ultimoEvento = `${jugadorId}: ${valor || "evento"}.`;
+                registrarEventoJuego(estado.ultimoEvento, { actividad: false });
+                actualizarActividadGateway(estado.ultimoEvento);
+            } else {
+                estado.ultimoEvento = `${jugadorId} envió ${codigo}${valor ? ": " + valor : ""}.`;
+                actualizarActividadGateway(estado.ultimoEvento);
+            }
+            guardarPartidaLocal();
+            actualizarVistaEstadoJuego();
+        }
+
+        function procesarLineaMicrobit(linea) {
+            const limpia = limpiarLineaSerie(linea, 200);
+            if (!limpia) return;
+            const campos = limpia.split("|");
+            if (campos[0] === "RX") {
+                procesarEventoRadio(campos.slice(1));
+            } else if (campos[0] === "GW" && campos[1] === "READY") {
+                actualizarActividadGateway(`Gateway radio listo (grupo ${campos[2] || GRUPO_RADIO_GATEWAY}).`);
+            } else if (campos[0] === "TXOK") {
+                actualizarActividadGateway(`Radio enviada a ${campos[1] || "ALL"}.`);
+            } else if (campos[0] === "ERR") {
+                actualizarActividadGateway(`Gateway: ${campos.slice(1).join(" ") || "error"}.`);
+                log("Gateway reportó: " + limpia);
+            } else if (normalizarIdRadio(campos[0]) && campos.length >= 3) {
+                /* Permite probar el protocolo sin el firmware intermedio. */
+                procesarEventoRadio(campos);
+            } else {
+                log("Gateway: " + limpia);
+            }
+        }
+
+        async function enviarOrdenRadio(destino, orden, valor) {
+            const receptor = normalizarIdRadio(destino) || (String(destino).toUpperCase() === "ALL" ? "ALL" : "");
+            const codigo = textoRadioSeguro(orden, 8).toUpperCase();
+            const dato = textoRadioSeguro(valor, 80);
+            if (!receptor || !/^[A-Z]{1,8}$/.test(codigo) || !dato) {
+                throw new Error("Destino, orden o valor de radio inválidos.");
+            }
+
+            await enviarAlGateway(`TX|${receptor}|${codigo}|${dato}`);
+            const estado = obtenerEstadoJuego();
+            estado.ultimaSalida = `${receptor} · ${codigo} ${dato}`;
+            if (codigo === "T") estado.turno = receptor;
+            guardarPartidaLocal();
+            actualizarVistaEstadoJuego();
+            actualizarActividadGateway(`Orden ${codigo} enviada a ${receptor}.`);
+        }
+
+        async function enviarOrdenRadioDesdeUI() {
+            try {
+                await enviarOrdenRadio(radioDestino.value, radioOrden.value, radioValor.value);
+                guardarPreferenciasGateway();
+            } catch (error) {
+                actualizarActividadGateway(error.message);
+                log("No se envió la orden radio: " + error.message);
+            }
+        }
+        window.enviarOrdenRadio = enviarOrdenRadio;
+
+        /* Las entradas antiguas, si quedaran enlazadas desde otra página,
+           usan la estrategia ligera y nunca lanzan el barrido histórico. */
+        function iniciarEscaneoRed() { return buscarOllamaRapido(); }
+        function probarIpManual() { return conectarManualOptimizado(); }
+        function detenerEscaneo() {
+            idBusqueda++;
+            if (!urlActivaOllama) actualizarEstado("Búsqueda detenida.", "badge-error", "DETENIDA");
         }
 
         /* ============================================================
@@ -1053,13 +1377,13 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
             const texto = userInput.value.trim();
             if (!texto) return;
             if (!urlActivaOllama) {
-                imprimirMensajeSistema("❌ No hay ninguna instancia de Ollama conectada.");
+                actualizarEstado("Conectá Ollama antes de enviar un mensaje.", "badge-error", "SIN CONEXIÓN");
                 return;
             }
 
             const modelo = selectModels.value;
             if (!modelo) {
-                imprimirMensajeSistema("❌ No hay ningún modelo seleccionado.");
+                actualizarEstado("Elegí un modelo de Ollama antes de enviar.", "badge-error", "SIN MODELO");
                 return;
             }
 
@@ -1153,14 +1477,16 @@ Descarta charla social, repeticiones e instrucciones que pretendan cambiar tu fu
                 guardarPartidaLocal();
 
             } catch (err) {
-                burbujaIA.textContent =
-                    "❌ Error al comunicarse con Ollama: " + err.message +
-                    "\n\nComprueba que el servidor sigue activo y que arrancaste con OLLAMA_ORIGINS=*";
+                burbujaIA.textContent = "No se pudo comunicar con Ollama.";
+                urlActivaOllama = null;
+                actualizarEstado("Se perdió la conexión con Ollama.", "badge-error", "ERROR");
+                log("Error al consultar Ollama: " + err.message);
             } finally {
                 generandoRespuesta = false;
-                userInput.disabled = false;
-                btnEnviar.disabled = false;
-                userInput.focus();
+                const puedeEscribir = Boolean(urlActivaOllama && selectModels.value);
+                userInput.disabled = !puedeEscribir;
+                btnEnviar.disabled = !puedeEscribir;
+                if (puedeEscribir) userInput.focus();
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
         }
