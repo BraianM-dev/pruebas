@@ -83,7 +83,7 @@
             <button id="btn-mb-conectar" type="button">Conectar micro:bit</button>
             <button id="btn-mb-desconectar" type="button" style="background:#dc3545" disabled>Desconectar</button>
         </div>
-        <div class="help">3 copias del mensaje separadas por 5 saltos de línea. El navegador elige la combinación más completa.</div>
+        <div class="help">5 copias con padding. Diccionario de seguridad para mensajes conocidos.</div>
     </section>
 
     <details class="diag" open>
@@ -107,13 +107,23 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v13";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v14";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
 const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
-const TIMEOUT_BUZON_MS = 4000;
+const TIMEOUT_BUZON_MS = 5000;
+const SIMILITUD_MINIMA_DICCIONARIO = 0.65;   // 65% para aceptar corrección de diccionario
+
+/* Diccionario de mensajes conocidos (red de seguridad final).
+   Si el mensaje combinado se parece ≥65% a uno de estos, se reemplaza.
+   Los mensajes libres (no en esta lista) pasan sin corrección. */
+const MENSAJES_CONOCIDOS = [
+    "Dime un chiste corto",
+    "Cuentame una historia sobre un dragon",
+    "Tiro el dado de seis caras"
+];
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
 
@@ -183,6 +193,43 @@ function generarRespuestaFallback(texto) {
 }
 
 /* =========================================================
+   LEVENSHTEIN + DICCIONARIO
+   ========================================================= */
+function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const d = [];
+    for (let i = 0; i <= m; i++) { d[i] = [i]; }
+    for (let j = 0; j <= n; j++) { d[0][j] = j; }
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            const cost = a[i-1] === b[j-1] ? 0 : 1;
+            d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + cost);
+        }
+    }
+    return d[m][n];
+}
+
+function corregirConDiccionario(texto) {
+    const lower = texto.toLowerCase();
+    let mejor = texto;
+    let mejorRatio = 1;
+    for (const conocido of MENSAJES_CONOCIDOS) {
+        const dist = levenshtein(lower, conocido.toLowerCase());
+        const ratio = dist / Math.max(texto.length, conocido.length);
+        if (ratio < mejorRatio && (1 - ratio) >= SIMILITUD_MINIMA_DICCIONARIO) {
+            mejorRatio = ratio;
+            mejor = conocido;
+        }
+    }
+    if (mejor !== texto) {
+        log(`  📖 Diccionario: "${texto}" → "${mejor}" (${Math.round((1 - mejorRatio) * 100)}% similitud)`);
+    }
+    return mejor;
+}
+
+/* =========================================================
    ALINEAMIENTO + VOTO POR MAYORÍA
    ========================================================= */
 function needlemanWunsch(a, b) {
@@ -222,7 +269,7 @@ function combinarCopias(copias) {
     const sorted = [...copias].sort((a, b) => b.length - a.length);
     const ref = sorted[0];
     const otras = sorted.slice(1);
-    const columnas = ref.split("").map(ch => ({ chars: [ch], insert: null }));
+    const columnas = ref.split("").map(ch => ({ chars: [ch], inserts: [] }));
 
     for (const copia of otras) {
         const aln = needlemanWunsch(ref, copia);
@@ -231,8 +278,8 @@ function combinarCopias(copias) {
         for (const par of aln) {
             if (par.a !== null) {
                 if (par.b !== null) columnas[posRef].chars.push(par.b);
-                if (insertsPendientes.length > 0 && !columnas[posRef].insert) {
-                    columnas[posRef].insert = insertsPendientes[0];
+                if (insertsPendientes.length > 0) {
+                    columnas[posRef].inserts.push(insertsPendientes.join(""));
                 }
                 insertsPendientes = [];
                 posRef++;
@@ -244,7 +291,17 @@ function combinarCopias(copias) {
 
     let resultado = "";
     for (const col of columnas) {
-        if (col.insert) resultado += col.insert;
+        // Inserts: tomar el más común (el más largo suele ser el correcto)
+        if (col.inserts.length > 0) {
+            const conteo = {};
+            for (const ins of col.inserts) conteo[ins] = (conteo[ins] || 0) + 1;
+            let mejorIns = col.inserts[0], maxCount = 0;
+            for (const ins in conteo) {
+                if (conteo[ins] > maxCount) { mejorIns = ins; maxCount = conteo[ins]; }
+            }
+            resultado += mejorIns;
+        }
+        // Votación de char principal
         const votos = {};
         for (const ch of col.chars) votos[ch] = (votos[ch] || 0) + 1;
         let mejor = col.chars[0], mejorCount = 0;
@@ -610,13 +667,13 @@ async function readMicrobitLoop() {
             if (done) break;
             mbBuffer += value;
 
-            // Protocolo simple: solo \n separa mensajes
             let idx;
             while ((idx = mbBuffer.indexOf("\n")) !== -1) {
-                const linea = mbBuffer.slice(0, idx).replace(/[\r\u0000@$#]/g, "").trim();
+                let linea = mbBuffer.slice(0, idx).replace(/[\r\u0000]/g, "");
                 mbBuffer = mbBuffer.slice(idx + 1);
 
-                // Ignorar warmup (puntos) y vacíos
+                // Quitar padding "~" del inicio
+                linea = linea.replace(/^~+/, "").trim();
                 if (!linea) continue;
                 if (/^\.+$/.test(linea)) continue;
                 if (linea.length < 3) continue;
@@ -624,7 +681,6 @@ async function readMicrobitLoop() {
                 log(`  ↳ línea: "${linea}" (${linea.length})`);
                 buzonCopias.push(linea);
 
-                // Timer: 4s desde la última línea recibida
                 if (timerBuzon) clearTimeout(timerBuzon);
                 timerBuzon = setTimeout(procesarBuzon, TIMEOUT_BUZON_MS);
             }
@@ -645,8 +701,13 @@ function procesarBuzon() {
     log(`── COMBINANDO ${copias.length} COPIA(S) ──`);
     copias.forEach((c, idx) => log(`   copia ${idx+1} (${c.length}): "${c}"`));
 
-    const mensajeFinal = combinarCopias(copias);
-    log(`✔ Mensaje (${mensajeFinal.length}): "${mensajeFinal}"`);
+    let mensajeFinal = combinarCopias(copias);
+    log(`  Combinado (${mensajeFinal.length}): "${mensajeFinal}"`);
+
+    // Red de seguridad: diccionario
+    mensajeFinal = corregirConDiccionario(mensajeFinal);
+
+    log(`✔ Mensaje final (${mensajeFinal.length}): "${mensajeFinal}"`);
     procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
 }
 
@@ -723,7 +784,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const candidatos = candidatosIniciales();
     log("Contexto: " + location.href);
     log(`Candidatos Ollama: ${candidatos.length}`);
-    log("Protocolo micro:bit: solo \\n, 3 copias por pulsación.");
+    log("Protocolo: 5 copias + padding ~~~ + diccionario de seguridad.");
     conectarCandidatos(candidatos, TIMEOUT_CONEXION_MS, 2);
 });
 </script>
