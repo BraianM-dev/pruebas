@@ -48,7 +48,7 @@
 
         .diag{padding:8px 20px;background:#f1f3f5;border-bottom:1px solid var(--border);font-size:13px}
         .diag summary{cursor:pointer;font-weight:600}
-        .diag textarea{width:100%;height:160px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
+        .diag textarea{width:100%;height:180px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
     </style>
 </head>
 <body>
@@ -86,7 +86,7 @@
         <div class="help">La placa envía 3 copias del mensaje con separadores redundantes. El navegador las combina por voto mayoritario. Funciona con mensajes arbitrarios.</div>
     </section>
 
-    <details class="diag">
+    <details class="diag" open>
         <summary>Diagnóstico</summary>
         <textarea id="log" readonly></textarea>
     </details>
@@ -107,13 +107,13 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v9";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v10";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
 const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
-const VENTANA_COPIAS_MS = 4500;   // esperar 4,5s antes de combinar copias
+const VENTANA_COPIAS_MS = 8000;   // amplio: espera todas las copias de un mismo botón
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
 
@@ -183,15 +183,9 @@ function generarRespuestaFallback(texto) {
 }
 
 /* =========================================================
-   COMBINACIÓN DE COPIAS — alineamiento + voto por mayoría
-   ---------------------------------------------------------
-   Recibe N copias del mismo mensaje, cada una con drops en
-   posiciones distintas. Usa Needleman-Wunsch para alinear
-   cada copia contra la más larga, luego vota carácter por
-   carácter en cada posición.
+   ALINEAMIENTO + VOTO POR MAYORÍA
    ========================================================= */
 function needlemanWunsch(a, b) {
-    // Devuelve array de {a: char|null, b: char|null}
     const m = a.length, n = b.length;
     const dp = [];
     for (let i = 0; i <= m; i++) { dp[i] = []; dp[i][0] = i; }
@@ -225,12 +219,9 @@ function combinarCopias(copias) {
     if (!copias.length) return "";
     if (copias.length === 1) return copias[0];
 
-    // La copia más larga se usa como referencia (menos drops esperados)
     const copiasOrdenadas = [...copias].sort((a, b) => b.length - a.length);
     const ref = copiasOrdenadas[0];
     const otras = copiasOrdenadas.slice(1);
-
-    // columns[k] = lista de chars propuestos para la posición k de la ref
     const columns = ref.split("").map(ch => [ch]);
 
     for (const copia of otras) {
@@ -241,11 +232,9 @@ function combinarCopias(copias) {
                 if (par.b !== null) columns[posRef].push(par.b);
                 posRef++;
             }
-            // par.a === null → inserción en 'copia' que no está en ref; se ignora
         }
     }
 
-    // Voto por mayoría en cada columna
     return columns.map(col => {
         const votos = {};
         for (const ch of col) votos[ch] = (votos[ch] || 0) + 1;
@@ -266,14 +255,12 @@ let historial = [];
 let idBusqueda = 0;
 let modoFallback = false;
 
-/* micro:bit */
 let mbPort = null;
 let mbReader = null;
 let mbWriter = null;
 let mbReading = false;
 let mbBuffer = "";
 
-/* acumulación de copias */
 let buzonCopias = [];
 let timerCopias = null;
 
@@ -307,7 +294,7 @@ function log(msg) {
 }
 
 /* =========================================================
-   OLLAMA — utilidades
+   OLLAMA
    ========================================================= */
 function normalizarUrl(valor) {
     if (!valor) return null;
@@ -361,9 +348,6 @@ function describirError(err, url) {
     return `${url}: ${err.message}`;
 }
 
-/* =========================================================
-   OLLAMA — conexión
-   ========================================================= */
 function prepararConexion() {
     urlActiva = null;
     modoFallback = false;
@@ -448,9 +432,6 @@ async function conectarCandidatos(candidatos, timeoutPorUrl, concurrencia) {
     }
 }
 
-/* =========================================================
-   CONSULTA AL MODELO
-   ========================================================= */
 async function consultarOllama() {
     const recientes = historial.slice(-MAX_MENSAJES_CONTEXTO);
     const ctrl = new AbortController();
@@ -623,11 +604,20 @@ async function readMicrobitLoop() {
 
             for (const linea of lineas) {
                 const limpia = linea.replace(/[\r\u0000]/g, "").trim();
-                if (/^\.+$/.test(limpia)) continue;   // warmup de puntos
+                if (/^\.+$/.test(limpia)) continue;
                 if (!limpia) continue;
 
-                log(`Micro:bit → "${limpia}" (${limpia.length} chars)`);
+                log(`  ↳ línea recibida (${limpia.length}): "${limpia}"`);
+
+                // Filtrar basura: si es solo 1-2 caracteres, probablemente sea
+                // un fragmento de separador corrupto, no una copia válida.
+                if (limpia.length < 3) {
+                    log(`    (descartada: demasiado corta)`);
+                    continue;
+                }
+
                 buzonCopias.push(limpia);
+                log(`    buzonCopias = ${buzonCopias.length}`);
 
                 if (timerCopias) clearTimeout(timerCopias);
                 timerCopias = setTimeout(() => {
@@ -635,11 +625,23 @@ async function readMicrobitLoop() {
                     buzonCopias = [];
                     timerCopias = null;
 
-                    log(`── Combinando ${copias.length} copia(s) ──`);
-                    copias.forEach((c, idx) => log(`  copia ${idx+1} (${c.length}): "${c}"`));
+                    // === Diagnóstico fuerte ===
+                    log(`── COMBINANDO ${copias.length} COPIA(S) ──`);
+                    copias.forEach((c, idx) => log(`   copia ${idx+1} (${c.length}): "${c}"`));
+
+                    if (copias.length === 1) {
+                        log(`⚠ SOLO 1 COPIA. La combinación no puede corregir drops.`);
+                        log(`   → La placa debe enviar 3, pero el navegador recibió 1.`);
+                        log(`   → Posibles causas: timer disparó antes, copias 2-3 perdidas, flag en micro:bit.`);
+                    } else {
+                        const unicas = new Set(copias);
+                        if (unicas.size === 1 && copias.length > 1) {
+                            log(`⚠ TODAS LAS COPIAS SON IDÉNTICAS. Corrupción sistemática.`);
+                        }
+                    }
 
                     const mensajeFinal = combinarCopias(copias);
-                    log(`Mensaje combinado (${mensajeFinal.length}): "${mensajeFinal}"`);
+                    log(`✔ Mensaje combinado (${mensajeFinal.length}): "${mensajeFinal}"`);
 
                     procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
                 }, VENTANA_COPIAS_MS);
@@ -719,9 +721,6 @@ if ("serial" in navigator) {
     });
 }
 
-/* =========================================================
-   ARRANQUE
-   ========================================================= */
 window.addEventListener("DOMContentLoaded", () => {
     actualizarBotonesMb();
     const guardada = leerGuardado();
@@ -729,6 +728,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const candidatos = candidatosIniciales();
     log("Contexto: " + location.href);
     log(`Candidatos Ollama: ${candidatos.length}`);
+    log("──────────────────────────────────────");
+    log("INSTRUCCIÓN: pulsá A, B o AB y mirá el log.");
+    log("Si aparece '⚠ SOLO 1 COPIA' → la placa no está enviando las 3 copias.");
+    log("Si aparece '⚠ COPIAS IDÉNTICAS' → corrupción sistemática (no ayuda combinar).");
+    log("Si aparece 'COMBINANDO 3 COPIAS' con copias distintas → debería corregir.");
+    log("──────────────────────────────────────");
     conectarCandidatos(candidatos, TIMEOUT_CONEXION_MS, 2);
 });
 </script>
