@@ -3,49 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dungeon Master Gateway · Ollama y micro:bit</title>
+    <title>Dungeon Master · Ollama + micro:bit</title>
     <style>
         :root{--primary:#007bff;--primary-hover:#0056b3;--success:#198754;--danger:#dc3545;--bg-body:#f4f6f9;--bg-card:#fff;--text-dark:#333;--border:#ddd;--bg-chat:#fafafa}
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg-body);color:var(--text-dark);height:100vh;height:100dvh;display:flex;justify-content:center;align-items:center;padding:10px}
         .container{width:100%;max-width:820px;height:100%;background:var(--bg-card);border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1);display:flex;flex-direction:column;overflow:hidden}
-        .header{background:var(--primary);color:#fff;padding:15px 20px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+        .header{background:var(--primary);color:#fff;padding:15px 20px;font-weight:bold;font-size:18px}
         .status-box{padding:12px 20px;background:#e9ecef;border-bottom:1px solid var(--border);font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
         .badge{padding:4px 8px;border-radius:4px;font-weight:bold;font-size:12px;text-transform:uppercase}
         .badge-scan{background:#ffc107;color:#212529}.badge-success{background:#28a745;color:#fff}
-        .badge-error{background:#dc3545;color:#fff}.badge-warn{background:#fd7e14;color:#fff}
+        .badge-error{background:#dc3545;color:#fff}
         .selector-wrapper{display:none;margin-left:auto;align-items:center;gap:8px}
         select{padding:6px 10px;border-radius:4px;border:1px solid var(--border);font-size:16px;background:#fff;cursor:pointer;outline:none}
-        .connection-panel{display:flex;flex-wrap:wrap;gap:10px;padding:12px 20px;background:#f8f9fa;border-bottom:1px solid var(--border)}
-        .connection-panel label{font-size:13px;font-weight:700;color:#495057}
-        .connection-row{display:flex;flex:1 1 100%;align-items:center;gap:8px;flex-wrap:wrap}
-        .connection-panel input{flex:1 1 240px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:16px}
-        .connection-panel button{padding:8px 14px;font-size:14px;background:#6c757d}
-        .connection-panel button:hover{background:#545b62}
-        #btn-conectar-ollama{background:var(--primary)}#btn-conectar-ollama:hover{background:var(--primary-hover)}
-        .connection-help{flex:1 1 100%;color:#6c757d;font-size:12px}
-        .alert{padding:10px 14px;border-radius:6px;font-size:13px;line-height:1.4;flex:1 1 100%;display:none}
-        .alert.show{display:block}
-        .alert-warn{background:#fff3cd;color:#856404;border:1px solid #ffeeba}
-        .alert-error{background:#f8d7da;color:#842029;border:1px solid #f5c2c7}
+
+        .panel{padding:12px 20px;background:#f8f9fa;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+        .panel label{font-size:13px;font-weight:700;color:#495057}
+        .panel input[type="text"]{flex:1 1 240px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:16px}
+        .panel button{padding:8px 14px;font-size:14px}
+        .panel .row{display:flex;flex:1 1 100%;align-items:center;gap:8px;flex-wrap:wrap}
+        .panel .help{flex:1 1 100%;color:#6c757d;font-size:12px}
+
+        .mb-panel{background:#f0f7ff}
+        .mb-panel .title{flex:1 1 100%;font-weight:700;color:#174a7a;display:flex;align-items:center;gap:8px}
+        .mb-status{padding:3px 8px;border-radius:99px;background:#e9ecef;color:#495057;font-size:12px;font-weight:700;text-transform:uppercase}
+        .mb-status.online{background:#d1e7dd;color:#0f5132}
+        .mb-status.error{background:#f8d7da;color:#842029}
+
         .chat-area{flex-grow:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;background:var(--bg-chat)}
         .msg{max-width:85%;padding:12px 16px;border-radius:8px;line-height:1.5;word-wrap:break-word;font-size:15px;white-space:pre-wrap}
         .msg.user{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:2px}
         .msg.ai{background:#e2e3e5;color:#383d41;align-self:flex-start;border-bottom-left-radius:2px}
+        .msg.system{background:#fff3cd;color:#856404;align-self:center;font-size:13px;border-radius:6px;border:1px solid #ffeeba;text-align:center;max-width:95%}
+
         .input-area{display:flex;padding:15px;border-top:1px solid var(--border);gap:10px;background:#fff}
         #user-input{flex-grow:1;padding:12px 15px;border:1px solid var(--border);border-radius:6px;font-size:16px;outline:none}
         #user-input:focus{border-color:var(--primary)}
-        button{color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer}
-        #btn-enviar{background:var(--primary)}#btn-enviar:hover:not(:disabled){background:var(--primary-hover)}
+        button{color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;background:var(--primary)}
+        #btn-enviar:hover:not(:disabled){background:var(--primary-hover)}
         button:disabled{background:#ccc!important;cursor:not-allowed}
+
         .diag{padding:8px 20px;background:#f1f3f5;border-bottom:1px solid var(--border);font-size:13px}
         .diag summary{cursor:pointer;font-weight:600}
-        .diag textarea{width:100%;height:160px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
+        .diag textarea{width:100%;height:140px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header"><span>Dungeon Master · Ollama 💬</span></div>
+    <div class="header">Dungeon Master · Ollama + micro:bit</div>
 
     <div class="status-box">
         <span id="status-text">Inicializando…</span>
@@ -56,21 +61,32 @@
         </div>
     </div>
 
-    <section class="connection-panel">
-        <div class="connection-row">
-            <label for="ip-manual">Servidor Ollama (IP:puerto o hostname)</label>
-            <input type="text" id="ip-manual" placeholder="192.168.1.50  ó  ollama-pc.local  ó  mi-pc.local:11434"
+    <!-- Panel Ollama -->
+    <section class="panel">
+        <div class="row">
+            <label for="ip-manual">Servidor Ollama</label>
+            <input type="text" id="ip-manual" placeholder="192.168.1.50  ó  ollama-pc.local"
                    autocapitalize="off" autocorrect="off" spellcheck="false">
             <button id="btn-conectar-ollama" type="button">Conectar</button>
-            <button id="btn-diagnostico" type="button">Diagnóstico de red</button>
+            <button id="btn-diagnostico" type="button" style="background:#6c757d">Diagnóstico</button>
         </div>
-        <div class="connection-help">Escribí la IP o el hostname del equipo donde corre Ollama. Se guarda para las próximas clases.</div>
-        <div id="alert-mixed" class="alert alert-error"></div>
-        <div id="alert-hint" class="alert alert-warn"></div>
+        <div class="help">Escribí la IP o el hostname del equipo donde corre Ollama. Se guarda para las próximas clases.</div>
+    </section>
+
+    <!-- Panel micro:bit -->
+    <section class="panel mb-panel">
+        <div class="title">
+            micro:bit por USB <span id="mb-status" class="mb-status">Sin conectar</span>
+        </div>
+        <div class="row">
+            <button id="btn-mb-conectar" type="button">Conectar micro:bit</button>
+            <button id="btn-mb-desconectar" type="button" style="background:#dc3545" disabled>Desconectar</button>
+        </div>
+        <div class="help">Al pulsar el botón A en la placa, la micro:bit envía un mensaje por USB. La página lo manda a Ollama y devuelve la respuesta a la micro:bit para mostrarla en los LEDs.</div>
     </section>
 
     <details class="diag">
-        <summary>Diagnóstico (qué se está probando)</summary>
+        <summary>Diagnóstico</summary>
         <textarea id="log" readonly></textarea>
     </details>
 
@@ -89,8 +105,10 @@
    ========================================================= */
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v3";
-const MODEL_PREFERIDO = "llama3.2:3b"; // cambialo por el que tengas
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v4";
+const MODEL_PREFERIDO = "llama3.2:3b";
+const BAUD_MICROBIT = 115200;
+const MAX_CHARS_MICROBIT = 200;
 
 const SYSTEM_PROMPT = `Eres el Dungeon Master de «Calabozos y Código». Respondé en español rioplatense, breve (3-6 oraciones), en personaje, sin salir del juego. Si no hay aventura aún, pedí los nombres de los jugadores. Contenido apto para adolescentes.`;
 
@@ -98,28 +116,35 @@ const SYSTEM_PROMPT = `Eres el Dungeon Master de «Calabozos y Código». Respon
    ESTADO
    ========================================================= */
 let urlActiva = null;
-let modo = "buscando";        // buscando | ollama | error
 let generando = false;
 let historial = [];
 let idBusqueda = 0;
+
+/* micro:bit */
+let mbPort = null;
+let mbReader = null;
+let mbWriter = null;
+let mbReading = false;
+let mbBuffer = "";
 
 /* =========================================================
    DOM
    ========================================================= */
 const $ = id => document.getElementById(id);
-const chatBox       = $("chat-box");
-const userInput     = $("user-input");
-const btnEnviar     = $("btn-enviar");
-const statusText    = $("status-text");
-const badgeEstado   = $("badge-estado");
-const selectorModelos = $("selector-modelos");
-const selectModels  = $("models");
-const ipManual      = $("ip-manual");
-const logEl         = $("log");
-const alertMixed    = $("alert-mixed");
-const alertHint     = $("alert-hint");
-const btnConectar   = $("btn-conectar-ollama");
-const btnDiagnostico= $("btn-diagnostico");
+const chatBox        = $("chat-box");
+const userInput      = $("user-input");
+const btnEnviar      = $("btn-enviar");
+const statusText     = $("status-text");
+const badgeEstado    = $("badge-estado");
+const selectorModelos= $("selector-modelos");
+const selectModels   = $("models");
+const ipManual       = $("ip-manual");
+const logEl          = $("log");
+const mbStatus       = $("mb-status");
+const btnMbConectar  = $("btn-mb-conectar");
+const btnMbDescon    = $("btn-mb-desconectar");
+const btnConectar    = $("btn-conectar-ollama");
+const btnDiagnostico = $("btn-diagnostico");
 
 /* =========================================================
    LOG
@@ -132,36 +157,7 @@ function log(msg) {
 }
 
 /* =========================================================
-   DETECCIÓN DE CONTEXTO (mixed content)
-   ========================================================= */
-const esHTTPS = location.protocol === "https:";
-
-function mostrarAlertaMixedContent() {
-    if (esHTTPS) {
-        alertMixed.classList.add("show");
-        alertMixed.innerHTML = `
-            <strong>⚠ Esta página está servida por HTTPS (por ejemplo, GitHub Pages).</strong><br>
-            Ollama escucha por HTTP. El navegador <em>bloqueará</em> todas las peticiones
-            a tu Ollama de la red por <em>contenido mixto</em>.<br><br>
-            <strong>Soluciones:</strong>
-            <ul style="margin:6px 0 0 18px">
-              <li>Serví esta página por HTTP local: <code>python3 -m http.server 8080</code> y abrí <code>http://IP-DEL-SERVIDOR:8080</code></li>
-              <li>O montá un túnel HTTPS para Ollama (ngrok, cloudflared)</li>
-            </ul>`;
-    }
-}
-
-function mostrarPista() {
-    alertHint.classList.add("show");
-    alertHint.innerHTML = `
-        <strong>💡 Pista:</strong> si no sabés la IP del equipo con Ollama, abrí una terminal en esa máquina y ejecutá:
-        <code>ipconfig</code> (Windows) o <code>ip a</code> (Linux/macOS).<br>
-        Verificá desde otra PC con: <code>curl http://LA-IP:11434/api/tags</code>.<br>
-        Y recordá arrancar Ollama con <code>OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS="*"</code>.`;
-}
-
-/* =========================================================
-   UTILIDADES DE URL
+   OLLAMA — utilidades
    ========================================================= */
 function normalizarUrl(valor) {
     if (!valor) return null;
@@ -171,7 +167,6 @@ function normalizarUrl(valor) {
     try {
         const u = new URL(t);
         if (!u.port) u.port = String(PUERTO_OLLAMA);
-        if (!u.pathname || u.pathname === "/") return u.origin;
         return u.origin;
     } catch { return null; }
 }
@@ -180,88 +175,65 @@ function leerGuardado() {
     try { return normalizarUrl(localStorage.getItem(CLAVE_OLLAMA_LOCAL)); }
     catch { return null; }
 }
+function guardar(url) { try { localStorage.setItem(CLAVE_OLLAMA_LOCAL, url); } catch {} }
 
-function guardar(url) {
-    try { localStorage.setItem(CLAVE_OLLAMA_LOCAL, url); } catch {}
-}
-
-/* =========================================================
-   CANDIDATOS INICIALES
-   ========================================================= */
 function candidatosIniciales() {
     const list = [];
     const q = new URLSearchParams(location.search).get("ollama");
     list.push(normalizarUrl(q));
     list.push(leerGuardado());
     list.push(normalizarUrl(ipManual.value));
-
-    // Si la página se sirve por HTTP desde un host concreto (no localhost),
-    // probar ese mismo host con el puerto de Ollama. Es el caso "sirvo la página
-    // desde la misma PC del Ollama".
-    if (!esHTTPS && location.hostname && location.hostname !== "localhost") {
+    if (location.protocol === "http:" && location.hostname && location.hostname !== "localhost") {
         list.push(`http://${location.hostname}:${PUERTO_OLLAMA}`);
     }
-
-    // Intento de mDNS sobre el hostname sin dominio
-    if (location.hostname && !esHTTPS) {
-        const short = location.hostname.split(".")[0];
-        list.push(`http://${short}.local:${PUERTO_OLLAMA}`);
-    }
-
-    // Fallback local
     list.push(`http://localhost:${PUERTO_OLLAMA}`);
     list.push(`http://127.0.0.1:${PUERTO_OLLAMA}`);
-
     return [...new Set(list.filter(Boolean))];
 }
 
-/* =========================================================
-   CONSULTA A OLLAMA (con errores detallados)
-   ========================================================= */
 async function consultarTags(urlBase, timeoutMs) {
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-        const r = await fetch(`${urlBase}/api/tags`, {
-            method: "GET",
-            cache: "no-store",
-            signal: ctrl.signal
-        });
+        const r = await fetch(`${urlBase}/api/tags`, { method: "GET", cache: "no-store", signal: ctrl.signal });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
-        if (!Array.isArray(data.models)) throw new Error("Respuesta sin campo 'models'");
+        if (!Array.isArray(data.models)) throw new Error("respuesta sin 'models'");
         return data.models;
-    } finally {
-        clearTimeout(to);
-    }
+    } finally { clearTimeout(to); }
 }
 
 function describirError(err, url) {
-    if (err.name === "AbortError") return `${url}: timeout (${TIMEOUT_CONEXION_MS}ms)`;
-    if (esHTTPS && url.startsWith("http://")) {
-        return `${url}: BLOQUEADO por contenido mixto (página HTTPS → Ollama HTTP)`;
-    }
+    if (err.name === "AbortError") return `${url}: timeout`;
     if (err instanceof TypeError && /Failed to fetch/i.test(err.message)) {
-        return `${url}: sin respuesta de red (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿CORS?)`;
+        return `${url}: sin respuesta (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿OLLAMA_ORIGINS?)`;
     }
     return `${url}: ${err.message}`;
 }
 
 /* =========================================================
-   CONEXIÓN
+   OLLAMA — conexión
    ========================================================= */
 function prepararConexion() {
     urlActiva = null;
-    modo = "buscando";
     selectModels.replaceChildren();
     selectorModelos.style.display = "none";
-    userInput.disabled = true;
-    btnEnviar.disabled = true;
+    actualizarInputs();
+}
+function actualizarInputs() {
+    const ok = Boolean(urlActiva && selectModels.value);
+    userInput.disabled = !ok;
+    btnEnviar.disabled = !ok;
+    userInput.placeholder = ok ? "Escribí tu mensaje al Dungeon Master…" : "Esperando conexión con Ollama…";
+}
+function actualizarEstado(texto, clase, badge) {
+    statusText.textContent = texto;
+    badgeEstado.className = "badge " + clase;
+    badgeEstado.textContent = badge;
 }
 
 function activarOllama(url, modelos) {
     urlActiva = url;
-    modo = "ollama";
     guardar(url);
     ipManual.value = url.replace(/^https?:\/\//, "");
     actualizarEstado(`Ollama: ${url}`, "badge-success", "ONLINE");
@@ -270,30 +242,13 @@ function activarOllama(url, modelos) {
     selectModels.replaceChildren();
     modelos.forEach(m => {
         const o = document.createElement("option");
-        o.value = m.name;
-        o.textContent = m.name;
+        o.value = m.name; o.textContent = m.name;
         selectModels.appendChild(o);
     });
     if (modelos.some(m => m.name === MODEL_PREFERIDO)) selectModels.value = MODEL_PREFERIDO;
     selectorModelos.style.display = "flex";
-    userInput.disabled = false;
-    btnEnviar.disabled = false;
-    userInput.placeholder = "Escribí tu mensaje al Dungeon Master…";
+    actualizarInputs();
     userInput.focus();
-}
-
-function activarError(msg) {
-    modo = "error";
-    actualizarEstado(msg, "badge-error", "SIN OLLAMA");
-    userInput.disabled = true;
-    btnEnviar.disabled = true;
-    mostrarPista();
-}
-
-function actualizarEstado(texto, clase, badge) {
-    statusText.textContent = texto;
-    badgeEstado.className = "badge " + clase;
-    badgeEstado.textContent = badge;
 }
 
 async function intentar(url, timeout, token) {
@@ -302,8 +257,7 @@ async function intentar(url, timeout, token) {
     try {
         const modelos = await consultarTags(url, timeout);
         if (token !== idBusqueda || urlActiva) return false;
-        const ms = Math.round(performance.now() - t0);
-        log(`✔ ${url} → ${modelos.length} modelos en ${ms} ms`);
+        log(`✔ ${url} → ${modelos.length} modelos en ${Math.round(performance.now() - t0)} ms`);
         activarOllama(url, modelos);
         return true;
     } catch (e) {
@@ -315,60 +269,42 @@ async function intentar(url, timeout, token) {
 async function conectarCandidatos(candidatos, timeoutPorUrl, concurrencia) {
     const token = ++idBusqueda;
     prepararConexion();
-    log(`Probando ${candidatos.length} candidato(s) con concurrencia ${concurrencia}…`);
-
+    log(`Probando ${candidatos.length} candidato(s)…`);
     let i = 0;
     const worker = async () => {
         while (i < candidatos.length && token === idBusqueda && !urlActiva) {
-            const url = candidatos[i++];
-            await intentar(url, timeoutPorUrl, token);
+            await intentar(candidatos[i++], timeoutPorUrl, token);
         }
     };
     await Promise.all(Array.from({ length: Math.min(concurrencia, candidatos.length) }, worker));
-
     if (token === idBusqueda && !urlActiva) {
-        activarError("No se encontró Ollama. Revisá la IP o el diagnóstico.");
+        actualizarEstado("No se encontró Ollama.", "badge-error", "SIN OLLAMA");
     }
 }
 
 /* =========================================================
-   BOTONES
+   CONSULTA AL MODELO (compartida chat + micro:bit)
    ========================================================= */
-btnConectar.addEventListener("click", async () => {
-    const url = normalizarUrl(ipManual.value);
-    if (!url) {
-        actualizarEstado("URL inválida. Ejemplo: 192.168.1.50", "badge-error", "REVISAR");
-        return;
-    }
-    mostrarAlertaMixedContent();
-    await conectarCandidatos([url], TIMEOUT_CONEXION_MS, 1);
-});
-
-btnDiagnostico.addEventListener("click", async () => {
-    log("── Diagnóstico manual ──");
-    const url = normalizarUrl(ipManual.value) || leerGuardado() || `http://localhost:${PUERTO_OLLAMA}`;
-    log(`Página: ${location.href}`);
-    log(`Es HTTPS: ${esHTTPS}`);
-    log(`URL a probar: ${url}`);
-    log(`Conectividad del navegador: ${navigator.onLine ? "sí" : "no"}`);
-    log(`Origen que el servidor debe aceptar en OLLAMA_ORIGINS: ${location.origin}`);
-
-    try {
-        const t0 = performance.now();
-        const modelos = await consultarTags(url, 5000);
-        const ms = Math.round(performance.now() - t0);
-        log(`✔ ¡Funciona! ${modelos.length} modelos en ${ms} ms.`);
-        activarOllama(url, modelos);
-    } catch (e) {
-        log("✖ " + describirError(e, url));
-        log("Recordá en el equipo de Ollama:");
-        log(`  OLLAMA_HOST=0.0.0.0:11434`);
-        log(`  OLLAMA_ORIGINS="${location.origin}"  (o "*" para pruebas)`);
-    }
-});
+async function consultarOllama() {
+    const resp = await fetch(`${urlActiva}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            model: selectModels.value,
+            stream: false,
+            messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                ...historial
+            ]
+        })
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    return (data.message && data.message.content ? data.message.content : "").trim();
+}
 
 /* =========================================================
-   CHAT
+   MENSAJE (usado por chat y por micro:bit)
    ========================================================= */
 function agregarMensaje(texto, tipo) {
     const div = document.createElement("div");
@@ -379,86 +315,200 @@ function agregarMensaje(texto, tipo) {
     return div;
 }
 
-async function enviarMensaje() {
-    if (generando) return;
-    const texto = userInput.value.trim();
-    if (!texto) return;
+async function procesarMensajeUsuario(texto, { desdeMicrobit = false } = {}) {
+    if (generando) {
+        if (desdeMicrobit) enviarAMicrobit("Ocupado");
+        return;
+    }
     if (!urlActiva || !selectModels.value) {
         agregarMensaje("Primero conectá con Ollama.", "ai");
+        if (desdeMicrobit) enviarAMicrobit("Sin Ollama");
         return;
     }
 
-    agregarMensaje(texto, "user");
-    userInput.value = "";
-    historial.push({ role: "user", content: texto });
-
-    const burbuja = agregarMensaje("…", "ai");
     generando = true;
-    userInput.disabled = true;
-    btnEnviar.disabled = true;
+    actualizarInputs();
+    agregarMensaje(texto, "user");
+    historial.push({ role: "user", content: texto });
+    const burbuja = agregarMensaje("…", "ai");
 
-    let contenido = "";
     try {
-        const resp = await fetch(`${urlActiva}/api/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: selectModels.value,
-                stream: true,
-                messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    ...historial
-                ]
-            })
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const reader = resp.body.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buf += dec.decode(value, { stream: true });
-            const lineas = buf.split("\n");
-            buf = lineas.pop();
-            for (const linea of lineas) {
-                const limpia = linea.trim();
-                if (!limpia) continue;
-                try {
-                    const j = JSON.parse(limpia);
-                    if (j.message?.content) {
-                        contenido += j.message.content;
-                        burbuja.textContent = contenido;
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                    }
-                } catch {}
-            }
-        }
-        if (!contenido) contenido = "(sin respuesta)";
-        burbuja.textContent = contenido;
-        historial.push({ role: "assistant", content: contenido });
+        const respuesta = await consultarOllama() || "(sin respuesta)";
+        burbuja.textContent = respuesta;
+        historial.push({ role: "assistant", content: respuesta });
+        if (desdeMicrobit) enviarAMicrobit(respuesta);
     } catch (e) {
-        burbuja.textContent = "Error: " + e.message + " (revisá la conexión a Ollama).";
-        log("Error de chat: " + e.message);
+        burbuja.textContent = "Error: " + e.message;
+        log("Error de Ollama: " + e.message);
+        if (desdeMicrobit) enviarAMicrobit("Error de IA");
     } finally {
         generando = false;
-        userInput.disabled = false;
-        btnEnviar.disabled = false;
-        userInput.focus();
+        actualizarInputs();
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
+}
+
+function enviarMensaje() {
+    const texto = userInput.value.trim();
+    if (!texto) return;
+    userInput.value = "";
+    procesarMensajeUsuario(texto, { desdeMicrobit: false });
+}
+
+/* =========================================================
+   MICRO:BIT — Web Serial
+   ========================================================= */
+function actualizarMbStatus(texto, clase = "") {
+    mbStatus.textContent = texto;
+    mbStatus.className = "mb-status" + (clase ? " " + clase : "");
+}
+
+function actualizarBotonesMb() {
+    const soportado = "serial" in navigator;
+    btnMbConectar.disabled = !soportado || Boolean(mbPort);
+    btnMbDescon.disabled  = !mbPort;
+    if (!soportado) {
+        actualizarMbStatus("No disponible", "error");
+        log("Web Serial no está disponible. Usá Chrome o Edge.");
+    }
+}
+
+async function conectarMicrobit() {
+    if (!("serial" in navigator)) return;
+    try {
+        actualizarMbStatus("Conectando…");
+        mbPort = await navigator.serial.requestPort();
+        await mbPort.open({ baudRate: BAUD_MICROBIT });
+
+        const decoder = new TextDecoderStream();
+        const encoder = new TextEncoderStream();
+        mbPort.readable.pipeTo(decoder.writable).catch(err => {
+            if (mbReading) log("Micro:bit lectura interrumpida: " + err.message);
+        });
+        encoder.readable.pipeTo(mbPort.writable).catch(err => {
+            log("Micro:bit escritura interrumpida: " + err.message);
+        });
+
+        mbReader = decoder.readable.getReader();
+        mbWriter = encoder.writable.getWriter();
+
+        mbReading = true;
+        mbBuffer = "";
+        actualizarMbStatus("Conectada", "online");
+        actualizarBotonesMb();
+        log("Micro:bit conectada por USB (115200 baudios).");
+
+        // Anuncia en el chat que quedó lista
+        agregarMensaje("Micro:bit conectada. Pulsá el botón A en la placa para enviar un mensaje.", "system");
+
+        readMicrobitLoop();
+    } catch (e) {
+        if (e && e.name !== "NotFoundError") {
+            actualizarMbStatus("Error", "error");
+            log("Error al conectar micro:bit: " + e.message);
+        } else {
+            actualizarMbStatus("Sin conectar");
+        }
+        actualizarBotonesMb();
+    }
+}
+
+async function readMicrobitLoop() {
+    try {
+        while (mbReading && mbReader) {
+            const { value, done } = await mbReader.read();
+            if (done) break;
+            mbBuffer += value;
+            const lineas = mbBuffer.split("\n");
+            mbBuffer = lineas.pop(); // última línea incompleta
+            for (const linea of lineas) {
+                const limpia = linea.replace(/[\r\u0000]/g, "").trim();
+                if (limpia) {
+                    log("Micro:bit → " + limpia);
+                    procesarMensajeUsuario(limpia, { desdeMicrobit: true });
+                }
+            }
+        }
+    } catch (e) {
+        if (mbReading) log("Error de lectura micro:bit: " + e.message);
+    } finally {
+        if (mbReader) { try { mbReader.releaseLock(); } catch {} mbReader = null; }
+    }
+}
+
+function enviarAMicrobit(texto) {
+    if (!mbWriter) return;
+    // Debe ir en una sola línea: read_line() del micro:bit corta en \n
+    const limpia = String(texto).replace(/[\r\n]+/g, " ").trim().slice(0, MAX_CHARS_MICROBIT);
+    mbWriter.write(limpia + "\n").catch(e => log("Error al enviar a micro:bit: " + e.message));
+}
+
+async function desconectarMicrobit() {
+    mbReading = false;
+    try { if (mbReader) await mbReader.cancel(); } catch {}
+    try { if (mbWriter) await mbWriter.close(); } catch {}
+    try { if (mbPort) await mbPort.close(); } catch {}
+    mbPort = null; mbReader = null; mbWriter = null; mbBuffer = "";
+    actualizarMbStatus("Sin conectar");
+    actualizarBotonesMb();
+    log("Micro:bit desconectada.");
+    agregarMensaje("Micro:bit desconectada.", "system");
+}
+
+/* =========================================================
+   BOTONES
+   ========================================================= */
+btnConectar.addEventListener("click", async () => {
+    const url = normalizarUrl(ipManual.value);
+    if (!url) {
+        actualizarEstado("URL inválida.", "badge-error", "REVISAR");
+        return;
+    }
+    await conectarCandidatos([url], TIMEOUT_CONEXION_MS, 1);
+});
+
+btnDiagnostico.addEventListener("click", async () => {
+    log("── Diagnóstico manual ──");
+    const url = normalizarUrl(ipManual.value) || leerGuardado() || `http://localhost:${PUERTO_OLLAMA}`;
+    log("Página: " + location.href);
+    log("HTTPS: " + (location.protocol === "https:"));
+    log("URL a probar: " + url);
+    log("Origen que debe aceptar OLLAMA_ORIGINS: " + location.origin);
+    log("Web Serial disponible: " + ("serial" in navigator));
+    try {
+        const modelos = await consultarTags(url, 5000);
+        log(`✔ Funciona. ${modelos.length} modelos.`);
+        activarOllama(url, modelos);
+    } catch (e) {
+        log("✖ " + describirError(e, url));
+        log("Recordá en el equipo de Ollama:");
+        log("  OLLAMA_HOST=0.0.0.0:11434");
+        log(`  OLLAMA_ORIGINS="${location.origin}"  (o "*" para pruebas)`);
+    }
+});
+
+btnMbConectar.addEventListener("click", conectarMicrobit);
+btnMbDescon.addEventListener("click", desconectarMicrobit);
+
+if ("serial" in navigator) {
+    navigator.serial.addEventListener("disconnect", ev => {
+        if (ev.target === mbPort) {
+            log("micro:bit desconectada físicamente.");
+            desconectarMicrobit();
+        }
+    });
 }
 
 /* =========================================================
    ARRANQUE
    ========================================================= */
 window.addEventListener("DOMContentLoaded", () => {
-    mostrarAlertaMixedContent();
+    actualizarBotonesMb();
     const guardada = leerGuardado();
     if (guardada) ipManual.value = guardada.replace(/^https?:\/\//, "");
     const candidatos = candidatosIniciales();
     log("Contexto: " + location.href);
-    log(`HTTPS: ${esHTTPS} | Candidatos: ${candidatos.length}`);
+    log(`Candidatos Ollama: ${candidatos.length}`);
     conectarCandidatos(candidatos, TIMEOUT_CONEXION_MS, 2);
 });
 </script>
