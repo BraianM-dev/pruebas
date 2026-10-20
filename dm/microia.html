@@ -72,7 +72,7 @@
             <button id="btn-conectar-ollama" type="button">Conectar</button>
             <button id="btn-diagnostico" type="button" style="background:#6c757d">Diagnóstico</button>
         </div>
-        <div class="help">Escribí la IP o el hostname del equipo donde corre Ollama. Se guarda para las próximas clases.</div>
+        <div class="help">Escribí la IP o el hostname del A71 donde corre Ollama. Se guarda para las próximas clases.</div>
     </section>
 
     <section class="panel mb-panel">
@@ -107,7 +107,7 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v7";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v8";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
@@ -126,7 +126,7 @@ REGLAS:
 Si aún no hay aventura, presentate brevemente, pedí los nombres de los jugadores y comenzá a la entrada de un calabozo.`;
 
 /* =========================================================
-   FALLBACK LOCAL
+   FALLBACK LOCAL — respuestas sin Ollama
    ========================================================= */
 const RESPUESTAS_FALLBACK = {
     chiste: [
@@ -190,11 +190,17 @@ let historial = [];
 let idBusqueda = 0;
 let modoFallback = false;
 
+/* micro:bit */
 let mbPort = null;
 let mbReader = null;
 let mbWriter = null;
 let mbReading = false;
 let mbBuffer = "";
+
+/* deduplicación de copias de micro:bit */
+let ultimoMensajeMicrobit = "";
+let ultimoMensajeTimestamp = 0;
+let esperandoMejorCopia = null;
 
 /* =========================================================
    DOM
@@ -275,7 +281,7 @@ async function consultarTags(urlBase, timeoutMs) {
 function describirError(err, url) {
     if (err.name === "AbortError") return `${url}: timeout`;
     if (err instanceof TypeError && /Failed to fetch/i.test(err.message)) {
-        return `${url}: sin respuesta (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿OLLAMA_ORIGINS? ¿el teléfono duerme?)`;
+        return `${url}: sin respuesta (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿OLLAMA_ORIGINS? ¿el A71 duerme?)`;
     }
     return `${url}: ${err.message}`;
 }
@@ -368,7 +374,7 @@ async function conectarCandidatos(candidatos, timeoutPorUrl, concurrencia) {
 }
 
 /* =========================================================
-   CONSULTA AL MODELO
+   CONSULTA AL MODELO (Ollama)
    ========================================================= */
 async function consultarOllama() {
     const recientes = historial.slice(-MAX_MENSAJES_CONTEXTO);
@@ -536,12 +542,42 @@ async function readMicrobitLoop() {
             mbBuffer += value;
             const lineas = mbBuffer.split("\n");
             mbBuffer = lineas.pop();
+
             for (const linea of lineas) {
                 const limpia = linea.replace(/[\r\u0000]/g, "").trim();
-                if (limpia) {
-                    log("Micro:bit → " + limpia + " (" + limpia.length + " chars)");
-                    procesarMensajeUsuario(limpia, { desdeMicrobit: true });
+
+                // Ignorar warmup (solo puntos)
+                if (/^\.+$/.test(limpia)) continue;
+                if (!limpia) continue;
+
+                log("Micro:bit → " + limpia + " (" + limpia.length + " chars)");
+
+                // La micro:bit envía el mensaje DOS veces. Nos quedamos con
+                // la copia más larga (= menos caracteres perdidos) dentro
+                // de una ventana de 2 segundos.
+                const ahora = Date.now();
+                if (ahora - ultimoMensajeTimestamp < 2000 && ultimoMensajeMicrobit) {
+                    if (limpia.length > ultimoMensajeMicrobit.length) {
+                        log(`  ↑ copia mejor (${limpia.length} > ${ultimoMensajeMicrobit.length})`);
+                        ultimoMensajeMicrobit = limpia;
+                    }
+                } else {
+                    ultimoMensajeMicrobit = limpia;
                 }
+                ultimoMensajeTimestamp = ahora;
+
+                // Reprogramar procesamiento: esperar 2s por si llega copia mejor.
+                if (esperandoMejorCopia) clearTimeout(esperandoMejorCopia);
+                esperandoMejorCopia = setTimeout(() => {
+                    if (ultimoMensajeMicrobit) {
+                        const mensajeFinal = ultimoMensajeMicrobit;
+                        ultimoMensajeMicrobit = "";
+                        ultimoMensajeTimestamp = 0;
+                        esperandoMejorCopia = null;
+                        log("Procesando: " + mensajeFinal);
+                        procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
+                    }
+                }, 2000);
             }
         }
     } catch (e) {
@@ -559,6 +595,9 @@ function enviarAMicrobit(texto) {
 
 async function desconectarMicrobit() {
     mbReading = false;
+    if (esperandoMejorCopia) { clearTimeout(esperandoMejorCopia); esperandoMejorCopia = null; }
+    ultimoMensajeMicrobit = "";
+    ultimoMensajeTimestamp = 0;
     try { if (mbReader) await mbReader.cancel(); } catch {}
     try { if (mbWriter) await mbWriter.close(); } catch {}
     try { if (mbPort) await mbPort.close(); } catch {}
