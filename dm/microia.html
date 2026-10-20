@@ -83,7 +83,7 @@
             <button id="btn-mb-conectar" type="button">Conectar micro:bit</button>
             <button id="btn-mb-desconectar" type="button" style="background:#dc3545" disabled>Desconectar</button>
         </div>
-        <div class="help">Protocolo @copia$ ... 3 copias + # de fin. El navegador procesa al ver #.</div>
+        <div class="help">3 copias del mensaje separadas por 5 saltos de línea. El navegador elige la combinación más completa.</div>
     </section>
 
     <details class="diag" open>
@@ -107,13 +107,13 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v12";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v13";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
 const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
-const TIMEOUT_SEGURIDAD_MS = 15000;   // si no llega # en 15s, procesar lo que haya
+const TIMEOUT_BUZON_MS = 4000;
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
 
@@ -183,7 +183,7 @@ function generarRespuestaFallback(texto) {
 }
 
 /* =========================================================
-   ALINEAMIENTO CON INSERTS + VOTO POR MAYORÍA
+   ALINEAMIENTO + VOTO POR MAYORÍA
    ========================================================= */
 function needlemanWunsch(a, b) {
     const m = a.length, n = b.length;
@@ -222,26 +222,19 @@ function combinarCopias(copias) {
     const sorted = [...copias].sort((a, b) => b.length - a.length);
     const ref = sorted[0];
     const otras = sorted.slice(1);
-
-    // Columnas: cada una con char votado + posible char de "insert" (que la ref perdió)
-    let columnas = ref.split("").map(ch => ({ chars: [ch], insert: null }));
+    const columnas = ref.split("").map(ch => ({ chars: [ch], insert: null }));
 
     for (const copia of otras) {
         const aln = needlemanWunsch(ref, copia);
         let posRef = 0;
         let insertsPendientes = [];
-
         for (const par of aln) {
             if (par.a !== null) {
-                if (par.b !== null) {
-                    columnas[posRef].chars.push(par.b);
+                if (par.b !== null) columnas[posRef].chars.push(par.b);
+                if (insertsPendientes.length > 0 && !columnas[posRef].insert) {
+                    columnas[posRef].insert = insertsPendientes[0];
                 }
-                if (insertsPendientes.length > 0) {
-                    if (!columnas[posRef].insert) {
-                        columnas[posRef].insert = insertsPendientes[0];
-                    }
-                    insertsPendientes = [];
-                }
+                insertsPendientes = [];
                 posRef++;
             } else {
                 insertsPendientes.push(par.b);
@@ -249,7 +242,6 @@ function combinarCopias(copias) {
         }
     }
 
-    // Construir: para cada columna, primero el insert, luego el char votado
     let resultado = "";
     for (const col of columnas) {
         if (col.insert) resultado += col.insert;
@@ -280,7 +272,7 @@ let mbReading = false;
 
 let mbBuffer = "";
 let buzonCopias = [];
-let timerSeguridad = null;
+let timerBuzon = null;
 
 /* =========================================================
    DOM
@@ -553,7 +545,7 @@ function enviarMensaje() {
 }
 
 /* =========================================================
-   MICRO:BIT — Web Serial con protocolo @copia$ ... #
+   MICRO:BIT — Web Serial
    ========================================================= */
 function actualizarMbStatus(texto, clase = "") {
     mbStatus.textContent = texto;
@@ -592,12 +584,12 @@ async function conectarMicrobit() {
         mbReading = true;
         mbBuffer = "";
         buzonCopias = [];
-        if (timerSeguridad) { clearTimeout(timerSeguridad); timerSeguridad = null; }
+        if (timerBuzon) { clearTimeout(timerBuzon); timerBuzon = null; }
 
         actualizarMbStatus("Conectada", "online");
         actualizarBotonesMb();
-        log("Micro:bit conectada. Protocolo @copia$ ... #");
-        agregarMensaje("Micro:bit conectada. Pulsá A, B o AB en la placa para enviar un mensaje.", "system");
+        log("Micro:bit conectada.");
+        agregarMensaje("Micro:bit conectada. Pulsá A, B o AB en la placa.", "system");
 
         readMicrobitLoop();
     } catch (e) {
@@ -618,52 +610,23 @@ async function readMicrobitLoop() {
             if (done) break;
             mbBuffer += value;
 
-            // Procesar mientras haya algo interpretable
-            while (true) {
-                const inicio = mbBuffer.indexOf("@");
-                if (inicio === -1) {
-                    // Sin @ → si hay # suelto, lo consumimos; si no, guardar últimos 5
-                    const finHash = mbBuffer.indexOf("#");
-                    if (finHash !== -1) {
-                        mbBuffer = mbBuffer.slice(finHash + 1);
-                        continue;
-                    }
-                    if (mbBuffer.length > 5) mbBuffer = mbBuffer.slice(-5);
-                    break;
-                }
+            // Protocolo simple: solo \n separa mensajes
+            let idx;
+            while ((idx = mbBuffer.indexOf("\n")) !== -1) {
+                const linea = mbBuffer.slice(0, idx).replace(/[\r\u0000@$#]/g, "").trim();
+                mbBuffer = mbBuffer.slice(idx + 1);
 
-                const finCopia = mbBuffer.indexOf("$", inicio + 1);
-                if (finCopia === -1) {
-                    mbBuffer = mbBuffer.slice(inicio);
-                    break;
-                }
+                // Ignorar warmup (puntos) y vacíos
+                if (!linea) continue;
+                if (/^\.+$/.test(linea)) continue;
+                if (linea.length < 3) continue;
 
-                const copia = mbBuffer.slice(inicio + 1, finCopia);
-                mbBuffer = mbBuffer.slice(finCopia + 1);
+                log(`  ↳ línea: "${linea}" (${linea.length})`);
+                buzonCopias.push(linea);
 
-                if (copia.length < 3) {
-                    log(`  (copia descartada: ${copia.length} chars)`);
-                    continue;
-                }
-
-                log(`  ↳ copia recibida (${copia.length}): "${copia}"`);
-                buzonCopias.push(copia);
-
-                // Reiniciar timer de seguridad
-                if (timerSeguridad) clearTimeout(timerSeguridad);
-                timerSeguridad = setTimeout(() => {
-                    log("⚠ Timeout de seguridad (no llegó #). Procesando lo que haya.");
-                    procesarBuzon("timeout");
-                }, TIMEOUT_SEGURIDAD_MS);
-            }
-
-            // Si aparece # → procesar inmediatamente
-            const posHash = mbBuffer.indexOf("#");
-            if (posHash !== -1) {
-                mbBuffer = mbBuffer.slice(posHash + 1);
-                if (buzonCopias.length > 0) {
-                    procesarBuzon("hash");
-                }
+                // Timer: 4s desde la última línea recibida
+                if (timerBuzon) clearTimeout(timerBuzon);
+                timerBuzon = setTimeout(procesarBuzon, TIMEOUT_BUZON_MS);
             }
         }
     } catch (e) {
@@ -673,13 +636,13 @@ async function readMicrobitLoop() {
     }
 }
 
-function procesarBuzon(origen) {
-    if (timerSeguridad) { clearTimeout(timerSeguridad); timerSeguridad = null; }
+function procesarBuzon() {
+    if (timerBuzon) { clearTimeout(timerBuzon); timerBuzon = null; }
     const copias = buzonCopias.slice();
     buzonCopias = [];
     if (!copias.length) return;
 
-    log(`── COMBINANDO ${copias.length} COPIA(S) [${origen}] ──`);
+    log(`── COMBINANDO ${copias.length} COPIA(S) ──`);
     copias.forEach((c, idx) => log(`   copia ${idx+1} (${c.length}): "${c}"`));
 
     const mensajeFinal = combinarCopias(copias);
@@ -695,7 +658,7 @@ function enviarAMicrobit(texto) {
 
 async function desconectarMicrobit() {
     mbReading = false;
-    if (timerSeguridad) { clearTimeout(timerSeguridad); timerSeguridad = null; }
+    if (timerBuzon) { clearTimeout(timerBuzon); timerBuzon = null; }
     buzonCopias = [];
     mbBuffer = "";
     try { if (mbReader) await mbReader.cancel(); } catch {}
@@ -728,7 +691,6 @@ btnDiagnostico.addEventListener("click", async () => {
     log("URL a probar: " + url);
     log("Origen para OLLAMA_ORIGINS: " + location.origin);
     log("Web Serial: " + ("serial" in navigator));
-    log("Modo: " + (urlActiva ? "Ollama" : (modoFallback ? "fallback" : "inicializando")));
     try {
         const modelos = await consultarTags(url, 8000);
         log(`✔ Funciona. ${modelos.length} modelos.`);
@@ -761,7 +723,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const candidatos = candidatosIniciales();
     log("Contexto: " + location.href);
     log(`Candidatos Ollama: ${candidatos.length}`);
-    log("Protocolo micro:bit: @copia$ ... # (3 copias, procesa con #)");
+    log("Protocolo micro:bit: solo \\n, 3 copias por pulsación.");
     conectarCandidatos(candidatos, TIMEOUT_CONEXION_MS, 2);
 });
 </script>
