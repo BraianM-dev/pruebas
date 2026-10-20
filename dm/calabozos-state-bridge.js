@@ -35,6 +35,7 @@ window.CalabozosStateBridge = (function () {
         // text/plain evita preflight CORS contra GAS
         const r = await fetch(armarUrl(params), {
             method: "POST",
+            mode: "no-cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(body || {}),
             redirect: "follow"
