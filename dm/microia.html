@@ -83,7 +83,7 @@
             <button id="btn-mb-conectar" type="button">Conectar micro:bit</button>
             <button id="btn-mb-desconectar" type="button" style="background:#dc3545" disabled>Desconectar</button>
         </div>
-        <div class="help">La placa envía 3 copias del mensaje con separadores redundantes. El navegador las combina por voto mayoritario. Funciona con mensajes arbitrarios.</div>
+        <div class="help">Protocolo: @copia$ con separadores redundantes. La micro:bit envía 2 copias por pulsación.</div>
     </section>
 
     <details class="diag" open>
@@ -107,13 +107,13 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v10";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v11";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
 const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
-const VENTANA_COPIAS_MS = 8000;   // amplio: espera todas las copias de un mismo botón
+const VENTANA_COPIAS_MS = 2500;   // 2,5s desde la última copia recibida
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
 
@@ -259,8 +259,9 @@ let mbPort = null;
 let mbReader = null;
 let mbWriter = null;
 let mbReading = false;
-let mbBuffer = "";
 
+/* buffer + copias */
+let mbBuffer = "";
 let buzonCopias = [];
 let timerCopias = null;
 
@@ -535,7 +536,7 @@ function enviarMensaje() {
 }
 
 /* =========================================================
-   MICRO:BIT — Web Serial
+   MICRO:BIT — Web Serial con protocolo @...$
    ========================================================= */
 function actualizarMbStatus(texto, clase = "") {
     mbStatus.textContent = texto;
@@ -578,7 +579,7 @@ async function conectarMicrobit() {
 
         actualizarMbStatus("Conectada", "online");
         actualizarBotonesMb();
-        log("Micro:bit conectada por USB (115200 baudios).");
+        log("Micro:bit conectada. Protocolo @...$");
         agregarMensaje("Micro:bit conectada. Pulsá A, B o AB en la placa para enviar un mensaje.", "system");
 
         readMicrobitLoop();
@@ -599,52 +600,37 @@ async function readMicrobitLoop() {
             const { value, done } = await mbReader.read();
             if (done) break;
             mbBuffer += value;
-            const lineas = mbBuffer.split("\n");
-            mbBuffer = lineas.pop();
 
-            for (const linea of lineas) {
-                const limpia = linea.replace(/[\r\u0000]/g, "").trim();
-                if (/^\.+$/.test(limpia)) continue;
-                if (!limpia) continue;
+            // Protocolo: @COPIA$ 
+            // Buscamos @ y $ en el buffer. No dependemos de \n.
+            while (true) {
+                const inicio = mbBuffer.indexOf("@");
+                if (inicio === -1) {
+                    // sin @ → conservar solo últimos 5 chars (por si viene @ cortado)
+                    if (mbBuffer.length > 5) mbBuffer = mbBuffer.slice(-5);
+                    break;
+                }
+                const fin = mbBuffer.indexOf("$", inicio + 1);
+                if (fin === -1) {
+                    // @ sin $ todavía → quedarse con lo que hay
+                    mbBuffer = mbBuffer.slice(inicio);
+                    break;
+                }
 
-                log(`  ↳ línea recibida (${limpia.length}): "${limpia}"`);
+                const copia = mbBuffer.slice(inicio + 1, fin);
+                mbBuffer = mbBuffer.slice(fin + 1);
 
-                // Filtrar basura: si es solo 1-2 caracteres, probablemente sea
-                // un fragmento de separador corrupto, no una copia válida.
-                if (limpia.length < 3) {
-                    log(`    (descartada: demasiado corta)`);
+                if (copia.length < 3) {
+                    log(`  (copia descartada: ${copia.length} chars)`);
                     continue;
                 }
 
-                buzonCopias.push(limpia);
-                log(`    buzonCopias = ${buzonCopias.length}`);
+                log(`  ↳ copia recibida (${copia.length}): "${copia}"`);
+                buzonCopias.push(copia);
 
+                // Reiniciar timer: 2,5s desde la última copia
                 if (timerCopias) clearTimeout(timerCopias);
-                timerCopias = setTimeout(() => {
-                    const copias = buzonCopias.slice();
-                    buzonCopias = [];
-                    timerCopias = null;
-
-                    // === Diagnóstico fuerte ===
-                    log(`── COMBINANDO ${copias.length} COPIA(S) ──`);
-                    copias.forEach((c, idx) => log(`   copia ${idx+1} (${c.length}): "${c}"`));
-
-                    if (copias.length === 1) {
-                        log(`⚠ SOLO 1 COPIA. La combinación no puede corregir drops.`);
-                        log(`   → La placa debe enviar 3, pero el navegador recibió 1.`);
-                        log(`   → Posibles causas: timer disparó antes, copias 2-3 perdidas, flag en micro:bit.`);
-                    } else {
-                        const unicas = new Set(copias);
-                        if (unicas.size === 1 && copias.length > 1) {
-                            log(`⚠ TODAS LAS COPIAS SON IDÉNTICAS. Corrupción sistemática.`);
-                        }
-                    }
-
-                    const mensajeFinal = combinarCopias(copias);
-                    log(`✔ Mensaje combinado (${mensajeFinal.length}): "${mensajeFinal}"`);
-
-                    procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
-                }, VENTANA_COPIAS_MS);
+                timerCopias = setTimeout(procesarBuzon, VENTANA_COPIAS_MS);
             }
         }
     } catch (e) {
@@ -652,6 +638,20 @@ async function readMicrobitLoop() {
     } finally {
         if (mbReader) { try { mbReader.releaseLock(); } catch {} mbReader = null; }
     }
+}
+
+function procesarBuzon() {
+    const copias = buzonCopias.slice();
+    buzonCopias = [];
+    timerCopias = null;
+    if (!copias.length) return;
+
+    log(`── COMBINANDO ${copias.length} COPIA(S) ──`);
+    copias.forEach((c, idx) => log(`   copia ${idx+1} (${c.length}): "${c}"`));
+
+    const mensajeFinal = combinarCopias(copias);
+    log(`✔ Mensaje (${mensajeFinal.length}): "${mensajeFinal}"`);
+    procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
 }
 
 function enviarAMicrobit(texto) {
@@ -664,10 +664,11 @@ async function desconectarMicrobit() {
     mbReading = false;
     if (timerCopias) { clearTimeout(timerCopias); timerCopias = null; }
     buzonCopias = [];
+    mbBuffer = "";
     try { if (mbReader) await mbReader.cancel(); } catch {}
     try { if (mbWriter) await mbWriter.close(); } catch {}
     try { if (mbPort) await mbPort.close(); } catch {}
-    mbPort = null; mbReader = null; mbWriter = null; mbBuffer = "";
+    mbPort = null; mbReader = null; mbWriter = null;
     actualizarMbStatus("Sin conectar");
     actualizarBotonesMb();
     log("Micro:bit desconectada.");
@@ -691,7 +692,6 @@ btnDiagnostico.addEventListener("click", async () => {
     log("── Diagnóstico manual ──");
     const url = normalizarUrl(ipManual.value) || leerGuardado() || `http://localhost:${PUERTO_OLLAMA}`;
     log("Página: " + location.href);
-    log("HTTPS: " + (location.protocol === "https:"));
     log("URL a probar: " + url);
     log("Origen para OLLAMA_ORIGINS: " + location.origin);
     log("Web Serial: " + ("serial" in navigator));
@@ -702,9 +702,9 @@ btnDiagnostico.addEventListener("click", async () => {
         activarOllama(url, modelos);
     } catch (e) {
         log("✖ " + describirError(e, url));
-        log("Recordá en el A71 con Termux:");
+        log("En el A71 con Termux:");
         log("  export OLLAMA_HOST=0.0.0.0:11434");
-        log(`  export OLLAMA_ORIGINS="${location.origin}"  (o "*" para pruebas)`);
+        log(`  export OLLAMA_ORIGINS="${location.origin}"`);
         log("  ollama serve");
     }
 });
@@ -728,12 +728,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const candidatos = candidatosIniciales();
     log("Contexto: " + location.href);
     log(`Candidatos Ollama: ${candidatos.length}`);
-    log("──────────────────────────────────────");
-    log("INSTRUCCIÓN: pulsá A, B o AB y mirá el log.");
-    log("Si aparece '⚠ SOLO 1 COPIA' → la placa no está enviando las 3 copias.");
-    log("Si aparece '⚠ COPIAS IDÉNTICAS' → corrupción sistemática (no ayuda combinar).");
-    log("Si aparece 'COMBINANDO 3 COPIAS' con copias distintas → debería corregir.");
-    log("──────────────────────────────────────");
+    log("Protocolo micro:bit: @COPIA$ (2 copias por pulsación).");
     conectarCandidatos(candidatos, TIMEOUT_CONEXION_MS, 2);
 });
 </script>
