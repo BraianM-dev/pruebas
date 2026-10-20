@@ -48,7 +48,7 @@
 
         .diag{padding:8px 20px;background:#f1f3f5;border-bottom:1px solid var(--border);font-size:13px}
         .diag summary{cursor:pointer;font-weight:600}
-        .diag textarea{width:100%;height:140px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
+        .diag textarea{width:100%;height:160px;margin-top:8px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical}
     </style>
 </head>
 <body>
@@ -83,7 +83,7 @@
             <button id="btn-mb-conectar" type="button">Conectar micro:bit</button>
             <button id="btn-mb-desconectar" type="button" style="background:#dc3545" disabled>Desconectar</button>
         </div>
-        <div class="help">Al pulsar A, B o AB en la placa, la micro:bit envía un mensaje por USB. La página lo manda a Ollama y devuelve la respuesta a la placa.</div>
+        <div class="help">La placa envía 3 copias del mensaje con separadores redundantes. El navegador las combina por voto mayoritario. Funciona con mensajes arbitrarios.</div>
     </section>
 
     <details class="diag">
@@ -107,12 +107,13 @@
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const TIMEOUT_RESPUESTA_MS = 60000;
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v8";
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v9";
 const MODEL_PREFERIDO = "llama3.2:1b";
 const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
 const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
+const VENTANA_COPIAS_MS = 4500;   // esperar 4,5s antes de combinar copias
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
 
@@ -126,13 +127,13 @@ REGLAS:
 Si aún no hay aventura, presentate brevemente, pedí los nombres de los jugadores y comenzá a la entrada de un calabozo.`;
 
 /* =========================================================
-   FALLBACK LOCAL — respuestas sin Ollama
+   FALLBACK LOCAL
    ========================================================= */
 const RESPUESTAS_FALLBACK = {
     chiste: [
         "El tabernero Erimond golpea la mesa con su jarra: «¿Sabés por qué el mago no baja al sótano? Porque le tiene miedo a los hechizos de nivel bajo». Las antorchas parpadean con la risa del grupo. ¿Qué hacen ahora?",
-        "Una enana de la guardia suelta entre risas: «¿Por qué los elfos no juegan a las escondidas? Porque el brillo del cabello los delata siempre». El fuego del campamento crepita. ¿Siguen adelante o acampan?",
-        "El bardo del pueblo rasguea su laúd y canta: «Un enano, un elfo y un mago entran a una taberna… y el tabernero les cobra doble por el drama». El grupo ríe. ¿Qué hacen?"
+        "Una enana de la guardia suelta entre risas: «¿Por qué los elfos no juegan a las escondidas? Porque el brillo del cabello los delata siempre». El fuego crepita. ¿Siguen adelante?",
+        "El bardo rasguea su laúd y canta: «Un enano, un elfo y un mago entran a una taberna… y el tabernero les cobra doble por el drama». El grupo ríe. ¿Qué hacen?"
     ],
     dragon: [
         "Sobre las torres del castillo, la silueta del dragón Vorath se recorta contra la luna. Su aliento huele a hierro y ceniza. ¿Se acercan, se esconden o preparan una trampa?",
@@ -140,9 +141,9 @@ const RESPUESTAS_FALLBACK = {
         "El suelo tiembla y una sombra enorme cruza el cielo. El dragón Kaelthar desciende sobre las montañas. ¿Se enfrentan, negocian o huyen?"
     ],
     dado: [
-        "El dado de seis caras gira sobre el tablero y se detiene en {N}. Las runas brillan con esa energía. ¿Cómo sigue la acción?",
+        "El dado gira sobre el tablero y se detiene en {N}. Las runas brillan con esa energía. ¿Cómo sigue la acción?",
         "La placa zumba y el dado marca {N}. El destino se inclina hacia ese número. ¿Qué acción intenta el grupo?",
-        "El dado cae con un golpe seco: {N}. El grupo contiene el aliento. ¿Qué sucede a continuación?"
+        "El dado cae con un golpe seco: {N}. El grupo contiene el aliento. ¿Qué sucede ahora?"
     ],
     combate: [
         "El enemigo se abalanza con furia y el grupo apenas alcanza a reaccionar. ¿Atacan todos a la vez o esperan una señal?",
@@ -154,7 +155,7 @@ const RESPUESTAS_FALLBACK = {
     ],
     generico: [
         "El Dungeon Master observa desde las sombras. Una antorcha parpadea y el viento trae olor a azufre. «La aventura aguarda». ¿Qué hacen ahora?",
-        "Las runas del tablero tiemblan. «El grupo se encuentra en un cruce de pasillos: a la izquierda, azufre; a la derecha, agua corriendo». ¿Qué camino eligen?",
+        "Las runas del tablero tiemblan. «El grupo está en un cruce de pasillos: a la izquierda, azufre; a la derecha, agua corriendo». ¿Qué camino eligen?",
         "El silencio se rompe con un crujido lejano. «El destino está en sus manos». ¿Qué acción declaran?",
         "Las antorchas se agitan: «Una puerta antigua aparece al final del pasillo. Tiene tres cerraduras y ninguna tiene ojo». ¿Qué hacen?"
     ]
@@ -182,6 +183,81 @@ function generarRespuestaFallback(texto) {
 }
 
 /* =========================================================
+   COMBINACIÓN DE COPIAS — alineamiento + voto por mayoría
+   ---------------------------------------------------------
+   Recibe N copias del mismo mensaje, cada una con drops en
+   posiciones distintas. Usa Needleman-Wunsch para alinear
+   cada copia contra la más larga, luego vota carácter por
+   carácter en cada posición.
+   ========================================================= */
+function needlemanWunsch(a, b) {
+    // Devuelve array de {a: char|null, b: char|null}
+    const m = a.length, n = b.length;
+    const dp = [];
+    for (let i = 0; i <= m; i++) { dp[i] = []; dp[i][0] = i; }
+    for (let j = 0; j <= n; j++) { dp[0][j] = j; }
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            const cost = a[i-1] === b[j-1] ? 0 : 1;
+            dp[i][j] = Math.min(dp[i-1][j-1] + cost, dp[i-1][j] + 1, dp[i][j-1] + 1);
+        }
+    }
+    let i = m, j = n;
+    const alignment = [];
+    while (i > 0 && j > 0) {
+        if (dp[i][j] === dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)) {
+            alignment.unshift({ a: a[i-1], b: b[j-1] });
+            i--; j--;
+        } else if (dp[i][j] === dp[i-1][j] + 1) {
+            alignment.unshift({ a: a[i-1], b: null });
+            i--;
+        } else {
+            alignment.unshift({ a: null, b: b[j-1] });
+            j--;
+        }
+    }
+    while (i > 0) { alignment.unshift({ a: a[i-1], b: null }); i--; }
+    while (j > 0) { alignment.unshift({ a: null, b: b[j-1] }); j--; }
+    return alignment;
+}
+
+function combinarCopias(copias) {
+    if (!copias.length) return "";
+    if (copias.length === 1) return copias[0];
+
+    // La copia más larga se usa como referencia (menos drops esperados)
+    const copiasOrdenadas = [...copias].sort((a, b) => b.length - a.length);
+    const ref = copiasOrdenadas[0];
+    const otras = copiasOrdenadas.slice(1);
+
+    // columns[k] = lista de chars propuestos para la posición k de la ref
+    const columns = ref.split("").map(ch => [ch]);
+
+    for (const copia of otras) {
+        const aln = needlemanWunsch(ref, copia);
+        let posRef = 0;
+        for (const par of aln) {
+            if (par.a !== null) {
+                if (par.b !== null) columns[posRef].push(par.b);
+                posRef++;
+            }
+            // par.a === null → inserción en 'copia' que no está en ref; se ignora
+        }
+    }
+
+    // Voto por mayoría en cada columna
+    return columns.map(col => {
+        const votos = {};
+        for (const ch of col) votos[ch] = (votos[ch] || 0) + 1;
+        let mejor = col[0], mejorCount = 0;
+        for (const ch in votos) {
+            if (votos[ch] > mejorCount) { mejor = ch; mejorCount = votos[ch]; }
+        }
+        return mejor;
+    }).join("");
+}
+
+/* =========================================================
    ESTADO
    ========================================================= */
 let urlActiva = null;
@@ -197,10 +273,9 @@ let mbWriter = null;
 let mbReading = false;
 let mbBuffer = "";
 
-/* deduplicación de copias de micro:bit */
-let ultimoMensajeMicrobit = "";
-let ultimoMensajeTimestamp = 0;
-let esperandoMejorCopia = null;
+/* acumulación de copias */
+let buzonCopias = [];
+let timerCopias = null;
 
 /* =========================================================
    DOM
@@ -374,7 +449,7 @@ async function conectarCandidatos(candidatos, timeoutPorUrl, concurrencia) {
 }
 
 /* =========================================================
-   CONSULTA AL MODELO (Ollama)
+   CONSULTA AL MODELO
    ========================================================= */
 async function consultarOllama() {
     const recientes = historial.slice(-MAX_MENSAJES_CONTEXTO);
@@ -517,6 +592,9 @@ async function conectarMicrobit() {
 
         mbReading = true;
         mbBuffer = "";
+        buzonCopias = [];
+        if (timerCopias) { clearTimeout(timerCopias); timerCopias = null; }
+
         actualizarMbStatus("Conectada", "online");
         actualizarBotonesMb();
         log("Micro:bit conectada por USB (115200 baudios).");
@@ -545,39 +623,26 @@ async function readMicrobitLoop() {
 
             for (const linea of lineas) {
                 const limpia = linea.replace(/[\r\u0000]/g, "").trim();
-
-                // Ignorar warmup (solo puntos)
-                if (/^\.+$/.test(limpia)) continue;
+                if (/^\.+$/.test(limpia)) continue;   // warmup de puntos
                 if (!limpia) continue;
 
-                log("Micro:bit → " + limpia + " (" + limpia.length + " chars)");
+                log(`Micro:bit → "${limpia}" (${limpia.length} chars)`);
+                buzonCopias.push(limpia);
 
-                // La micro:bit envía el mensaje DOS veces. Nos quedamos con
-                // la copia más larga (= menos caracteres perdidos) dentro
-                // de una ventana de 2 segundos.
-                const ahora = Date.now();
-                if (ahora - ultimoMensajeTimestamp < 2000 && ultimoMensajeMicrobit) {
-                    if (limpia.length > ultimoMensajeMicrobit.length) {
-                        log(`  ↑ copia mejor (${limpia.length} > ${ultimoMensajeMicrobit.length})`);
-                        ultimoMensajeMicrobit = limpia;
-                    }
-                } else {
-                    ultimoMensajeMicrobit = limpia;
-                }
-                ultimoMensajeTimestamp = ahora;
+                if (timerCopias) clearTimeout(timerCopias);
+                timerCopias = setTimeout(() => {
+                    const copias = buzonCopias.slice();
+                    buzonCopias = [];
+                    timerCopias = null;
 
-                // Reprogramar procesamiento: esperar 2s por si llega copia mejor.
-                if (esperandoMejorCopia) clearTimeout(esperandoMejorCopia);
-                esperandoMejorCopia = setTimeout(() => {
-                    if (ultimoMensajeMicrobit) {
-                        const mensajeFinal = ultimoMensajeMicrobit;
-                        ultimoMensajeMicrobit = "";
-                        ultimoMensajeTimestamp = 0;
-                        esperandoMejorCopia = null;
-                        log("Procesando: " + mensajeFinal);
-                        procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
-                    }
-                }, 2000);
+                    log(`── Combinando ${copias.length} copia(s) ──`);
+                    copias.forEach((c, idx) => log(`  copia ${idx+1} (${c.length}): "${c}"`));
+
+                    const mensajeFinal = combinarCopias(copias);
+                    log(`Mensaje combinado (${mensajeFinal.length}): "${mensajeFinal}"`);
+
+                    procesarMensajeUsuario(mensajeFinal, { desdeMicrobit: true });
+                }, VENTANA_COPIAS_MS);
             }
         }
     } catch (e) {
@@ -595,9 +660,8 @@ function enviarAMicrobit(texto) {
 
 async function desconectarMicrobit() {
     mbReading = false;
-    if (esperandoMejorCopia) { clearTimeout(esperandoMejorCopia); esperandoMejorCopia = null; }
-    ultimoMensajeMicrobit = "";
-    ultimoMensajeTimestamp = 0;
+    if (timerCopias) { clearTimeout(timerCopias); timerCopias = null; }
+    buzonCopias = [];
     try { if (mbReader) await mbReader.cancel(); } catch {}
     try { if (mbWriter) await mbWriter.close(); } catch {}
     try { if (mbPort) await mbPort.close(); } catch {}
@@ -627,9 +691,9 @@ btnDiagnostico.addEventListener("click", async () => {
     log("Página: " + location.href);
     log("HTTPS: " + (location.protocol === "https:"));
     log("URL a probar: " + url);
-    log("Origen que debe aceptar OLLAMA_ORIGINS: " + location.origin);
-    log("Web Serial disponible: " + ("serial" in navigator));
-    log("Modo actual: " + (urlActiva ? "Ollama" : (modoFallback ? "fallback" : "inicializando")));
+    log("Origen para OLLAMA_ORIGINS: " + location.origin);
+    log("Web Serial: " + ("serial" in navigator));
+    log("Modo: " + (urlActiva ? "Ollama" : (modoFallback ? "fallback" : "inicializando")));
     try {
         const modelos = await consultarTags(url, 8000);
         log(`✔ Funciona. ${modelos.length} modelos.`);
