@@ -106,12 +106,12 @@
    ========================================================= */
 const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
-const TIMEOUT_RESPUESTA_MS = 60000;   // los A71 tardan en cargar el modelo 1b
-const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v6";
+const TIMEOUT_RESPUESTA_MS = 60000;
+const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v7";
 const MODEL_PREFERIDO = "llama3.2:1b";
-const BAUD_MICROBIT = 9600;
+const BAUD_MICROBIT = 115200;
 const MAX_CHARS_MICROBIT = 80;
-const MAX_MENSAJES_CONTEXTO = 8;      // 1b rinde peor con historial largo
+const MAX_MENSAJES_CONTEXTO = 8;
 const MAX_HISTORIAL_DURO = 40;
 
 const SYSTEM_PROMPT = `Sos el Dungeon Master de «Calabozos y Código», un juego de rol de fantasía medieval totalmente ficticio y apto para adolescentes.
@@ -126,54 +126,44 @@ REGLAS:
 Si aún no hay aventura, presentate brevemente, pedí los nombres de los jugadores y comenzá a la entrada de un calabozo.`;
 
 /* =========================================================
-   FALLBACK LOCAL — respuestas del Dungeon Master sin Ollama
-   ---------------------------------------------------------
-   Varias variantes por categoría para que no se repitan.
-   El dado se tira con Math.random() y se inyecta {N}.
+   FALLBACK LOCAL
    ========================================================= */
 const RESPUESTAS_FALLBACK = {
     chiste: [
-        "El tabernero Erimond golpea la mesa con su jarra: «¿Sabés por qué el mago no baja al sótano? Porque le tiene miedo a los hechizos de nivel bajo». Las antorchas parpadean con la risa del grupo. ¿Qué hacen ahora, aventureros?",
+        "El tabernero Erimond golpea la mesa con su jarra: «¿Sabés por qué el mago no baja al sótano? Porque le tiene miedo a los hechizos de nivel bajo». Las antorchas parpadean con la risa del grupo. ¿Qué hacen ahora?",
         "Una enana de la guardia suelta entre risas: «¿Por qué los elfos no juegan a las escondidas? Porque el brillo del cabello los delata siempre». El fuego del campamento crepita. ¿Siguen adelante o acampan?",
-        "El bardo del pueblo rasguea su laúd y canta: «Un enano, un elfo y un mago entran a una taberna… y el tabernero les cobra doble por el drama». El grupo ríe mientras la noche cae sobre el camino. ¿Qué hacen?",
-        "Desde las sombras del calabozo, una voz fantasmal susurra un chiste tan viejo que hasta las ratas se ríen: «¿Cuántos goblins hacen falta para encender una antorcha? Ninguno, ya están todos huyendo del grupo». ¿Avanza el grupo?",
-        "El posadero seca un vaso y dice: «¿Sabés cuál es el colmo de un dragón? Que le dé miedo el fuego de su propia cocina». Las risas llenan el salón. ¿Piden otra ronda o parten hacia la aventura?"
+        "El bardo del pueblo rasguea su laúd y canta: «Un enano, un elfo y un mago entran a una taberna… y el tabernero les cobra doble por el drama». El grupo ríe. ¿Qué hacen?"
     ],
     dragon: [
-        "Sobre las torres del castillo, la silueta del dragón Vorath se recorta contra la luna. Su aliento huele a hierro y ceniza. El grupo siente el calor desde el camino. ¿Se acercan, se esconden o preparan una trampa?",
-        "En las ruinas, las escamas rojas de un dragón joven relucen entre los pilares. Todavía no los ha visto. Una de sus garras araña la piedra. ¿Qué hace el grupo?",
-        "El suelo tiembla y una sombra enorme cruza el cielo. El dragón de las nieves, Kaelthar, desciende sobre las montañas. Su rugido hace vibrar las antorchas. ¿El grupo se enfrenta, negocia o huye?",
-        "En la caverna, el dragón anciano abre un ojo dorado. «Pequeños mortales», ronronea. «¿Vienen por el tesoro o por la sabiduría?». El aire huele a azufre y oro antiguo. ¿Qué responden?"
+        "Sobre las torres del castillo, la silueta del dragón Vorath se recorta contra la luna. Su aliento huele a hierro y ceniza. ¿Se acercan, se esconden o preparan una trampa?",
+        "En las ruinas, las escamas rojas de un dragón joven relucen entre los pilares. Todavía no los ha visto. ¿Qué hace el grupo?",
+        "El suelo tiembla y una sombra enorme cruza el cielo. El dragón Kaelthar desciende sobre las montañas. ¿Se enfrentan, negocian o huyen?"
     ],
     dado: [
-        "El dado de seis caras gira sobre el tablero y se detiene en {N}. Las runas brillan con esa energía. La acción se resuelve con un {N}. ¿Cómo narra el Dungeon Master lo que sigue?",
-        "La placa zumba y el dado marca {N}. El destino se inclina hacia ese número. ¿Qué acción intenta el próximo jugador?",
-        "El dado cae con un golpe seco: {N}. El grupo contiene el aliento mientras el Dungeon Master observa las runas del tablero. ¿Qué sucede a continuación?",
-        "Las runas del tablero destellan y el resultado es {N}. El destino habló. ¿Cómo actúa el grupo con ese número en la mano?"
+        "El dado de seis caras gira sobre el tablero y se detiene en {N}. Las runas brillan con esa energía. ¿Cómo sigue la acción?",
+        "La placa zumba y el dado marca {N}. El destino se inclina hacia ese número. ¿Qué acción intenta el grupo?",
+        "El dado cae con un golpe seco: {N}. El grupo contiene el aliento. ¿Qué sucede a continuación?"
     ],
     combate: [
-        "El enemigo se abalanza con furia y el grupo apenas alcanza a reaccionar. Las antorchas iluminan el acero. ¿Atacan todos a la vez o esperan una señal?",
-        "Un rugido rompe el silencio y la criatura se lanza al ataque. El polvo vuela mientras las armas se alzan. ¿Qué táctica elige el grupo?",
-        "El aire se vuelve espeso y una sombra se mueve entre los pilares. La amenaza está cerca. ¿Atacan primero o intentan dialogar?"
+        "El enemigo se abalanza con furia y el grupo apenas alcanza a reaccionar. ¿Atacan todos a la vez o esperan una señal?",
+        "Un rugido rompe el silencio y la criatura se lanza al ataque. ¿Qué táctica elige el grupo?"
     ],
     tesoro: [
-        "Un cofre antiguo descansa bajo una fina capa de polvo. Las runas talladas brillan débilmente. ¿Lo abren, lo inspeccionan o buscan trampas primero?",
-        "Entre las ruinas, un destello dorado llama la atención del grupo. Parece un fragmento de corona. ¿Se acercan o sospechan una emboscada?",
-        "Bajo una piedra floja aparece una bolsa de cuero con monedas viejas. El silencio del lugar es demasiado perfecto. ¿La toman o la dejan?"
+        "Un cofre antiguo descansa bajo una fina capa de polvo. Las runas talladas brillan débilmente. ¿Lo abren, lo inspeccionan o buscan trampas?",
+        "Entre las ruinas, un destello dorado llama la atención. Parece un fragmento de corona. ¿Se acercan o sospechan una emboscada?"
     ],
     generico: [
-        "El Dungeon Master observa desde las sombras del calabozo. Una antorcha parpadea y el viento trae olor a azufre desde el pasillo. «La aventura aguarda, aventureros». ¿Qué hacen ahora?",
-        "Las runas del tablero tiemblan. El Dungeon Master improvisa: «El grupo se encuentra en un cruce de pasillos. A la izquierda, un aroma a azufre. A la derecha, agua corriendo». ¿Qué camino eligen?",
-        "El silencio del calabozo se rompe con un crujido lejano. El Dungeon Master se inclina sobre el tablero. «El destino del grupo está en sus manos». ¿Qué acción declaran?",
-        "Las antorchas se agitan y el Dungeon Master sonríe: «Una puerta antigua aparece al final del pasillo. Tiene tres cerraduras y ninguna tiene ojo de cerradura». ¿Qué hacen?",
-        "El grupo escucha pasos que se acercan desde la oscuridad. El Dungeon Master espera en silencio. ¿Se preparan para luchar, se esconden o llaman a quien se aproxima?"
+        "El Dungeon Master observa desde las sombras. Una antorcha parpadea y el viento trae olor a azufre. «La aventura aguarda». ¿Qué hacen ahora?",
+        "Las runas del tablero tiemblan. «El grupo se encuentra en un cruce de pasillos: a la izquierda, azufre; a la derecha, agua corriendo». ¿Qué camino eligen?",
+        "El silencio se rompe con un crujido lejano. «El destino está en sus manos». ¿Qué acción declaran?",
+        "Las antorchas se agitan: «Una puerta antigua aparece al final del pasillo. Tiene tres cerraduras y ninguna tiene ojo». ¿Qué hacen?"
     ]
 };
 
 function detectarIntencion(texto) {
     const t = texto.toLowerCase();
     if (/chiste|risa|broma|gracioso/.test(t)) return "chiste";
-    if (/drag[oó]n|wyrm|wyvern|escamas/.test(t)) return "dragon";
+    if (/drag[oó]n|wyrm|escamas/.test(t)) return "dragon";
     if (/dado|tiro|tirar|tirada|d6/.test(t)) return "dado";
     if (/atac|pelea|combate|lucha|golpe|enfrent/.test(t)) return "combate";
     if (/tesoro|cofre|oro|bot[ií]n|recompensa/.test(t)) return "tesoro";
@@ -200,7 +190,6 @@ let historial = [];
 let idBusqueda = 0;
 let modoFallback = false;
 
-/* micro:bit */
 let mbPort = null;
 let mbReader = null;
 let mbWriter = null;
@@ -286,7 +275,7 @@ async function consultarTags(urlBase, timeoutMs) {
 function describirError(err, url) {
     if (err.name === "AbortError") return `${url}: timeout`;
     if (err instanceof TypeError && /Failed to fetch/i.test(err.message)) {
-        return `${url}: sin respuesta (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿OLLAMA_ORIGINS? ¿el teléfono está despierto?)`;
+        return `${url}: sin respuesta (¿firewall? ¿OLLAMA_HOST=0.0.0.0? ¿OLLAMA_ORIGINS? ¿el teléfono duerme?)`;
     }
     return `${url}: ${err.message}`;
 }
@@ -303,17 +292,12 @@ function prepararConexion() {
 }
 
 function actualizarInputs() {
-    // El chat se habilita si hay Ollama O si el fallback está activo.
     const ok = Boolean(urlActiva && selectModels.value) || modoFallback;
     userInput.disabled = !ok;
     btnEnviar.disabled = !ok;
-    if (modoFallback) {
-        userInput.placeholder = "Modo offline: el Dungeon Master improvisa…";
-    } else if (ok) {
-        userInput.placeholder = "Escribí tu mensaje al Dungeon Master…";
-    } else {
-        userInput.placeholder = "Esperando conexión con Ollama…";
-    }
+    if (modoFallback) userInput.placeholder = "Modo offline: el Dungeon Master improvisa…";
+    else if (ok) userInput.placeholder = "Escribí tu mensaje al Dungeon Master…";
+    else userInput.placeholder = "Esperando conexión con Ollama…";
 }
 
 function actualizarEstado(texto, clase, badge) {
@@ -346,7 +330,7 @@ function activarOllama(url, modelos) {
 function activarFallback(motivo = "") {
     urlActiva = null;
     modoFallback = true;
-    actualizarEstado("Ollama offline · respuestas locales activas", "badge-offline", "OFFLINE");
+    actualizarEstado("Ollama offline · respuestas locales", "badge-offline", "OFFLINE");
     if (motivo) log("Fallback activado: " + motivo);
     actualizarInputs();
     agregarMensaje("Modo offline activo: el Dungeon Master improvisa con respuestas locales. Reintentá «Conectar» cuando el servidor vuelva.", "offline-note");
@@ -384,7 +368,7 @@ async function conectarCandidatos(candidatos, timeoutPorUrl, concurrencia) {
 }
 
 /* =========================================================
-   CONSULTA AL MODELO (Ollama)
+   CONSULTA AL MODELO
    ========================================================= */
 async function consultarOllama() {
     const recientes = historial.slice(-MAX_MENSAJES_CONTEXTO);
@@ -400,9 +384,9 @@ async function consultarOllama() {
                 stream: false,
                 options: {
                     temperature: 0.7,
-                    repeat_penalty: 1.15,   // 1b suele entrar en loops sin esto
+                    repeat_penalty: 1.15,
                     num_predict: 100,
-                    num_ctx: 1024           // contexto chico: el A71 no da para más
+                    num_ctx: 1024
                 },
                 messages: [
                     { role: "system", content: SYSTEM_PROMPT },
@@ -419,7 +403,7 @@ async function consultarOllama() {
 }
 
 /* =========================================================
-   MENSAJE (online = Ollama · offline = fallback)
+   MENSAJE
    ========================================================= */
 function agregarMensaje(texto, tipo) {
     const div = document.createElement("div");
@@ -437,7 +421,7 @@ async function procesarMensajeUsuario(texto, { desdeMicrobit = false } = {}) {
     }
     if (!urlActiva && !modoFallback) {
         agregarMensaje("Esperando conexión con Ollama o activación del modo offline…", "system");
-        if (desdeMicrobit) enviarAMicrobit("Sin conexión");
+        if (desdeMicrobit) enviarAMicrobit("Sin conexion");
         return;
     }
 
@@ -447,9 +431,7 @@ async function procesarMensajeUsuario(texto, { desdeMicrobit = false } = {}) {
     historial.push({ role: "user", content: texto });
     const burbuja = agregarMensaje("…", "ai");
 
-    // ---- Modo offline: fallback inmediato ----
     if (modoFallback || !urlActiva || !selectModels.value) {
-        // pequeña pausa para que parezca que "piensa"
         await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
         const respuesta = generarRespuestaFallback(texto);
         burbuja.textContent = respuesta;
@@ -462,7 +444,6 @@ async function procesarMensajeUsuario(texto, { desdeMicrobit = false } = {}) {
         return;
     }
 
-    // ---- Modo online: Ollama ----
     try {
         const respuesta = await consultarOllama() || generarRespuestaFallback(texto);
         burbuja.textContent = respuesta;
@@ -470,7 +451,6 @@ async function procesarMensajeUsuario(texto, { desdeMicrobit = false } = {}) {
         if (historial.length > MAX_HISTORIAL_DURO) historial.splice(0, historial.length - MAX_HISTORIAL_DURO);
         if (desdeMicrobit) enviarAMicrobit(respuesta);
     } catch (e) {
-        // Falló el pedido a Ollama → pasamos a fallback permanente y respondemos local
         log("Ollama falló: " + e.message + " → activando fallback");
         activarFallback("fallo durante consulta: " + e.message);
         const respuesta = generarRespuestaFallback(texto);
@@ -533,7 +513,7 @@ async function conectarMicrobit() {
         mbBuffer = "";
         actualizarMbStatus("Conectada", "online");
         actualizarBotonesMb();
-        log("Micro:bit conectada por USB (9600 baudios).");
+        log("Micro:bit conectada por USB (115200 baudios).");
         agregarMensaje("Micro:bit conectada. Pulsá A, B o AB en la placa para enviar un mensaje.", "system");
 
         readMicrobitLoop();
@@ -559,7 +539,7 @@ async function readMicrobitLoop() {
             for (const linea of lineas) {
                 const limpia = linea.replace(/[\r\u0000]/g, "").trim();
                 if (limpia) {
-                    log("Micro:bit → " + limpia);
+                    log("Micro:bit → " + limpia + " (" + limpia.length + " chars)");
                     procesarMensajeUsuario(limpia, { desdeMicrobit: true });
                 }
             }
@@ -598,7 +578,6 @@ btnConectar.addEventListener("click", async () => {
         actualizarEstado("URL inválida.", "badge-error", "REVISAR");
         return;
     }
-    // Al reintentar conexión manual, salimos del modo fallback
     modoFallback = false;
     await conectarCandidatos([url], TIMEOUT_CONEXION_MS, 1);
 });
@@ -618,11 +597,10 @@ btnDiagnostico.addEventListener("click", async () => {
         activarOllama(url, modelos);
     } catch (e) {
         log("✖ " + describirError(e, url));
-        log("Recordá en el equipo de Ollama (Termux en el A71):");
+        log("Recordá en el A71 con Termux:");
         log("  export OLLAMA_HOST=0.0.0.0:11434");
         log(`  export OLLAMA_ORIGINS="${location.origin}"  (o "*" para pruebas)`);
         log("  ollama serve");
-        log("Y verificá que el A71 no esté en modo ahorro de energía.");
     }
 });
 
