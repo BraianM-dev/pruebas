@@ -105,7 +105,7 @@ const PUERTO_OLLAMA = 11434;
 const TIMEOUT_CONEXION_MS = 3500;
 const CLAVE_OLLAMA_LOCAL = "dm.ollama-url.v5";
 const MODEL_PREFERIDO = "llama3.2:3b";
-const BAUD_MICROBIT = 115200;
+const BAUD_MICROBIT = 9600;
 const MAX_CHARS_MICROBIT = 80;      // show_string bloquea la placa; no abusar
 const MAX_MENSAJES_CONTEXTO = 10;   // cuántos turnos viajan al modelo
 const MAX_HISTORIAL_DURO = 60;      // cap del array en memoria
@@ -419,7 +419,7 @@ async function conectarMicrobit() {
         mbBuffer = "";
         actualizarMbStatus("Conectada", "online");
         actualizarBotonesMb();
-        log("Micro:bit conectada por USB (115200 baudios).");
+        log("Micro:bit conectada por USB (9600 baudios).");
         agregarMensaje("Micro:bit conectada. Pulsá el botón A en la placa para enviar un mensaje.", "system");
 
         readMicrobitLoop();
