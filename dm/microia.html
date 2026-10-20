@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat IA con Micro:bit y Ollama</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        #chat { border: 1px solid #ccc; height: 400px; overflow-y: auto; padding: 1rem; margin-bottom: 1rem; background: #f9f9f9; }
+        .message { margin-bottom: 0.8rem; padding: 0.6rem; border-radius: 8px; max-width: 80%; }
+        .user { background: #d1e7ff; align-self: flex-end; margin-left: auto; }
+        .bot { background: #e2e3e5; }
+        #controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        #status { font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Chat IA con Micro:bit y Ollama</h1>
+    <p>Conecta tu micro:bit, pulsa el botón A en la placa y la IA responderá. Las respuestas también se mostrarán en la matriz de LEDs de la micro:bit.</p>
+
+    <div id="controls">
+        <button id="connectBtn">Conectar Micro:bit</button>
+        <span id="status">Desconectado</span>
+    </div>
+
+    <div id="chat"></div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const OLLAMA_URL = 'http://localhost:11434/api/chat';
+        const MODEL = 'llama3.2:3b'; // Cambia por el modelo que tengas en Ollama
+
+        // --- ESTADO ---
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let keepReading = true;
+
+        // --- ELEMENTOS DEL DOM ---
+        const connectBtn = document.getElementById('connectBtn');
+        const statusEl = document.getElementById('status');
+        const chatEl = document.getElementById('chat');
+
+        // --- 1. CONEXIÓN WEB SERIAL ---
+        if (!('serial' in navigator)) {
+            statusEl.textContent = 'Web Serial no soportado (usa Chrome/Edge)';
+            connectBtn.disabled = true;
+        }
+
+        connectBtn.addEventListener('click', async () => {
+            if (port) {
+                await disconnectSerial();
+                return;
+            }
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                statusEl.textContent = 'Conectado';
+
+                // Configurar streams de lectura/escritura
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                reader = textDecoder.readable.getReader();
+
+                const textEncoder = new TextEncoderStream();
+                const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                writer = textEncoder.writable.getWriter();
+
+                // Bucle de lectura de líneas
+                readLoop();
+            } catch (err) {
+                console.error('Error al conectar:', err);
+                statusEl.textContent = 'Error de conexión';
+            }
+        });
+
+        async function readLoop() {
+            let buffer = '';
+            try {
+                while (keepReading && reader) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    let lines = buffer.split('\n');
+                    buffer = lines.pop(); // Guardar la última línea incompleta
+                    for (const line of lines) {
+                        const cleanLine = line.trim();
+                        if (cleanLine) {
+                            console.log('Micro:bit dice:', cleanLine);
+                            handleMicrobitMessage(cleanLine);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error de lectura:', err);
+            } finally {
+                if (reader) {
+                    reader.releaseLock();
+                    reader = null;
+                }
+            }
+        }
+
+        async function disconnectSerial() {
+            keepReading = false;
+            if (reader) { await reader.cancel(); reader.releaseLock(); reader = null; }
+            if (writer) { await writer.close(); writer.releaseLock(); writer = null; }
+            if (port) { await port.close(); port = null; }
+            statusEl.textContent = 'Desconectado';
+        }
+
+        // --- 2. LÓGICA DE CHAT CON OLLAMA ---
+        async function handleMicrobitMessage(message) {
+            // Mostrar mensaje del usuario en la interfaz
+            addMessageToChat('user', message);
+
+            // Enviar a Ollama y obtener respuesta
+            const botResponse = await fetchOllamaResponse(message);
+
+            // Mostrar respuesta en la interfaz
+            addMessageToChat('bot', botResponse);
+
+            // Enviar la respuesta a la micro:bit para que la muestre en los LEDs
+            if (writer) {
+                // Aseguramos que la respuesta no sea demasiado larga para la pantalla
+                const shortResponse = botResponse.substring(0, 50);
+                try {
+                    await writer.write(shortResponse + '\n');
+                } catch (err) {
+                    console.error('Error al escribir en micro:bit:', err);
+                }
+            }
+        }
+
+        async function fetchOllamaResponse(prompt) {
+            try {
+                const response = await fetch(OLLAMA_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [{ role: 'user', content: prompt }],
+                        stream: false // Usamos respuesta no-streaming para simplificar
+                    })
+                });
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                const data = await response.json();
+                return data.message.content.trim();
+            } catch (error) {
+                console.error('Error con Ollama:', error);
+                return 'Lo siento, no pude obtener una respuesta. Revisa la conexión con Ollama y la configuración de CORS.';
+            }
+        }
+
+        function addMessageToChat(sender, text) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.textContent = text;
+            chatEl.appendChild(div);
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        // Limpieza al cerrar la página
+        window.addEventListener('beforeunload', () => { if (port) disconnectSerial(); });
+    </script>
+</body>
+</html>
