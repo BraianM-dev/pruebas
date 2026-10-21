@@ -30,6 +30,7 @@ body{
 }
 .btn:hover{background:var(--dorado);color:#1a1a2e}
 .btn.primary{background:var(--dorado);color:#1a1a2e;border-color:var(--dorado)}
+.btn.danger{background:var(--rojo);color:#fff;border-color:var(--rojo)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 input,select{
   padding:6px 8px;border-radius:6px;border:1px solid var(--borde);
@@ -209,6 +210,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
     <button class="btn primary" id="btn-crear" onclick="crearSalaDocente()">🎬 Crear sala</button>
     <button class="btn" id="btn-traspaso" onclick="generarTraspaso()" style="display:none">🔑 Traspaso</button>
     <button class="btn" id="btn-recuperar-host" onclick="recuperarHost()" style="display:none">🔓 Recuperar host</button>
+    <button class="btn danger" id="btn-cerrar-sala" onclick="cerrarSalaDocente()" style="display:none">🔒 Cerrar sala</button>
     <span class="sala-info" id="sala-info" hidden></span>
   </div>
   <div id="panel-alumno" style="display:none;gap:5px" class="row">
@@ -236,7 +238,6 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
     <div id="lista-jugadores"><p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p></div>
   </div>
   <div id="camara-ar">
-    /* ============================================================ IFRAME AR */
     <iframe id="ar-game-frame" src="../index.html"
             allow="camera *; microphone *" allowfullscreen></iframe>
   </div>
@@ -309,7 +310,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 const PUERTO_OLLAMA = 11434;
 const GRUPO_RADIO = 99;
 const TAM_MAPA = 6;
-const CLAVE_PARTIDA = "calabozos.partida.v17";
+const CLAVE_PARTIDA = "calabozos.partida.v19";
 const CLAVE_OLLAMA = "calabozos.ollama.url";
 const CLAVE_GAS = "calabozos.gas.url";
 const CLAVE_ADMIN_KEY = "calabozos.adminKey";
@@ -323,7 +324,6 @@ const MAPAS = [
 ];
 const MAPAS_ID = Object.fromEntries(MAPAS.map(m=>[m.id,m]));
 
-// ⚠️ URL por defecto para que los alumnos no tengan que configurar nada
 const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyqG2PUzr9f-1-pFQhKSqZD9FoO_fkX3Sl6jGVXMlrzahgKPNmZ79UTEjayd7Ytqr4/exec";
 
 const CONFIG = {
@@ -351,6 +351,17 @@ let pollingGAS = false, debouncePub = null;
 let pollingDocenteId = null, ultRevDoc = 0, ultSeqDoc = 0;
 let microbitPort = null, lectorMicrobit = null, serialAbierto = false;
 let colaSerie = Promise.resolve();
+
+/* ============================================================ DEDUPLICACIÓN */
+const _recientes = [];
+function yaEstaEnChat(autor, texto) {
+  const ahora = Date.now();
+  while (_recientes.length && ahora - _recientes[0].ts > 15000) _recientes.shift();
+  const clave = (autor || "") + "::" + (texto || "");
+  const existe = _recientes.some(m => m.clave === clave);
+  if (!existe) _recientes.push({ clave, ts: ahora });
+  return existe;
+}
 
 /* ============================================================ DOM */
 const $ = id => document.getElementById(id);
@@ -484,24 +495,22 @@ async function crearSalaDocente(){
 
   esDocenteVerificado = info.esDocente;
 
-  if (!info.esDocente) {
-    if (!adminKey) {
-      adminKey = prompt(
-        "El servidor no te reconoce como docente (puede pasar si Google no expone tu email).\n\n" +
-        "Ingresá la ADMIN_KEY configurada en Apps Script.\n\n" +
-        "Si no la tenés:\n" +
-        "  1. Abrí Apps Script → Editor\n" +
-        "  2. Ejecutá configurarAdminKey()\n" +
-        "  3. Copiá la clave del Logger\n\n" +
-        "ADMIN_KEY:",
-        ""
-      );
-      if (!adminKey) return;
-      adminKey = adminKey.trim();
-      localStorage.setItem(CLAVE_ADMIN_KEY, adminKey);
-      if($("cfg-admin-key")) $("cfg-admin-key").value = adminKey;
-      CalabozosStateBridge.configurar({ adminKey });
-    }
+  if (!info.esDocente && !adminKey) {
+    adminKey = prompt(
+      "El servidor no te reconoce como docente (puede pasar si Google no expone tu email).\n\n" +
+      "Ingresá la ADMIN_KEY configurada en Apps Script.\n\n" +
+      "Si no la tenés:\n" +
+      "  1. Abrí Apps Script → Editor\n" +
+      "  2. Ejecutá configurarAdminKey()\n" +
+      "  3. Copiá la clave del Logger\n\n" +
+      "ADMIN_KEY:",
+      ""
+    );
+    if (!adminKey) return;
+    adminKey = adminKey.trim();
+    localStorage.setItem(CLAVE_ADMIN_KEY, adminKey);
+    if($("cfg-admin-key")) $("cfg-admin-key").value = adminKey;
+    CalabozosStateBridge.configurar({ adminKey });
   }
 
   const cod = generarCodigo();
@@ -522,15 +531,35 @@ async function crearSalaDocente(){
     localStorage.setItem("calabozos.hostToken", sessionTokenDocente);
     $("btn-crear").hidden = true;
     $("btn-traspaso").style.display = "inline-block";
+    $("btn-cerrar-sala").style.display = "inline-block";
     mostrarInfoSala();
     p2pHost = new CalabozosStateBridge.P2PHost(cod, sessionTokenDocente, {
-      onPeerConnected: (id, name, jid) => { agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system"); enviarEstadoPorP2P(id); actualizarContadorP2P(); },
-      onPeerMessage: (id, msg) => procesarMensajeP2PPeer(msg),
-      onPeerDisconnected: () => { agregarMensaje(`🔌 peer desconectado`,"system"); actualizarContadorP2P(); },
+      onPeerConnected: (id, name, jid) => {
+        agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");
+        // Asegurar que el jugador exista con peerId
+        const clave = (jid || name || id).toUpperCase();
+        if(!partida.estadoJuego.jugadores[clave]){
+          partida.estadoJuego.jugadores[clave] = {
+            x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+            ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:id
+          };
+        } else {
+          partida.estadoJuego.jugadores[clave].peerId = id;
+        }
+        enviarEstadoPorP2P(id);
+        actualizarContadorP2P();
+        renderizarTodo();
+      },
+      onPeerMessage: (id, msg) => procesarMensajeP2PPeer(id, msg),
+      onPeerDisconnected: (id) => {
+        agregarMensaje(`🔌 peer desconectado`,"system");
+        actualizarContadorP2P();
+        renderizarTodo();
+      },
       onHostRevoked: () => {
         if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
         agregarMensaje("⚠ Ya no sos host","system");
-        $("btn-crear").hidden=false; $("btn-traspaso").style.display="none";
+        resetearBotonesDocente();
       }
     });
     p2pHost.start();
@@ -541,6 +570,14 @@ async function crearSalaDocente(){
     alert("Error: " + e.message);
   }
 }
+
+function resetearBotonesDocente(){
+  $("btn-crear").hidden = false;
+  $("btn-traspaso").style.display = "none";
+  $("btn-cerrar-sala").style.display = "none";
+  $("sala-info").hidden = true;
+}
+
 function mostrarInfoSala(){
   const info=$("sala-info");
   const url=`${location.origin}${location.pathname}?modo=alumno&sala=${codigoSala}`;
@@ -559,6 +596,29 @@ function actualizarContadorP2P(){
   }
 }
 
+/* ============================================================ CERRAR SALA */
+async function cerrarSalaDocente(){
+  if(!codigoSala || !sessionTokenDocente){alert("No hay sala activa");return}
+  if(!confirm("¿Cerrar la sala? Todos los alumnos se desconectarán y se perderá el estado.")) return;
+  try {
+    const r = await CalabozosStateBridge.cerrarSala(codigoSala, sessionTokenDocente);
+    if(!r.ok && r.error !== "auth"){
+      throw new Error(r.error || "Error");
+    }
+    if(p2pHost){ try{p2pHost.broadcast({tipo:"host-changed"})}catch(_){}; p2pHost.stop(); p2pHost=null; }
+    detenerPollingDocente();
+    detenerGAS();
+    codigoSala = "";
+    sessionTokenDocente = "";
+    localStorage.removeItem("calabozos.hostToken");
+    resetearBotonesDocente();
+    agregarMensaje("🔒 Sala cerrada","system");
+    log("Sala cerrada");
+  } catch(e) {
+    alert("Error al cerrar: " + e.message);
+  }
+}
+
 /* ============================================================ UNIRSE */
 async function unirseSalaAlumno(){
   const c=$("input-sala").value.trim().toUpperCase();
@@ -570,8 +630,11 @@ async function unirseSalaAlumno(){
     nombreAlumno=prompt("Tu nombre (o apodo):","Alumno")||"Alumno";
   }
   if(!jugadorIdAlumno){
-    jugadorIdAlumno=prompt("Tu ID de jugador (micro:bit, ej. P01).\nOpcional pero necesario para expulsión.","")||"";
-    jugadorIdAlumno=jugadorIdAlumno.toUpperCase().slice(0,12);
+    while(true){
+      jugadorIdAlumno=(prompt("Tu ID de jugador (micro:bit, ej. P01).\nEs REQUERIDO para que el docente pueda identificarte.","")||"").toUpperCase().slice(0,12);
+      if(jugadorIdAlumno.length>=1)break;
+      if(confirm("Sin ID de jugador no podrás ser identificado por el docente. ¿Continuar igual?"))break;
+    }
     if(jugadorIdAlumno)localStorage.setItem("calabozos.jugadorId",jugadorIdAlumno);
   }
   try{
@@ -594,7 +657,10 @@ async function unirseSalaAlumno(){
       onConnected:()=>{
         p2pConectado=true;
         info.textContent=`✓ P2P · ${c}`; info.className="sala-info";
-        agregarMensaje("🔗 Conectado al DM (baja latencia)","system");
+        [...chat.querySelectorAll(".msg.system")].forEach(el=>{
+          if(el.textContent.includes("vía GAS"))el.remove();
+        });
+        agregarMensaje("🔗 Conectado al DM (P2P, baja latencia)","system");
         $("p2p-badge").style.display="inline-flex"; $("p2p-badge").textContent="⚡ P2P";
         detenerGAS();
       },
@@ -623,15 +689,19 @@ async function unirseSalaAlumno(){
     const timeout=setTimeout(()=>{
       if(!p2pConectado){
         info.textContent=`✓ En sala ${c} (GAS)`; info.className="sala-info";
-        agregarMensaje("🔗 Conectado vía GAS (fallback)","system");
+        if(![...chat.querySelectorAll(".msg.system")].some(el=>el.textContent.includes("vía GAS"))){
+          agregarMensaje("🔗 Conectado vía GAS (fallback)","system");
+        }
         iniciarGAS(c);
       }
-    },12000);
+    },20000);
     p2pPeer.conectar().then(()=>clearTimeout(timeout)).catch(()=>{
       clearTimeout(timeout);
       if(!p2pConectado){
         info.textContent=`✓ En sala ${c} (GAS)`; info.className="sala-info";
-        agregarMensaje("🔗 Conectado vía GAS (fallback)","system");
+        if(![...chat.querySelectorAll(".msg.system")].some(el=>el.textContent.includes("vía GAS"))){
+          agregarMensaje("🔗 Conectado vía GAS (fallback)","system");
+        }
         iniciarGAS(c);
       }
     });
@@ -676,9 +746,8 @@ function iniciarGAS(c){
     onEstado:(e)=>aplicarEstadoRemoto(e),
     onMensajes:(msgs)=>msgs.forEach(m=>{
       if(m.tipo==="chat"&&m.autor!==nombreAlumno){
-        const etiqueta=`🎓 ${m.autor}: ${m.texto}`;
-        const yaEsta=[...chat.querySelectorAll(".msg")].some(el=>el.textContent===etiqueta);
-        if(!yaEsta)agregarMensaje(etiqueta,"user");
+        if(yaEstaEnChat(m.autor,m.texto))return;
+        agregarMensaje(`🎓 ${m.autor}: ${m.texto}`,"user");
       }
     }),
     onRejoin:(re)=>{
@@ -719,12 +788,9 @@ function iniciarPollingDocente(sala, hostToken) {
         ultSeqDoc = rs.ultimoSeq;
         rs.mensajes.forEach(m => {
           if (m.tipo !== "chat") return;
-          const etiqueta = `🎓 ${m.autor}: ${m.texto}`;
-          const yaEsta = [...chat.querySelectorAll(".msg")].some(el => el.textContent === etiqueta);
-          if (!yaEsta) {
-            agregarMensaje(etiqueta, "user");
-            historial.push({ role: "user", content: `[${m.autor}] ${m.texto}`, tipo: "chat" });
-          }
+          if (yaEstaEnChat(m.autor, m.texto)) return;
+          agregarMensaje(`🎓 ${m.autor}: ${m.texto}`, "user");
+          historial.push({ role: "user", content: `[${m.autor}] ${m.texto}`, tipo: "chat" });
         });
         guardarPartida();
       }
@@ -736,20 +802,25 @@ function iniciarPollingDocente(sala, hostToken) {
 
 function actualizarJugadoresDesdeLista(jugadores) {
   const e = partida.estadoJuego;
-  const porJugadorId = {};
-  jugadores.forEach(j => { if (j.jugadorId) porJugadorId[j.jugadorId] = j.peerId; });
-  Object.keys(e.jugadores).forEach(jid => {
-    e.jugadores[jid].peerId = porJugadorId[jid] || null;
-  });
+  let cambios = false;
   jugadores.forEach(j => {
-    if (j.jugadorId && !e.jugadores[j.jugadorId]) {
-      e.jugadores[j.jugadorId] = {
+    const clave = (j.jugadorId || j.nombre || j.peerId || "").toUpperCase();
+    if (!clave) return;
+    if (!e.jugadores[clave]) {
+      e.jugadores[clave] = {
         x: 0, y: 0, mapaId: e.mapaActual, ultimaConexion: new Date().toISOString(),
         ultimoDado: null, peerId: j.peerId
       };
+      cambios = true;
+    } else {
+      if (e.jugadores[clave].peerId !== j.peerId) {
+        e.jugadores[clave].peerId = j.peerId;
+        cambios = true;
+      }
+      e.jugadores[clave].ultimaConexion = new Date().toISOString();
     }
   });
-  renderizarTodo();
+  if (cambios) renderizarTodo();
 }
 
 function detenerPollingDocente() {
@@ -790,7 +861,7 @@ function publicarEstado(motivo){
       if(e.code==="host_revoked"||e.message==="host_revoked"){
         p2pHost&&p2pHost.stop(); p2pHost=null;
         agregarMensaje("⚠ Transferiste el control","system");
-        $("btn-crear").hidden=false; $("btn-traspaso").style.display="none";
+        resetearBotonesDocente();
       } else log("Publicar GAS falló: "+e.message);
     }
   },p2pHost&&p2pHost.peersConectados().length?1500:500);
@@ -799,12 +870,26 @@ function enviarEstadoPorP2P(peerId){
   if(!p2pHost)return;
   p2pHost.enviarA(peerId,{tipo:"estado",estado:construirSnapshot()});
 }
-function procesarMensajeP2PPeer(msg){
+function procesarMensajeP2PPeer(peerId, msg){
   if(msg.tipo==="chat"){
-    agregarMensaje(`🎓 ${msg.autor}: ${msg.texto}`,"user");
-    historial.push({role:"user",content:`[${msg.autor}] ${msg.texto}`,tipo:"chat"});
+    const autor = msg.autor || "Alumno";
+    // Asegurar que el jugador existe con peerId asociado
+    const clave = autor.toUpperCase();
+    if(!partida.estadoJuego.jugadores[clave]){
+      partida.estadoJuego.jugadores[clave] = {
+        x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+        ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:peerId||null
+      };
+    } else {
+      if(peerId) partida.estadoJuego.jugadores[clave].peerId = peerId;
+      partida.estadoJuego.jugadores[clave].ultimaConexion = new Date().toISOString();
+    }
+    if(yaEstaEnChat(autor, msg.texto))return;
+    agregarMensaje(`🎓 ${autor}: ${msg.texto}`,"user");
+    historial.push({role:"user",content:`[${autor}] ${msg.texto}`,tipo:"chat"});
     guardarPartida();
-    if(p2pHost)p2pHost.broadcast({tipo:"chat",autor:msg.autor,texto:msg.texto});
+    renderizarTodo();
+    if(p2pHost)p2pHost.broadcast({tipo:"chat",autor,texto:msg.texto});
   }
 }
 function aplicarEstadoRemoto(estado){
@@ -815,6 +900,8 @@ function aplicarEstadoRemoto(estado){
     estado.recentMessages.forEach(m => {
       if (m.tipo === "evento") return;
       const tipo = m.role === "assistant" ? "ai" : "user";
+      const autor = tipo === "ai" ? "DM" : "alumno";
+      if (yaEstaEnChat(autor, m.content)) return;
       const yaEsta = [...chat.querySelectorAll(".msg")].some(
         el => el.textContent === m.content && el.classList.contains(tipo)
       );
@@ -828,6 +915,15 @@ function agregarMensaje(texto,tipo){
   const d=document.createElement("div"); d.className="msg "+tipo; d.textContent=texto;
   chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d;
 }
+function obtenerPeerIdJugador(clave, jugador) {
+  if (jugador.peerId) return jugador.peerId;
+  if (p2pHost) {
+    const peers = p2pHost.peersConectados();
+    const match = peers.find(p => p.jugadorId === clave || p.name === clave);
+    if (match) return match.id;
+  }
+  return null;
+}
 function renderizarTodo(){
   const e=partida.estadoJuego;
   listaJugadores.replaceChildren();
@@ -838,13 +934,16 @@ function renderizarTodo(){
   else act.forEach(([id,j])=>{
     const d=document.createElement("div"); d.className="tarjeta";
     d.innerHTML=`<h3>🎭 ${id}</h3><small>📍 ${coord(j.x,j.y)}</small><br><small>${j.ultimoDado?"🎲 "+j.ultimoDado:"Sin tiradas"}</small>`;
-    if(modo==="docente"&&sessionTokenDocente&&p2pHost&&j.peerId){
-      const btn=document.createElement("button");
-      btn.className="btn";
-      btn.style.cssText="padding:2px 6px;font-size:.65rem;margin-top:3px;background:var(--rojo);color:#fff;border:none";
-      btn.textContent="Expulsar";
-      btn.onclick=()=>kickJugador(j.peerId);
-      d.appendChild(btn);
+    if(modo==="docente"&&sessionTokenDocente&&p2pHost){
+      const pid = obtenerPeerIdJugador(id, j);
+      if(pid){
+        const btn=document.createElement("button");
+        btn.className="btn danger";
+        btn.style.cssText="padding:2px 6px;font-size:.65rem;margin-top:3px";
+        btn.textContent="Expulsar";
+        btn.onclick=()=>kickJugador(pid);
+        d.appendChild(btn);
+      }
     }
     listaJugadores.appendChild(d);
   });
@@ -877,12 +976,28 @@ async function kickJugador(peerId){
   if(!confirm("¿Expulsar a este jugador?"))return;
   try{
     const r=await CalabozosStateBridge.kickPeer(codigoSala,sessionTokenDocente,peerId);
-    if(!r.ok)throw new Error(r.error);
-    if(p2pHost&&p2pHost.enviarA(peerId,{tipo:"kick"})){
+    if(!r.ok){
+      const msgs={
+        "auth":"Token de docente inválido. Recreá la sala.",
+        "peer_no_existe":"El jugador ya no está conectado",
+        "accion_invalida":"El servidor no tiene el endpoint kick. Actualizá el backend.",
+        "peer_invalido":"ID de jugador inválido"
+      };
+      throw new Error(msgs[r.error]||r.error);
+    }
+    if(p2pHost){
+      p2pHost.enviarA(peerId,{tipo:"kick"});
       setTimeout(()=>{if(p2pHost)p2pHost.cerrarPeer(peerId)},300);
-    } else if(p2pHost){ p2pHost.cerrarPeer(peerId); }
+    }
+    // Eliminar jugador del estado local
+    Object.keys(partida.estadoJuego.jugadores).forEach(k=>{
+      if(partida.estadoJuego.jugadores[k].peerId === peerId){
+        delete partida.estadoJuego.jugadores[k];
+      }
+    });
     agregarMensaje(`🚫 Jugador expulsado`,"system");
     actualizarContadorP2P();
+    renderizarTodo();
   }catch(e){alert("Error: "+e.message)}
 }
 function abrirTablero(){renderizarTodo();$("tablero").showModal?.()||$("tablero").setAttribute("open","")}
@@ -948,24 +1063,25 @@ async function enviarMensaje(){
   input.value="";
 
   if(modo==="alumno"&&codigoSala){
-    const msg={tipo:"chat",texto};
-    // 1. Intentar P2P (rápido)
-    if(p2pConectado&&p2pPeer&&p2pPeer.enviar(msg)){
-      // OK, ya se envió por P2P
+    const msg={tipo:"chat", texto, autor: nombreAlumno};
+    let enviadoP2P = false;
+    if(p2pConectado && p2pPeer){
+      enviadoP2P = p2pPeer.enviar(msg);
     }
-    // 2. SIEMPRE enviar por GAS también (para que el docente lo reciba aunque P2P falle)
-    try {
-      await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
-    } catch(e) {
-      if (String(e.message||"").indexOf("auth") >= 0) {
-        try {
-          const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno);
-          if (re.ok) {
-            sessionTokenAlumno = re.sessionToken;
-            peerIdAlumno = re.peerId;
-            await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
-          }
-        } catch(_) {}
+    if(!enviadoP2P){
+      try {
+        await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
+      } catch(e) {
+        if (String(e.message||"").indexOf("auth") >= 0) {
+          try {
+            const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno);
+            if (re.ok) {
+              sessionTokenAlumno = re.sessionToken;
+              peerIdAlumno = re.peerId;
+              await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
+            }
+          } catch(_) {}
+        }
       }
     }
     return;
@@ -976,6 +1092,16 @@ async function enviarMensaje(){
   let contenido="";
   historial.push({role:"user",content:texto,tipo:"chat"});
   guardarPartida();
+
+  if(codigoSala && sessionTokenDocente){
+    try{
+      const rj = await CalabozosStateBridge.listarJugadores(codigoSala, sessionTokenDocente);
+      if(rj && rj.ok && Array.isArray(rj.jugadores)){
+        actualizarJugadoresDesdeLista(rj.jugadores);
+      }
+    }catch(_){}
+  }
+
   publicarEstado("mensaje-alumno");
   try{
     if(modoDM!=="ollama"||!urlOllama){
@@ -1118,10 +1244,19 @@ async function enviarTrama(linea){
 
 /* ============================================================ TRASPASO */
 async function generarTraspaso(){
-  if(modo!=="docente"||!codigoSala||!sessionTokenDocente)return;
+  if(modo!=="docente"||!codigoSala||!sessionTokenDocente){alert("No hay sala activa");return}
   try{
+    log("Solicitando traspaso para sala " + codigoSala);
     const r=await CalabozosStateBridge.genTraspaso(codigoSala,sessionTokenDocente);
-    if(!r.ok)throw new Error(r.error);
+    if(!r || !r.ok){
+      const err = (r && r.error) ? r.error : "error_desconocido";
+      const msgs = {
+        "auth":"Token de docente inválido. Recreá la sala.",
+        "accion_invalida":"El servidor NO tiene el endpoint genTraspaso. Actualizá el backend:\n1. Pegar Código.gs v17\n2. Implementar → Gestionar implementaciones → Editar → Nueva versión",
+        "sala_invalida":"La sala expiró o no existe."
+      };
+      throw new Error(msgs[err] || err);
+    }
     alert(`Código de traspaso: ${r.codigo}\n\nVálido por ${r.exp} minutos.\nDáselo al alumno que debe tomar el control.\n\nAl transferirlo, tu sesión de host se cerrará.`);
   }catch(e){alert("Error: "+e.message)}
 }
@@ -1146,6 +1281,7 @@ async function canjearTraspaso(){
         "codigo_incorrecto":"Código incorrecto",
         "traspaso_expirado":"Código expirado",
         "sin_traspaso":"No hay traspaso pendiente",
+        "accion_invalida":"El servidor NO tiene el endpoint canjeTraspaso. Actualizá el backend.",
         "rate_limit":"Esperá un minuto"
       };
       throw new Error(msgs[r.error]||r.error);
@@ -1160,17 +1296,31 @@ async function canjearTraspaso(){
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
     try{
       p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
-        onPeerConnected:(id,name,jid)=>{agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
-        onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(msg),
-        onPeerDisconnected:()=>actualizarContadorP2P(),
+        onPeerConnected:(id,name,jid)=>{
+          agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");
+          const clave = (jid || name || id).toUpperCase();
+          if(!partida.estadoJuego.jugadores[clave]){
+            partida.estadoJuego.jugadores[clave] = {
+              x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+              ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:id
+            };
+          }
+          enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo();
+        },
+        onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(id,msg),
+        onPeerDisconnected:()=>{actualizarContadorP2P();renderizarTodo()},
         onHostRevoked:()=>{
           if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
           agregarMensaje("⚠ Ya no sos host","system");
-          $("btn-crear").hidden=false; $("btn-traspaso").style.display="none";
+          resetearBotonesDocente();
         }
       });
       p2pHost.start();
       iniciarPollingDocente(codigoSala, sessionTokenDocente);
+      $("btn-crear").hidden=true;
+      $("btn-traspaso").style.display="inline-block";
+      $("btn-cerrar-sala").style.display="inline-block";
+      mostrarInfoSala();
       publicarEstado("host-traspasado");
       alert("¡Ahora sos el host!");
     }catch(err){
@@ -1189,7 +1339,8 @@ async function recuperarHost(){
         "auth":"Clave incorrecta o no autorizado",
         "admin_key_no_configurada":"Ejecutá configurarAdminKey() en Apps Script",
         "publicaciones_recientes":"La sala tuvo publicaciones recientes. Esperá 90s.",
-        "sala_invalida":"La sala expiró"
+        "sala_invalida":"La sala expiró",
+        "accion_invalida":"El servidor NO tiene el endpoint solicitarRecuperacion. Actualizá el backend."
       };
       throw new Error(msgs[r1.error]||r1.error);
     }
@@ -1209,6 +1360,7 @@ async function recuperarHost(){
         "ticket_expirado":"El ticket expiró. Reintentá.",
         "ticket_invalido":"Ticket inválido",
         "auth":"Clave incorrecta",
+        "accion_invalida":"El servidor NO tiene el endpoint confirmarRecuperacion. Actualizá el backend.",
         "estado_no_recuperable":"El estado del servidor no es recuperable."
       };
       throw new Error(msgs[r2.error]||r2.error);
@@ -1221,13 +1373,27 @@ async function recuperarHost(){
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
     p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
-      onPeerConnected: (id,name,jid)=>{agregarMensaje(`🔗 ${name} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
-      onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(msg),
-      onPeerDisconnected: ()=>actualizarContadorP2P(),
-      onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); }
+      onPeerConnected: (id,name,jid)=>{
+        agregarMensaje(`🔗 ${name} conectado`,"system");
+        const clave = (jid || name || id).toUpperCase();
+        if(!partida.estadoJuego.jugadores[clave]){
+          partida.estadoJuego.jugadores[clave] = {
+            x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+            ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:id
+          };
+        }
+        enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo();
+      },
+      onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(id,msg),
+      onPeerDisconnected: ()=>{actualizarContadorP2P();renderizarTodo()},
+      onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
     });
     p2pHost.start();
     iniciarPollingDocente(codigoSala, sessionTokenDocente);
+    $("btn-crear").hidden=true;
+    $("btn-traspaso").style.display="inline-block";
+    $("btn-cerrar-sala").style.display="inline-block";
+    mostrarInfoSala();
     publicarEstado("host-recuperado");
     $("btn-recuperar-host").style.display = "none";
     alert("¡Recuperaste el control!");
