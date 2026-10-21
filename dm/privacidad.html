@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad · Calabozos y Código</title>
+<link rel="icon" type="image/png" href="https://braianm-dev.github.io/pruebas/oa/assets/logo-calabozos-codigo.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#1a1a2e;color:#f0e6d0;padding:20px;line-height:1.6}
+.container{max-width:800px;margin:0 auto;background:#16213e;border:2px solid #c9a84c;border-radius:12px;padding:30px}
+h1{color:#c9a84c;margin-bottom:20px;font-size:1.6rem}
+h2{color:#c9a84c;margin:24px 0 10px;font-size:1.1rem}
+p{margin-bottom:12px}
+ul{margin-left:24px;margin-bottom:12px}
+a{color:#c9a84c}
+.back{display:inline-block;margin-bottom:20px;color:#c9a84c;text-decoration:underline}
+small{color:#8a8a9a}
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="javascript:history.back()" class="back">← Volver</a>
+  <h1>Política de Privacidad</h1>
+  <small>Última actualización: 2026</small>
+  
+  <h2>1. Qué datos recopilamos</h2>
+  <p>Calabozos y Código es una actividad educativa que recopila únicamente:</p>
+  <ul>
+    <li><strong>Alias o apodo</strong> que el alumno elige al ingresar.</li>
+    <li><strong>ID de jugador</strong> (asignado por la placa micro:bit, ej. P01).</li>
+    <li><strong>Mensajes de chat</strong> que envían alumnos y docente durante la partida.</li>
+    <li><strong>Estado del juego</strong>: posiciones en el tablero, dados tirados, vida, nivel y acciones.</li>
+    <li><strong>Rol</strong>: jugador o espectador.</li>
+  </ul>
+  
+  <h2>2. Dónde se guardan</h2>
+  <p>Los datos se almacenan en <strong>Google Apps Script (PropertiesService)</strong> y, de forma temporal, en la memoria del navegador. Se borran automáticamente cuando la sala expira (8 horas) o cuando el docente cierra la sala.</p>
+  
+  <h2>3. Para qué los usamos</h2>
+  <ul>
+    <li>Permitir que el docente y los alumnos vean el estado del juego en tiempo real.</li>
+    <li>Generar narraciones del Dungeon Master (por IA local o fallback).</li>
+    <li>Coordinar el uso de micro:bits y el tablero AR.</li>
+  </ul>
+  
+  <h2>4. Qué NO hacemos</h2>
+  <ul>
+    <li>No vendemos ni compartimos datos con terceros.</li>
+    <li>No enviamos correos electrónicos ni mensajes externos.</li>
+    <li>No usamos los datos para publicidad.</li>
+    <li>No pedimos nombre completo, DNI, dirección ni datos sensibles.</li>
+  </ul>
+  
+  <h2>5. IA local</h2>
+  <p>Si el docente usa Ollama, el modelo se ejecuta en su propia computadora. Los mensajes <strong>no se envían a servicios externos de IA</strong>. Si Ollama no está disponible, se usa el modo fallback con respuestas predefinidas.</p>
+  
+  <h2>6. Tus derechos</h2>
+  <p>Podés pedir al docente que elimine tu sesión en cualquier momento. Al cerrar la sala, todos los datos se borran.</p>
+  
+  <h2>7. Contacto</h2>
+  <p>Para consultas: <a href="https://github.com/BraianM-dev/pruebas" target="_blank">repositorio del proyecto</a>.</p>
+</div>
+</body>
+</html>
