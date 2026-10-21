@@ -236,7 +236,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
     <div id="lista-jugadores"><p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p></div>
   </div>
   <div id="camara-ar">
-    <iframe id="ar-game-frame" src="../index.html"
+    <iframe id="ar-game-frame" src="../Juego/index.html"
             allow="camera *; microphone *" allowfullscreen></iframe>
   </div>
   <div class="panel" id="panel-enemigos">
@@ -308,7 +308,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 const PUERTO_OLLAMA = 11434;
 const GRUPO_RADIO = 99;
 const TAM_MAPA = 6;
-const CLAVE_PARTIDA = "calabozos.partida.v16";
+const CLAVE_PARTIDA = "calabozos.partida.v17";
 const CLAVE_OLLAMA = "calabozos.ollama.url";
 const CLAVE_GAS = "calabozos.gas.url";
 const CLAVE_ADMIN_KEY = "calabozos.adminKey";
@@ -321,8 +321,12 @@ const MAPAS = [
   {id:"bosque_ruinas",codigo:"X",nombre:"Bosque con ruinas"}
 ];
 const MAPAS_ID = Object.fromEntries(MAPAS.map(m=>[m.id,m]));
+
+// ⚠️ URL por defecto para que los alumnos no tengan que configurar nada
+const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyqG2PUzr9f-1-pFQhKSqZD9FoO_fkX3Sl6jGVXMlrzahgKPNmZ79UTEjayd7Ytqr4/exec";
+
 const CONFIG = {
-  appsScriptUrl: localStorage.getItem(CLAVE_GAS) || "",
+  appsScriptUrl: localStorage.getItem(CLAVE_GAS) || APPS_SCRIPT_URL_DEFAULT,
   arFrameId: "ar-game-frame"
 };
 
@@ -343,6 +347,7 @@ let modoDM = "fallback";
 let generando = false;
 let p2pHost = null, p2pPeer = null, p2pConectado = false;
 let pollingGAS = false, debouncePub = null;
+let pollingDocenteId = null, ultRevDoc = 0, ultSeqDoc = 0;
 let microbitPort = null, lectorMicrobit = null, serialAbierto = false;
 let colaSerie = Promise.resolve();
 
@@ -528,6 +533,7 @@ async function crearSalaDocente(){
       }
     });
     p2pHost.start();
+    iniciarPollingDocente(cod, sessionTokenDocente);
     publicarEstado("sala-creada");
     log("Sala creada: " + cod + " (auth: " + r.via + ")");
   } catch(e) {
@@ -661,14 +667,18 @@ function iniciarP2P(token){
   p2pPeer.conectar().catch(()=>{iniciarGAS(codigoSala)});
 }
 
-/* ============================================================ GAS FALLBACK */
+/* ============================================================ GAS FALLBACK (alumno) */
 function iniciarGAS(c){
   if(pollingGAS||!sessionTokenAlumno)return;
   CalabozosStateBridge.iniciarPolling(c,sessionTokenAlumno,{
     nombre:nombreAlumno, jugadorId:jugadorIdAlumno,
     onEstado:(e)=>aplicarEstadoRemoto(e),
     onMensajes:(msgs)=>msgs.forEach(m=>{
-      if(m.tipo==="chat"&&m.autor!==nombreAlumno)agregarMensaje(`🎓 ${m.autor}: ${m.texto}`,"user");
+      if(m.tipo==="chat"&&m.autor!==nombreAlumno){
+        const etiqueta=`🎓 ${m.autor}: ${m.texto}`;
+        const yaEsta=[...chat.querySelectorAll(".msg")].some(el=>el.textContent===etiqueta);
+        if(!yaEsta)agregarMensaje(etiqueta,"user");
+      }
     }),
     onRejoin:(re)=>{
       sessionTokenAlumno=re.sessionToken;
@@ -691,9 +701,65 @@ function iniciarGAS(c){
   pollingGAS=true;
 }
 function detenerGAS(){CalabozosStateBridge.detenerPolling();pollingGAS=false}
+
+/* ============================================================ POLLING DOCENTE */
+function iniciarPollingDocente(sala, hostToken) {
+  if (pollingDocenteId) { clearTimeout(pollingDocenteId); pollingDocenteId = null; }
+  ultRevDoc = 0; ultSeqDoc = 0;
+  async function tick() {
+    if (!hostToken || !sala) return;
+    try {
+      const rj = await CalabozosStateBridge.listarJugadores(sala, hostToken);
+      if (rj && rj.ok && Array.isArray(rj.jugadores)) {
+        actualizarJugadoresDesdeLista(rj.jugadores);
+      }
+      const rs = await CalabozosStateBridge.syncHost(sala, hostToken, ultRevDoc, ultSeqDoc);
+      if (rs && rs.ok && Array.isArray(rs.mensajes) && rs.mensajes.length) {
+        ultSeqDoc = rs.ultimoSeq;
+        rs.mensajes.forEach(m => {
+          if (m.tipo !== "chat") return;
+          const etiqueta = `🎓 ${m.autor}: ${m.texto}`;
+          const yaEsta = [...chat.querySelectorAll(".msg")].some(el => el.textContent === etiqueta);
+          if (!yaEsta) {
+            agregarMensaje(etiqueta, "user");
+            historial.push({ role: "user", content: `[${m.autor}] ${m.texto}`, tipo: "chat" });
+          }
+        });
+        guardarPartida();
+      }
+    } catch (_) {}
+    pollingDocenteId = setTimeout(tick, 3000);
+  }
+  tick();
+}
+
+function actualizarJugadoresDesdeLista(jugadores) {
+  const e = partida.estadoJuego;
+  const porJugadorId = {};
+  jugadores.forEach(j => { if (j.jugadorId) porJugadorId[j.jugadorId] = j.peerId; });
+  Object.keys(e.jugadores).forEach(jid => {
+    e.jugadores[jid].peerId = porJugadorId[jid] || null;
+  });
+  jugadores.forEach(j => {
+    if (j.jugadorId && !e.jugadores[j.jugadorId]) {
+      e.jugadores[j.jugadorId] = {
+        x: 0, y: 0, mapaId: e.mapaActual, ultimaConexion: new Date().toISOString(),
+        ultimoDado: null, peerId: j.peerId
+      };
+    }
+  });
+  renderizarTodo();
+}
+
+function detenerPollingDocente() {
+  if (pollingDocenteId) { clearTimeout(pollingDocenteId); pollingDocenteId = null; }
+  ultRevDoc = 0; ultSeqDoc = 0;
+}
+
 function detenerP2P(){
   if(p2pHost){p2pHost.stop();p2pHost=null}
   if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
+  detenerPollingDocente();
   p2pConectado=false;
   $("p2p-badge").style.display="none";
 }
@@ -741,17 +807,18 @@ function procesarMensajeP2PPeer(msg){
   }
 }
 function aplicarEstadoRemoto(estado){
-  if(!estado)return;
-  partida.estadoJuego=normalizarEstado(estado);
+  if(!estado) return;
+  partida.estadoJuego = normalizarEstado(estado);
   renderizarTodo();
-  if(Array.isArray(estado.recentMessages)&&estado.recentMessages.length){
-    const ultimaIA=[...chat.querySelectorAll(".msg.ai")].pop();
-    if(!ultimaIA||!ultimaIA.textContent.trim()){
-      chat.replaceChildren();
-      estado.recentMessages.forEach(m=>{
-        if(m.tipo!=="evento")agregarMensaje(m.content,m.role==="assistant"?"ai":"user");
-      });
-    }
+  if (Array.isArray(estado.recentMessages) && estado.recentMessages.length) {
+    estado.recentMessages.forEach(m => {
+      if (m.tipo === "evento") return;
+      const tipo = m.role === "assistant" ? "ai" : "user";
+      const yaEsta = [...chat.querySelectorAll(".msg")].some(
+        el => el.textContent === m.content && el.classList.contains(tipo)
+      );
+      if (!yaEsta) agregarMensaje(m.content, tipo);
+    });
   }
 }
 
@@ -878,21 +945,31 @@ async function enviarMensaje(){
   if(!texto)return;
   agregarMensaje(texto,"user");
   input.value="";
+
   if(modo==="alumno"&&codigoSala){
     const msg={tipo:"chat",texto};
-    if(p2pConectado&&p2pPeer&&p2pPeer.enviar(msg))return;
-    try{await CalabozosStateBridge.enviarMensaje(codigoSala,sessionTokenAlumno,{texto})}
-    catch(e){
-      if(String(e.message||"").indexOf("auth")>=0){
-        try{
-          const re=await CalabozosStateBridge.unirseSala(codigoSala,nombreAlumno,jugadorIdAlumno);
-          if(re.ok){sessionTokenAlumno=re.sessionToken; peerIdAlumno=re.peerId;
-            await CalabozosStateBridge.enviarMensaje(codigoSala,sessionTokenAlumno,{texto});}
-        }catch(_){agregarMensaje("✗ No se pudo enviar","system")}
-      } else agregarMensaje("✗ No se pudo enviar","system");
+    // 1. Intentar P2P (rápido)
+    if(p2pConectado&&p2pPeer&&p2pPeer.enviar(msg)){
+      // OK, ya se envió por P2P
+    }
+    // 2. SIEMPRE enviar por GAS también (para que el docente lo reciba aunque P2P falle)
+    try {
+      await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
+    } catch(e) {
+      if (String(e.message||"").indexOf("auth") >= 0) {
+        try {
+          const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno);
+          if (re.ok) {
+            sessionTokenAlumno = re.sessionToken;
+            peerIdAlumno = re.peerId;
+            await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
+          }
+        } catch(_) {}
+      }
     }
     return;
   }
+
   generando=true; ajustarInput(false);
   const bub=agregarMensaje("…","ai");
   let contenido="";
@@ -1092,6 +1169,7 @@ async function canjearTraspaso(){
         }
       });
       p2pHost.start();
+      iniciarPollingDocente(codigoSala, sessionTokenDocente);
       publicarEstado("host-traspasado");
       alert("¡Ahora sos el host!");
     }catch(err){
@@ -1148,6 +1226,7 @@ async function recuperarHost(){
       onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); }
     });
     p2pHost.start();
+    iniciarPollingDocente(codigoSala, sessionTokenDocente);
     publicarEstado("host-recuperado");
     $("btn-recuperar-host").style.display = "none";
     alert("¡Recuperaste el control!");
