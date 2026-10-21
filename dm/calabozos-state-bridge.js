@@ -1,12 +1,7 @@
-/* ============================================================
-   Calabozos State Bridge v15
-   - GAS: polling + signaling + syncDocente
-   - WebRTC: P2P host ↔ peer con ACK y reconexión
-   - Detección de baneo y host revocado
-   ============================================================ */
 window.CalabozosStateBridge = (function () {
     const config = {
-        appsScriptUrl: "https://script.google.com/macros/s/AKfycbwoCM7YhnMq93CZGwNmUa4uGCZFY0jtXLgW_ZRnWKQaMkbzx_8Rx6YpL8WNHrLT0dK-/exec",
+        appsScriptUrl: "",
+        adminKey: "",
         iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
             { urls: "stun:stun1.l.google.com:19302" }
@@ -43,9 +38,9 @@ window.CalabozosStateBridge = (function () {
         ping:                  ()                              => getJSON({ accion: "ping", _: Date.now() }),
         whoami:                ()                              => getJSON({ accion: "whoami", _: Date.now() }),
         unirseSala:            (sala, nombre, jid)             => getJSON({ accion: "unirse", sala, nombre, jugadorId: jid || "", _: Date.now() }),
-        crearSala:             (sala)                          => postJSON({ accion: "crear", sala }, {}),
+        crearSala:             (sala, adminKey)                => postJSON({ accion: "crear", sala }, { adminKey: adminKey || config.adminKey || "" }),
         sync:                  (sala, tok, rev, seq)           => postJSON({ accion: "sync", sala }, { sessionToken: tok, rev, seq }),
-        syncDocente:           (sala)                          => postJSON({ accion: "syncDocente", sala }, {}),
+        syncDocente:           (sala, adminKey)                => postJSON({ accion: "syncDocente", sala }, { adminKey: adminKey || config.adminKey || "" }),
         publicarEstado:        (sala, hostToken, snapshot)     => postCheckAuth({ accion: "publicar", sala }, { hostToken, snapshot }),
         enviarMensaje:         (sala, tok, m)                  => postJSON({ accion: "enviar", sala }, Object.assign({ sessionToken: tok }, m)),
         cerrarSala:            (sala, hostToken)               => postJSON({ accion: "cerrar", sala }, { hostToken }),
@@ -54,8 +49,8 @@ window.CalabozosStateBridge = (function () {
         sigack:                (sala, payload)                 => postJSON({ accion: "sigack", sala }, payload),
         genTraspaso:           (sala, hostToken)               => postJSON({ accion: "genTraspaso", sala }, { hostToken }),
         canjeTraspaso:         (sala, tok, codigo)             => postJSON({ accion: "canjeTraspaso", sala }, { sessionToken: tok, codigo }),
-        solicitarRecuperacion: (sala)                          => postJSON({ accion: "solicitarRecuperacion", sala }, {}),
-        confirmarRecuperacion: (sala, ticket)                  => postJSON({ accion: "confirmarRecuperacion", sala }, { ticket }),
+        solicitarRecuperacion: (sala, adminKey)                => postJSON({ accion: "solicitarRecuperacion", sala }, { adminKey: adminKey || config.adminKey || "" }),
+        confirmarRecuperacion: (sala, ticket, adminKey)        => postJSON({ accion: "confirmarRecuperacion", sala }, { ticket, adminKey: adminKey || config.adminKey || "" }),
         kickPeer:              (sala, hostToken, peerId)       => postJSON({ accion: "kick", sala }, { hostToken, peerId }),
         kickJugador:           (sala, hostToken, jugadorId)    => postJSON({ accion: "kickJugador", sala }, { hostToken, jugadorId })
     };
