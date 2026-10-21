@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-tema="oscuro">
+<html lang="es" data-tema="oscuro" data-anim="on">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -19,6 +19,7 @@ html[data-contraste="alto"]{
   --fondo:#000;--panel:#111;--panel2:#222;--chat:#000;
   --dorado:#ffd700;--texto:#fff;--tenue:#ddd;--borde:#888;
 }
+html[data-anim="off"] *{animation:none!important;transition:none!important}
 body{
   font-family:'Segoe UI',Tahoma,sans-serif;background:var(--fondo);color:var(--texto);
   height:100dvh;display:flex;flex-direction:column;padding:4px;overflow:hidden;font-size:var(--fs);
@@ -64,12 +65,6 @@ input:focus,select:focus{border-color:var(--dorado)}
   background:rgba(76,175,80,.15);color:var(--verde);white-space:nowrap
 }
 .sala-info.error{background:rgba(233,69,96,.15);color:var(--rojo)}
-#a11y{
-  background:var(--panel);padding:3px 10px;border-bottom:1px solid var(--borde);
-  display:flex;gap:4px;flex-wrap:wrap;flex:0 0 auto;font-size:.7rem
-}
-#a11y .btn{padding:3px 7px;font-size:.7rem}
-#a11y .btn.on{background:var(--dorado);color:#1a1a2e}
 #main{
   flex:1 1 0;min-height:0;
   display:grid;gap:4px;padding:4px;
@@ -165,6 +160,35 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 .celda.ene{box-shadow:inset 0 0 0 1px #df7e7e}
 .celda .pl{display:block;color:#0b5f9d;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .celda .en{display:block;color:#a12c2c;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Gate overlay */
+#gate-overlay{
+  position:fixed;inset:0;background:var(--fondo);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:16px
+}
+#gate-card{
+  background:var(--panel);border:2px solid var(--dorado);border-radius:12px;
+  padding:28px 24px;max-width:400px;width:100%;text-align:center
+}
+#gate-card h2{color:var(--dorado);font-size:1.3rem;margin-bottom:6px}
+#gate-card p{color:var(--tenue);font-size:.82rem;margin-bottom:16px}
+#gate-input{
+  width:100%;padding:12px;text-align:center;text-transform:uppercase;
+  font-size:16px;letter-spacing:2px;margin-bottom:12px
+}
+#gate-error{color:var(--rojo);font-size:.75rem;margin-top:10px;display:none}
+
+/* Accessibility floating panel */
+#a11y-panel{
+  display:none;position:fixed;top:52px;right:10px;z-index:1000;
+  background:var(--panel);border:1px solid var(--dorado);border-radius:10px;
+  padding:12px;width:240px;box-shadow:0 8px 24px rgba(0,0,0,.5)
+}
+#a11y-panel h3{color:var(--dorado);font-size:.8rem;margin-bottom:10px;text-align:center}
+#a11y-panel .row{margin-bottom:8px}
+#a11y-panel label{font-size:.75rem;color:var(--tenue);flex:1}
+#a11y-panel .btn{flex:1;text-align:center}
+
 @media(max-width:900px){#main{grid-template-columns:140px 1fr 140px}}
 @media(max-width:768px){
   body{padding:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -182,6 +206,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   .msg{font-size:.72rem}
   #barra{padding:4px 6px}
   .accion-btn{flex:1 1 auto}
+  #a11y-panel{width:calc(100vw - 20px);right:10px;left:10px}
 }
 @media(max-width:400px){#camara-ar{height:26vh;min-height:130px}.panel{max-height:65px}}
 @media(orientation:landscape) and (max-height:500px){
@@ -194,16 +219,53 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 </head>
 <body>
 
+<!-- ==================== GATE OVERLAY ==================== -->
+<div id="gate-overlay">
+  <div id="gate-card">
+    <h2>🏰 Calabozos y Código</h2>
+    <p>Ingresá el código de clase para continuar</p>
+    <input id="gate-input" type="text" placeholder="CÓDIGO" autocapitalize="characters" autocomplete="off">
+    <button class="btn primary" onclick="ingresarClase()" style="width:100%">Ingresar</button>
+    <p id="gate-error"></p>
+  </div>
+</div>
+
+<!-- ==================== HEADER ==================== -->
 <div id="header">
   <span class="title">🏰 Calabozos y Código · DM</span>
   <div class="acciones">
+    <button class="btn" onclick="toggleA11y()" title="Accesibilidad" aria-label="Accesibilidad">♿</button>
     <button class="btn" id="btn-nueva" onclick="iniciarNuevaAventura()">Nueva</button>
-    <button class="btn" id="btn-ollama" onclick="buscarOllama()">Buscar Ollama</button>
     <button class="btn" id="btn-tablero" onclick="abrirTablero()">Tablero</button>
     <button class="btn" onclick="toggleFullscreen()" title="Pantalla completa">⛶</button>
   </div>
 </div>
 
+<!-- ==================== PANEL ACCESIBILIDAD ==================== -->
+<div id="a11y-panel">
+  <h3>Accesibilidad</h3>
+  <div class="row">
+    <button class="btn" onclick="ajustarFuente(1)">A+</button>
+    <button class="btn" onclick="ajustarFuente(-1)">A-</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="a11y-tema" onclick="toggleTema()">🌙 Oscuro</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="a11y-contraste" onclick="toggleContraste()">◐ Contraste</button>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="a11y-anim" checked onchange="toggleAnimaciones(this.checked)"> Animaciones</label>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="toggleCustomDM()">🎨 Texto DM</button>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="restablecerA11y()">↺ Restablecer</button>
+  </div>
+</div>
+
+<!-- ==================== SESSION ==================== -->
 <div id="session">
   <span id="modo-indicador" class="badge-modo modo-docente">👨‍🏫 DOCENTE</span>
   <div id="panel-docente" style="display:contents">
@@ -223,15 +285,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <button class="btn" id="btn-toggle-modo" onclick="alternarModo()">Cambiar a alumno</button>
 </div>
 
-<div id="a11y">
-  <button class="btn" onclick="ajustarFuente(1)">A+</button>
-  <button class="btn" onclick="ajustarFuente(-1)">A-</button>
-  <button class="btn" id="btn-tema" onclick="toggleTema()">🌙 Oscuro</button>
-  <button class="btn" id="btn-contraste" onclick="toggleContraste()">◐ Contraste</button>
-  <button class="btn" id="btn-teatro" onclick="toggleTeatro()">🎭 Teatro</button>
-  <button class="btn" id="btn-custom-dm" onclick="toggleCustomDM()">🎨 Texto DM</button>
-</div>
-
+<!-- ==================== MAIN ==================== -->
 <div id="main">
   <div class="panel" id="panel-jugadores">
     <h2>⚔️ Héroes</h2>
@@ -247,11 +301,13 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   </div>
 </div>
 
+<!-- ==================== CHAT ==================== -->
 <div id="zona-narracion">
   <h3>📜 Narración</h3>
   <div id="chat"></div>
 </div>
 
+<!-- ==================== ACCIONES ==================== -->
 <div id="barra">
   <input type="text" id="user-input" placeholder="Esperando conexión..." disabled onkeypress="onEnter(event)">
   <button class="btn primary" id="btn-enviar" onclick="enviarMensaje()" disabled>Enviar</button>
@@ -260,21 +316,14 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <button class="btn accion-btn" onclick="accionCurar()">💚 Curar</button>
 </div>
 
+<!-- ==================== CONFIGURACIÓN AVANZADA ==================== -->
 <details class="settings">
   <summary>⚙️ Configuración avanzada</summary>
-  <div class="row">
-    <label>URL Apps Script:</label>
-    <input type="text" id="cfg-gas-url" style="flex:1 1 200px" placeholder="https://script.google.com/.../exec">
-  </div>
-  <div class="row">
-    <label>ADMIN_KEY:</label>
-    <input type="text" id="cfg-admin-key" style="flex:1 1 200px" placeholder="(configurarAdminKey en Apps Script)">
-    <button class="btn" onclick="guardarGasUrl()">Guardar</button>
-  </div>
   <div class="row">
     <label>Servidor Ollama:</label>
     <input type="text" id="cfg-ollama" placeholder="192.168.1.20" style="flex:1 1 150px">
     <button class="btn" onclick="conectarOllamaManual()">Conectar</button>
+    <button class="btn" onclick="buscarOllama()">Buscar</button>
     <select id="cfg-modelo" style="flex:1 1 120px"></select>
   </div>
   <div class="row" id="microbit-row">
@@ -286,6 +335,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <textarea id="log" readonly></textarea>
 </details>
 
+<!-- ==================== TABLERO ==================== -->
 <dialog id="tablero">
   <h2>Tablero del grupo</h2>
   <div class="row" style="margin-bottom:8px">
@@ -310,10 +360,10 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 const PUERTO_OLLAMA = 11434;
 const GRUPO_RADIO = 99;
 const TAM_MAPA = 6;
-const CLAVE_PARTIDA = "calabozos.partida.v19";
+const CLAVE_PARTIDA = "calabozos.partida.v20";
 const CLAVE_OLLAMA = "calabozos.ollama.url";
-const CLAVE_GAS = "calabozos.gas.url";
-const CLAVE_ADMIN_KEY = "calabozos.adminKey";
+const CLAVE_GATE = "calabozos.gateToken";
+const CLAVE_ADMIN = "calabozos.adminToken";
 const MAPAS = [
   {id:"inicios",codigo:"I",nombre:"Inicios"},
   {id:"castillo",codigo:"C",nombre:"Castillo"},
@@ -326,20 +376,17 @@ const MAPAS_ID = Object.fromEntries(MAPAS.map(m=>[m.id,m]));
 
 const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyqG2PUzr9f-1-pFQhKSqZD9FoO_fkX3Sl6jGVXMlrzahgKPNmZ79UTEjayd7Ytqr4/exec";
 
-const CONFIG = {
-  appsScriptUrl: localStorage.getItem(CLAVE_GAS) || APPS_SCRIPT_URL_DEFAULT,
-  arFrameId: "ar-game-frame"
-};
+const CONFIG = { appsScriptUrl: APPS_SCRIPT_URL_DEFAULT, arFrameId: "ar-game-frame" };
 
 /* ============================================================ ESTADO */
 let modo = "docente";
 let codigoSala = "";
+let gateToken = localStorage.getItem(CLAVE_GATE) || "";
+let adminToken = sessionStorage.getItem(CLAVE_ADMIN) || "";
 let sessionTokenDocente = localStorage.getItem("calabozos.hostToken") || "";
 let sessionTokenAlumno = "";
 let peerIdAlumno = "";
 let jugadorIdAlumno = localStorage.getItem("calabozos.jugadorId") || "";
-let adminKey = localStorage.getItem(CLAVE_ADMIN_KEY) || "";
-let esDocenteVerificado = false;
 let nombreAlumno = "Alumno";
 let partida = cargarPartida();
 let historial = partida.historial;
@@ -425,28 +472,111 @@ function validarEstadoOriginal(e){
   return true;
 }
 
+/* ============================================================ GATE (código de clase) */
+async function ingresarClase(){
+  const input = $("gate-input");
+  const errEl = $("gate-error");
+  const codigo = input.value.trim();
+  if(!codigo){ errEl.textContent="Escribí el código"; errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  try{
+    const r = await CalabozosStateBridge.enterClass(codigo);
+    if(!r.ok){
+      const msgs = {
+        "codigo_incorrecto":"Código incorrecto",
+        "acceso_no_configurado":"El docente debe configurar el acceso en Apps Script (configurarAcceso)"
+      };
+      errEl.textContent = msgs[r.error] || r.error;
+      errEl.style.display="block";
+      return;
+    }
+    gateToken = r.gateToken;
+    localStorage.setItem(CLAVE_GATE, gateToken);
+    $("gate-overlay").style.display = "none";
+    log("Acceso concedido");
+    // Ahora sí inicializar la app
+    inicializarApp();
+  }catch(e){
+    errEl.textContent = "No se pudo conectar: " + e.message;
+    errEl.style.display="block";
+  }
+}
+
+/* ============================================================ ADMIN (PIN docente) */
+async function pedirPinDocente(){
+  if(adminToken) return adminToken;
+  const pin = prompt("PIN docente:");
+  if(!pin) return null;
+  try{
+    const r = await CalabozosStateBridge.adminLogin(pin);
+    if(!r.ok){
+      const msgs = {
+        "pin_incorrecto":"PIN incorrecto",
+        "acceso_no_configurado":"El docente debe configurar el acceso en Apps Script"
+      };
+      alert(msgs[r.error] || r.error);
+      return null;
+    }
+    adminToken = r.adminToken;
+    sessionStorage.setItem(CLAVE_ADMIN, adminToken);
+    return adminToken;
+  }catch(e){
+    alert("Error: " + e.message);
+    return null;
+  }
+}
+
 /* ============================================================ ACCESIBILIDAD */
 let fsBase=14,fsChat=13;
+function toggleA11y(){
+  const p = $("a11y-panel");
+  p.style.display = p.style.display === "none" ? "block" : "none";
+}
 function ajustarFuente(d){
   fsBase=Math.max(10,Math.min(22,fsBase+d)); fsChat=Math.max(10,Math.min(22,fsChat+d));
   document.documentElement.style.setProperty("--fs",fsBase+"px");
   document.documentElement.style.setProperty("--fsChat",fsChat+"px");
 }
-function toggleTema(){const h=document.documentElement;const n=h.dataset.tema==="claro"?"oscuro":"claro";h.dataset.tema=n;
-  $("btn-tema").textContent=n==="claro"?"☀️ Claro":"🌙 Oscuro"}
-function toggleContraste(){const h=document.documentElement;h.dataset.contraste=h.dataset.contraste==="alto"?"normal":"alto";
-  $("btn-contraste").classList.toggle("on",h.dataset.contraste==="alto")}
-function toggleTeatro(){document.body.classList.toggle("teatro");$("btn-teatro").classList.toggle("on",document.body.classList.contains("teatro"))}
+function toggleTema(){
+  const h=document.documentElement;const n=h.dataset.tema==="claro"?"oscuro":"claro";h.dataset.tema=n;
+  $("a11y-tema").textContent=n==="claro"?"☀️ Claro":"🌙 Oscuro";
+}
+function toggleContraste(){
+  const h=document.documentElement;
+  h.dataset.contraste=h.dataset.contraste==="alto"?"normal":"alto";
+  $("a11y-contraste").classList.toggle("on",h.dataset.contraste==="alto");
+}
+function toggleAnimaciones(activo){
+  document.documentElement.dataset.anim = activo ? "on" : "off";
+  $("a11y-anim").checked = activo;
+}
 function toggleCustomDM(){
-  const a=document.body.classList.toggle("custom-dm"); $("btn-custom-dm").classList.toggle("on",a);
-  if(a){const fs=prompt("Tamaño texto DM (px):","14")||"14";
+  const a=document.body.classList.toggle("custom-dm");
+  if(a){
+    const fs=prompt("Tamaño texto DM (px):","14")||"14";
     const c=prompt("Color texto (ej #f0e6d0):","#f0e6d0")||"#f0e6d0";
     const bg=prompt("Fondo (ej rgba(201,168,76,.1)):","rgba(201,168,76,.1)")||"rgba(201,168,76,.1)";
     document.documentElement.style.setProperty("--fs-dm",parseInt(fs)+"px");
     document.documentElement.style.setProperty("--color-dm",c);
-    document.documentElement.style.setProperty("--bg-dm",bg);}
+    document.documentElement.style.setProperty("--bg-dm",bg);
+  }
 }
-function toggleFullscreen(){const el=$("camara-ar");if(!document.fullscreenElement)(el.requestFullscreen||el.webkitRequestFullscreen).call(el);else(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
+function restablecerA11y(){
+  fsBase=14; fsChat=13;
+  document.documentElement.style.setProperty("--fs","14px");
+  document.documentElement.style.setProperty("--fsChat","13px");
+  document.documentElement.dataset.tema="oscuro";
+  document.documentElement.dataset.contraste="normal";
+  document.documentElement.dataset.anim="on";
+  document.body.classList.remove("custom-dm","teatro");
+  document.documentElement.style.removeProperty("--fs-dm");
+  document.documentElement.style.removeProperty("--color-dm");
+  document.documentElement.style.removeProperty("--bg-dm");
+  $("a11y-tema").textContent="🌙 Oscuro";
+  $("a11y-contraste").classList.remove("on");
+  $("a11y-anim").checked=true;
+}
+function toggleFullscreen(){const el=$("camara-area");if(!document.fullscreenElement)(el.requestFullscreen||el.webkitRequestFullscreen).call(el);else(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
 
 /* ============================================================ MODO/SALA */
 function detectarModo(){
@@ -463,7 +593,7 @@ function aplicarModoVisual(){
   $("panel-docente").style.display=modo==="docente"?"contents":"none";
   $("panel-alumno").style.display=modo==="alumno"?"flex":"none";
   $("btn-toggle-modo").textContent=modo==="docente"?"Cambiar a alumno":"Cambiar a docente";
-  ["btn-nueva","btn-ollama","btn-tablero"].forEach(id=>{$(id).style.display=modo==="docente"?"":"none"});
+  ["btn-nueva","btn-tablero"].forEach(id=>{$(id).style.display=modo==="docente"?"":"none"});
 }
 function alternarModo(){
   if(generando)return;
@@ -480,49 +610,16 @@ function generarCodigo(){
 
 /* ============================================================ CREAR SALA */
 async function crearSalaDocente(){
-  if(!CONFIG.appsScriptUrl){alert("Configurá URL de Apps Script primero");return}
-
-  let info = { esDocente: false, requiereAdminKey: false, via: "" };
-  try {
-    const w = await CalabozosStateBridge.whoami();
-    info.esDocente = Boolean(w && w.esDocente);
-    info.requiereAdminKey = Boolean(w && w.requiereAdminKey);
-    info.via = (w && w.via) || "";
-  } catch(e) {
-    alert("No se pudo contactar el servidor.\n\n" + e.message);
-    return;
-  }
-
-  esDocenteVerificado = info.esDocente;
-
-  if (!info.esDocente && !adminKey) {
-    adminKey = prompt(
-      "El servidor no te reconoce como docente (puede pasar si Google no expone tu email).\n\n" +
-      "Ingresá la ADMIN_KEY configurada en Apps Script.\n\n" +
-      "Si no la tenés:\n" +
-      "  1. Abrí Apps Script → Editor\n" +
-      "  2. Ejecutá configurarAdminKey()\n" +
-      "  3. Copiá la clave del Logger\n\n" +
-      "ADMIN_KEY:",
-      ""
-    );
-    if (!adminKey) return;
-    adminKey = adminKey.trim();
-    localStorage.setItem(CLAVE_ADMIN_KEY, adminKey);
-    if($("cfg-admin-key")) $("cfg-admin-key").value = adminKey;
-    CalabozosStateBridge.configurar({ adminKey });
-  }
-
+  const tok = await pedirPinDocente();
+  if(!tok) return;
   const cod = generarCodigo();
-  try {
-    const r = await CalabozosStateBridge.crearSala(cod, adminKey);
-    if (!r.ok) {
+  try{
+    const r = await CalabozosStateBridge.crearSala(cod, tok);
+    if(!r.ok){
       const msgs = {
-        "auth": "Clave incorrecta. Borrá 'calabozos.adminKey' del localStorage y reintentá.",
-        "admin_key_no_configurada": "El servidor no tiene ADMIN_KEY ni identidad configurada. Ejecutá configurarAdminKey() en Apps Script.",
-        "requiere_login_docente": "No autorizado.",
-        "rate_limit_crear": "Demasiadas salas creadas. Esperá una hora.",
-        "sala_existente": "Ese código ya existe. Reintentá."
+        "pin_requerido":"PIN docente requerido. Volvé a intentar.",
+        "rate_limit_crear":"Demasiadas salas creadas. Esperá una hora.",
+        "sala_existente":"Ese código ya existe. Reintentá."
       };
       throw new Error(msgs[r.error] || r.error);
     }
@@ -536,7 +633,6 @@ async function crearSalaDocente(){
     p2pHost = new CalabozosStateBridge.P2PHost(cod, sessionTokenDocente, {
       onPeerConnected: (id, name, jid) => {
         agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");
-        // Asegurar que el jugador exista con peerId
         const clave = (jid || name || id).toUpperCase();
         if(!partida.estadoJuego.jugadores[clave]){
           partida.estadoJuego.jugadores[clave] = {
@@ -551,11 +647,7 @@ async function crearSalaDocente(){
         renderizarTodo();
       },
       onPeerMessage: (id, msg) => procesarMensajeP2PPeer(id, msg),
-      onPeerDisconnected: (id) => {
-        agregarMensaje(`🔌 peer desconectado`,"system");
-        actualizarContadorP2P();
-        renderizarTodo();
-      },
+      onPeerDisconnected: () => { agregarMensaje(`🔌 peer desconectado`,"system"); actualizarContadorP2P(); renderizarTodo(); },
       onHostRevoked: () => {
         if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
         agregarMensaje("⚠ Ya no sos host","system");
@@ -565,19 +657,17 @@ async function crearSalaDocente(){
     p2pHost.start();
     iniciarPollingDocente(cod, sessionTokenDocente);
     publicarEstado("sala-creada");
-    log("Sala creada: " + cod + " (auth: " + r.via + ")");
+    log("Sala creada: " + cod);
   } catch(e) {
     alert("Error: " + e.message);
   }
 }
-
 function resetearBotonesDocente(){
   $("btn-crear").hidden = false;
   $("btn-traspaso").style.display = "none";
   $("btn-cerrar-sala").style.display = "none";
   $("sala-info").hidden = true;
 }
-
 function mostrarInfoSala(){
   const info=$("sala-info");
   const url=`${location.origin}${location.pathname}?modo=alumno&sala=${codigoSala}`;
@@ -599,27 +689,21 @@ function actualizarContadorP2P(){
 /* ============================================================ CERRAR SALA */
 async function cerrarSalaDocente(){
   if(!codigoSala || !sessionTokenDocente){alert("No hay sala activa");return}
-  if(!confirm("¿Cerrar la sala? Todos los alumnos se desconectarán y se perderá el estado.")) return;
+  if(!confirm("¿Cerrar la sala? Todos los alumnos se desconectarán.")) return;
   try {
     const r = await CalabozosStateBridge.cerrarSala(codigoSala, sessionTokenDocente);
-    if(!r.ok && r.error !== "auth"){
-      throw new Error(r.error || "Error");
-    }
+    if(!r.ok && r.error !== "auth") throw new Error(r.error || "Error");
     if(p2pHost){ try{p2pHost.broadcast({tipo:"host-changed"})}catch(_){}; p2pHost.stop(); p2pHost=null; }
-    detenerPollingDocente();
-    detenerGAS();
-    codigoSala = "";
-    sessionTokenDocente = "";
+    detenerPollingDocente(); detenerGAS();
+    codigoSala = ""; sessionTokenDocente = "";
     localStorage.removeItem("calabozos.hostToken");
     resetearBotonesDocente();
     agregarMensaje("🔒 Sala cerrada","system");
     log("Sala cerrada");
-  } catch(e) {
-    alert("Error al cerrar: " + e.message);
-  }
+  } catch(e) { alert("Error al cerrar: " + e.message); }
 }
 
-/* ============================================================ UNIRSE */
+/* ============================================================ UNIRSE (alumno) */
 async function unirseSalaAlumno(){
   const c=$("input-sala").value.trim().toUpperCase();
   if(c.length<4){alert("Código inválido");return}
@@ -630,17 +714,14 @@ async function unirseSalaAlumno(){
     nombreAlumno=prompt("Tu nombre (o apodo):","Alumno")||"Alumno";
   }
   if(!jugadorIdAlumno){
-    while(true){
-      jugadorIdAlumno=(prompt("Tu ID de jugador (micro:bit, ej. P01).\nEs REQUERIDO para que el docente pueda identificarte.","")||"").toUpperCase().slice(0,12);
-      if(jugadorIdAlumno.length>=1)break;
-      if(confirm("Sin ID de jugador no podrás ser identificado por el docente. ¿Continuar igual?"))break;
-    }
+    jugadorIdAlumno=(prompt("Tu ID de jugador (micro:bit, ej. P01):","")||"").toUpperCase().slice(0,12);
     if(jugadorIdAlumno)localStorage.setItem("calabozos.jugadorId",jugadorIdAlumno);
   }
   try{
-    const r=await CalabozosStateBridge.unirseSala(c,nombreAlumno,jugadorIdAlumno);
+    const r=await CalabozosStateBridge.unirseSala(c,nombreAlumno,jugadorIdAlumno,gateToken);
     if(!r.ok){
       const msgMap={
+        "codigo_clase_requerido":"❌ Tu sesión de clase expiró. Recargá la página e ingresá el código de nuevo.",
         "baneado":"❌ Fuiste expulsado. Esperá unos minutos.",
         "jugador_id_duplicado":"❌ Ya hay otra sesión con tu ID. Esperá 30 min.",
         "rate_limit_global":"⏳ Demasiados intentos. Esperá un minuto.",
@@ -657,10 +738,8 @@ async function unirseSalaAlumno(){
       onConnected:()=>{
         p2pConectado=true;
         info.textContent=`✓ P2P · ${c}`; info.className="sala-info";
-        [...chat.querySelectorAll(".msg.system")].forEach(el=>{
-          if(el.textContent.includes("vía GAS"))el.remove();
-        });
-        agregarMensaje("🔗 Conectado al DM (P2P, baja latencia)","system");
+        [...chat.querySelectorAll(".msg.system")].forEach(el=>{if(el.textContent.includes("vía GAS"))el.remove();});
+        agregarMensaje("🔗 Conectado al DM (P2P)","system");
         $("p2p-badge").style.display="inline-flex"; $("p2p-badge").textContent="⚡ P2P";
         detenerGAS();
       },
@@ -669,8 +748,7 @@ async function unirseSalaAlumno(){
         else if(msg.tipo==="chat")agregarMensaje(msg.texto,"ai");
         else if(msg.tipo==="kick"){
           p2pPeer&&p2pPeer.desconectar(); p2pPeer=null; p2pConectado=false;
-          sessionTokenAlumno="";
-          $("p2p-badge").style.display="none";
+          sessionTokenAlumno=""; $("p2p-badge").style.display="none";
           info.textContent="❌ Fuiste expulsado"; info.className="sala-info error";
           ajustarInput(false);
         } else if(msg.tipo==="host-changed"){
@@ -738,11 +816,11 @@ function iniciarP2P(token){
   p2pPeer.conectar().catch(()=>{iniciarGAS(codigoSala)});
 }
 
-/* ============================================================ GAS FALLBACK (alumno) */
+/* ============================================================ GAS FALLBACK */
 function iniciarGAS(c){
   if(pollingGAS||!sessionTokenAlumno)return;
   CalabozosStateBridge.iniciarPolling(c,sessionTokenAlumno,{
-    nombre:nombreAlumno, jugadorId:jugadorIdAlumno,
+    nombre:nombreAlumno, jugadorId:jugadorIdAlumno, gateToken:gateToken,
     onEstado:(e)=>aplicarEstadoRemoto(e),
     onMensajes:(msgs)=>msgs.forEach(m=>{
       if(m.tipo==="chat"&&m.autor!==nombreAlumno){
@@ -757,14 +835,18 @@ function iniciarGAS(c){
     },
     onError:(e)=>{
       if(e.code==="baneado"){
-        pollingGAS=false;
-        sessionTokenAlumno="";
-        ajustarInput(false);
+        pollingGAS=false; sessionTokenAlumno=""; ajustarInput(false);
         $("alumno-sala-info").textContent="❌ Fuiste expulsado de la sala";
         $("alumno-sala-info").className="sala-info error";
         $("p2p-badge").style.display="none";
         if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
         p2pConectado=false;
+      }
+      if(e.code==="codigo_clase_requerido"){
+        pollingGAS=false;
+        $("gate-overlay").style.display="flex";
+        localStorage.removeItem(CLAVE_GATE);
+        gateToken="";
       }
     }
   });
@@ -780,9 +862,7 @@ function iniciarPollingDocente(sala, hostToken) {
     if (!hostToken || !sala) return;
     try {
       const rj = await CalabozosStateBridge.listarJugadores(sala, hostToken);
-      if (rj && rj.ok && Array.isArray(rj.jugadores)) {
-        actualizarJugadoresDesdeLista(rj.jugadores);
-      }
+      if (rj && rj.ok && Array.isArray(rj.jugadores)) actualizarJugadoresDesdeLista(rj.jugadores);
       const rs = await CalabozosStateBridge.syncHost(sala, hostToken, ultRevDoc, ultSeqDoc);
       if (rs && rs.ok && Array.isArray(rs.mensajes) && rs.mensajes.length) {
         ultSeqDoc = rs.ultimoSeq;
@@ -799,7 +879,6 @@ function iniciarPollingDocente(sala, hostToken) {
   }
   tick();
 }
-
 function actualizarJugadoresDesdeLista(jugadores) {
   const e = partida.estadoJuego;
   let cambios = false;
@@ -807,33 +886,18 @@ function actualizarJugadoresDesdeLista(jugadores) {
     const clave = (j.jugadorId || j.nombre || j.peerId || "").toUpperCase();
     if (!clave) return;
     if (!e.jugadores[clave]) {
-      e.jugadores[clave] = {
-        x: 0, y: 0, mapaId: e.mapaActual, ultimaConexion: new Date().toISOString(),
-        ultimoDado: null, peerId: j.peerId
-      };
+      e.jugadores[clave] = { x:0, y:0, mapaId:e.mapaActual, ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:j.peerId };
       cambios = true;
     } else {
-      if (e.jugadores[clave].peerId !== j.peerId) {
-        e.jugadores[clave].peerId = j.peerId;
-        cambios = true;
-      }
+      if (e.jugadores[clave].peerId !== j.peerId) { e.jugadores[clave].peerId = j.peerId; cambios = true; }
       e.jugadores[clave].ultimaConexion = new Date().toISOString();
     }
   });
   if (cambios) renderizarTodo();
 }
-
 function detenerPollingDocente() {
   if (pollingDocenteId) { clearTimeout(pollingDocenteId); pollingDocenteId = null; }
   ultRevDoc = 0; ultSeqDoc = 0;
-}
-
-function detenerP2P(){
-  if(p2pHost){p2pHost.stop();p2pHost=null}
-  if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
-  detenerPollingDocente();
-  p2pConectado=false;
-  $("p2p-badge").style.display="none";
 }
 
 /* ============================================================ PUBLICAR */
@@ -849,15 +913,11 @@ function publicarEstado(motivo){
   if(modo!=="docente"||!codigoSala||!sessionTokenDocente)return;
   partida.estadoJuego.revision++;
   const snap=construirSnapshot();
-  if(p2pHost){
-    const n=p2pHost.broadcast({tipo:"estado",estado:snap});
-    if(n>0)log(`[P2P] estado a ${n} peers`);
-  }
+  if(p2pHost){ const n=p2pHost.broadcast({tipo:"estado",estado:snap}); if(n>0)log(`[P2P] estado a ${n} peers`); }
   clearTimeout(debouncePub);
   debouncePub=setTimeout(async()=>{
-    try{
-      await CalabozosStateBridge.publicarEstado(codigoSala,sessionTokenDocente,snap);
-    }catch(e){
+    try{ await CalabozosStateBridge.publicarEstado(codigoSala,sessionTokenDocente,snap); }
+    catch(e){
       if(e.code==="host_revoked"||e.message==="host_revoked"){
         p2pHost&&p2pHost.stop(); p2pHost=null;
         agregarMensaje("⚠ Transferiste el control","system");
@@ -873,13 +933,9 @@ function enviarEstadoPorP2P(peerId){
 function procesarMensajeP2PPeer(peerId, msg){
   if(msg.tipo==="chat"){
     const autor = msg.autor || "Alumno";
-    // Asegurar que el jugador existe con peerId asociado
     const clave = autor.toUpperCase();
     if(!partida.estadoJuego.jugadores[clave]){
-      partida.estadoJuego.jugadores[clave] = {
-        x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
-        ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:peerId||null
-      };
+      partida.estadoJuego.jugadores[clave] = { x:0, y:0, mapaId:partida.estadoJuego.mapaActual, ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:peerId||null };
     } else {
       if(peerId) partida.estadoJuego.jugadores[clave].peerId = peerId;
       partida.estadoJuego.jugadores[clave].ultimaConexion = new Date().toISOString();
@@ -902,9 +958,7 @@ function aplicarEstadoRemoto(estado){
       const tipo = m.role === "assistant" ? "ai" : "user";
       const autor = tipo === "ai" ? "DM" : "alumno";
       if (yaEstaEnChat(autor, m.content)) return;
-      const yaEsta = [...chat.querySelectorAll(".msg")].some(
-        el => el.textContent === m.content && el.classList.contains(tipo)
-      );
+      const yaEsta = [...chat.querySelectorAll(".msg")].some(el => el.textContent === m.content && el.classList.contains(tipo));
       if (!yaEsta) agregarMensaje(m.content, tipo);
     });
   }
@@ -980,24 +1034,17 @@ async function kickJugador(peerId){
       const msgs={
         "auth":"Token de docente inválido. Recreá la sala.",
         "peer_no_existe":"El jugador ya no está conectado",
-        "accion_invalida":"El servidor no tiene el endpoint kick. Actualizá el backend.",
+        "accion_invalida":"El servidor no tiene el endpoint kick.",
         "peer_invalido":"ID de jugador inválido"
       };
       throw new Error(msgs[r.error]||r.error);
     }
-    if(p2pHost){
-      p2pHost.enviarA(peerId,{tipo:"kick"});
-      setTimeout(()=>{if(p2pHost)p2pHost.cerrarPeer(peerId)},300);
-    }
-    // Eliminar jugador del estado local
+    if(p2pHost){ p2pHost.enviarA(peerId,{tipo:"kick"}); setTimeout(()=>{if(p2pHost)p2pHost.cerrarPeer(peerId)},300); }
     Object.keys(partida.estadoJuego.jugadores).forEach(k=>{
-      if(partida.estadoJuego.jugadores[k].peerId === peerId){
-        delete partida.estadoJuego.jugadores[k];
-      }
+      if(partida.estadoJuego.jugadores[k].peerId === peerId) delete partida.estadoJuego.jugadores[k];
     });
     agregarMensaje(`🚫 Jugador expulsado`,"system");
-    actualizarContadorP2P();
-    renderizarTodo();
+    actualizarContadorP2P(); renderizarTodo();
   }catch(e){alert("Error: "+e.message)}
 }
 function abrirTablero(){renderizarTodo();$("tablero").showModal?.()||$("tablero").setAttribute("open","")}
@@ -1065,21 +1112,14 @@ async function enviarMensaje(){
   if(modo==="alumno"&&codigoSala){
     const msg={tipo:"chat", texto, autor: nombreAlumno};
     let enviadoP2P = false;
-    if(p2pConectado && p2pPeer){
-      enviadoP2P = p2pPeer.enviar(msg);
-    }
+    if(p2pConectado && p2pPeer) enviadoP2P = p2pPeer.enviar(msg);
     if(!enviadoP2P){
-      try {
-        await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
-      } catch(e) {
+      try { await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto}); }
+      catch(e) {
         if (String(e.message||"").indexOf("auth") >= 0) {
           try {
-            const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno);
-            if (re.ok) {
-              sessionTokenAlumno = re.sessionToken;
-              peerIdAlumno = re.peerId;
-              await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto});
-            }
+            const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno, gateToken);
+            if (re.ok) { sessionTokenAlumno = re.sessionToken; peerIdAlumno = re.peerId; await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto}); }
           } catch(_) {}
         }
       }
@@ -1092,21 +1132,13 @@ async function enviarMensaje(){
   let contenido="";
   historial.push({role:"user",content:texto,tipo:"chat"});
   guardarPartida();
-
   if(codigoSala && sessionTokenDocente){
-    try{
-      const rj = await CalabozosStateBridge.listarJugadores(codigoSala, sessionTokenDocente);
-      if(rj && rj.ok && Array.isArray(rj.jugadores)){
-        actualizarJugadoresDesdeLista(rj.jugadores);
-      }
-    }catch(_){}
+    try{ const rj = await CalabozosStateBridge.listarJugadores(codigoSala, sessionTokenDocente); if(rj && rj.ok && Array.isArray(rj.jugadores)) actualizarJugadoresDesdeLista(rj.jugadores); }catch(_){}
   }
-
   publicarEstado("mensaje-alumno");
   try{
-    if(modoDM!=="ollama"||!urlOllama){
-      contenido=crearFallback(texto);
-    }else{
+    if(modoDM!=="ollama"||!urlOllama){ contenido=crearFallback(texto); }
+    else{
       const modelo=$("cfg-modelo").value;
       const r=await fetch(`${urlOllama}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:modelo,messages:construirMensajes(),stream:true})});
@@ -1115,9 +1147,7 @@ async function enviarMensaje(){
         const {done,value}=await reader.read(); if(done)break;
         buf+=dec.decode(value,{stream:true});
         const lineas=buf.split("\n"); buf=lineas.pop();
-        for(const l of lineas){
-          try{const j=JSON.parse(l); if(j.message?.content){contenido+=j.message.content;bub.textContent=contenido;chat.scrollTop=chat.scrollHeight}}catch(_){}
-        }
+        for(const l of lineas){ try{const j=JSON.parse(l); if(j.message?.content){contenido+=j.message.content;bub.textContent=contenido;chat.scrollTop=chat.scrollHeight}}catch(_){} }
       }
     }
     if(!contenido)contenido=crearFallback(texto);
@@ -1126,8 +1156,7 @@ async function enviarMensaje(){
     guardarPartida();
     publicarEstado("narracion");
   }catch(e){
-    contenido=crearFallback(texto);
-    bub.textContent=contenido;
+    contenido=crearFallback(texto); bub.textContent=contenido;
     historial.push({role:"assistant",content:contenido,tipo:"chat"});
     guardarPartida();
     log("Ollama error: "+e.message);
@@ -1174,13 +1203,8 @@ async function desconectarMicrobit(){
 async function leerSerial(){
   const lector=microbitPort.readable.getReader();
   lectorMicrobit=lector;
-  try{
-    while(serialAbierto){
-      const {value,done}=await lector.read();
-      if(done)break;
-      for(const b of value)procesarByte(b);
-    }
-  }catch(e){log("Serial error: "+e.message)}
+  try{ while(serialAbierto){ const {value,done}=await lector.read(); if(done)break; for(const b of value)procesarByte(b); } }
+  catch(e){log("Serial error: "+e.message)}
   finally{try{lector.releaseLock()}catch(_){}}
 }
 function procesarByte(b){
@@ -1189,9 +1213,7 @@ function procesarByte(b){
     if(bufSerial.length>1){
       const datos=bufSerial.slice(0,-1);
       const chk=bufSerial[bufSerial.length-1];
-      if(xor(datos)===chk){
-        try{procesarLinea(new TextDecoder().decode(new Uint8Array(datos)))}catch(_){}
-      }
+      if(xor(datos)===chk){ try{procesarLinea(new TextDecoder().decode(new Uint8Array(datos)))}catch(_){} }
     }
     bufSerial=[]; return;
   }
@@ -1235,10 +1257,7 @@ async function enviarTrama(linea){
   if(!serialAbierto||!microbitPort)return;
   const data=new TextEncoder().encode(linea);
   const trama=new Uint8Array([STX,...data,xor([...data]),ETX]);
-  colaSerie=colaSerie.then(async()=>{
-    const w=microbitPort.writable.getWriter();
-    try{await w.write(trama)}finally{w.releaseLock()}
-  });
+  colaSerie=colaSerie.then(async()=>{ const w=microbitPort.writable.getWriter(); try{await w.write(trama)}finally{w.releaseLock()} });
   return colaSerie;
 }
 
@@ -1246,18 +1265,17 @@ async function enviarTrama(linea){
 async function generarTraspaso(){
   if(modo!=="docente"||!codigoSala||!sessionTokenDocente){alert("No hay sala activa");return}
   try{
-    log("Solicitando traspaso para sala " + codigoSala);
     const r=await CalabozosStateBridge.genTraspaso(codigoSala,sessionTokenDocente);
     if(!r || !r.ok){
       const err = (r && r.error) ? r.error : "error_desconocido";
       const msgs = {
         "auth":"Token de docente inválido. Recreá la sala.",
-        "accion_invalida":"El servidor NO tiene el endpoint genTraspaso. Actualizá el backend:\n1. Pegar Código.gs v17\n2. Implementar → Gestionar implementaciones → Editar → Nueva versión",
+        "accion_invalida":"El servidor NO tiene el endpoint genTraspaso. Actualizá el backend.",
         "sala_invalida":"La sala expiró o no existe."
       };
       throw new Error(msgs[err] || err);
     }
-    alert(`Código de traspaso: ${r.codigo}\n\nVálido por ${r.exp} minutos.\nDáselo al alumno que debe tomar el control.\n\nAl transferirlo, tu sesión de host se cerrará.`);
+    alert(`Código de traspaso: ${r.codigo}\n\nVálido por ${r.exp} minutos.\nDáselo al alumno que debe tomar el control.`);
   }catch(e){alert("Error: "+e.message)}
 }
 async function canjearTraspaso(){
@@ -1266,24 +1284,12 @@ async function canjearTraspaso(){
   if(!sessionTokenAlumno){alert("Necesitás estar en la sala primero");return}
   try{
     let estadoOriginal=null;
-    try{
-      const syncResp=await CalabozosStateBridge.sync(codigoSala,sessionTokenAlumno,-1,0);
-      if(syncResp.ok&&syncResp.estado) estadoOriginal=syncResp.estado;
-    }catch(err){log("Fallo recuperando estado: "+err.message)}
-    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){
-      alert("Traspaso abortado: el estado no es válido.\nEl código NO fue consumido.");
-      return;
-    }
+    try{ const syncResp=await CalabozosStateBridge.sync(codigoSala,sessionTokenAlumno,-1,0); if(syncResp.ok&&syncResp.estado) estadoOriginal=syncResp.estado; }catch(err){log("Fallo recuperando estado: "+err.message)}
+    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){ alert("Traspaso abortado: el estado no es válido.\nEl código NO fue consumido."); return; }
     const estadoRecuperado=normalizarEstado(estadoOriginal);
     const r=await CalabozosStateBridge.canjeTraspaso(codigoSala,sessionTokenAlumno,c);
     if(!r.ok){
-      const msgs={
-        "codigo_incorrecto":"Código incorrecto",
-        "traspaso_expirado":"Código expirado",
-        "sin_traspaso":"No hay traspaso pendiente",
-        "accion_invalida":"El servidor NO tiene el endpoint canjeTraspaso. Actualizá el backend.",
-        "rate_limit":"Esperá un minuto"
-      };
+      const msgs={ "codigo_incorrecto":"Código incorrecto", "traspaso_expirado":"Código expirado", "sin_traspaso":"No hay traspaso pendiente", "accion_invalida":"El servidor NO tiene el endpoint canjeTraspaso.", "rate_limit":"Esperá un minuto" };
       throw new Error(msgs[r.error]||r.error);
     }
     sessionTokenDocente=r.hostToken;
@@ -1294,75 +1300,38 @@ async function canjearTraspaso(){
     modo="docente"; aplicarModoVisual();
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
-    try{
-      p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
-        onPeerConnected:(id,name,jid)=>{
-          agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");
-          const clave = (jid || name || id).toUpperCase();
-          if(!partida.estadoJuego.jugadores[clave]){
-            partida.estadoJuego.jugadores[clave] = {
-              x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
-              ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:id
-            };
-          }
-          enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo();
-        },
-        onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(id,msg),
-        onPeerDisconnected:()=>{actualizarContadorP2P();renderizarTodo()},
-        onHostRevoked:()=>{
-          if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
-          agregarMensaje("⚠ Ya no sos host","system");
-          resetearBotonesDocente();
-        }
-      });
-      p2pHost.start();
-      iniciarPollingDocente(codigoSala, sessionTokenDocente);
-      $("btn-crear").hidden=true;
-      $("btn-traspaso").style.display="inline-block";
-      $("btn-cerrar-sala").style.display="inline-block";
-      mostrarInfoSala();
-      publicarEstado("host-traspasado");
-      alert("¡Ahora sos el host!");
-    }catch(err){
-      alert("Host iniciado pero P2P falló. Reintentá desde 'Recuperar host'.");
-      $("btn-recuperar-host").style.display="inline-block";
-    }
+    p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
+      onPeerConnected:(id,name,jid)=>{ agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
+      onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(id,msg),
+      onPeerDisconnected:()=>{actualizarContadorP2P();renderizarTodo()},
+      onHostRevoked:()=>{ if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
+    });
+    p2pHost.start();
+    iniciarPollingDocente(codigoSala, sessionTokenDocente);
+    $("btn-crear").hidden=true; $("btn-traspaso").style.display="inline-block"; $("btn-cerrar-sala").style.display="inline-block";
+    mostrarInfoSala();
+    publicarEstado("host-traspasado");
+    alert("¡Ahora sos el host!");
   }catch(e){alert("Error: "+e.message)}
 }
 
 async function recuperarHost(){
   if(!codigoSala){alert("Ingresá el código de la sala primero");return}
+  const tok = await pedirPinDocente();
+  if(!tok) return;
   try{
-    const r1 = await CalabozosStateBridge.solicitarRecuperacion(codigoSala, adminKey);
+    const r1 = await CalabozosStateBridge.solicitarRecuperacion(codigoSala, tok);
     if(!r1.ok){
-      const msgs={
-        "auth":"Clave incorrecta o no autorizado",
-        "admin_key_no_configurada":"Ejecutá configurarAdminKey() en Apps Script",
-        "publicaciones_recientes":"La sala tuvo publicaciones recientes. Esperá 90s.",
-        "sala_invalida":"La sala expiró",
-        "accion_invalida":"El servidor NO tiene el endpoint solicitarRecuperacion. Actualizá el backend."
-      };
+      const msgs={ "pin_requerido":"PIN requerido", "publicaciones_recientes":"La sala tuvo publicaciones recientes. Esperá 90s.", "sala_invalida":"La sala expiró" };
       throw new Error(msgs[r1.error]||r1.error);
     }
     let estadoOriginal=null;
-    try{
-      const sr = await CalabozosStateBridge.syncDocente(codigoSala, adminKey);
-      if(sr.ok&&sr.estado) estadoOriginal=sr.estado;
-    }catch(_){}
-    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){
-      alert("No se pudo leer un estado válido. El host anterior sigue activo.");
-      return;
-    }
+    try{ const sr = await CalabozosStateBridge.syncDocente(codigoSala, tok); if(sr.ok&&sr.estado) estadoOriginal=sr.estado; }catch(_){}
+    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){ alert("No se pudo leer un estado válido. El host anterior sigue activo."); return; }
     const estadoRecuperado = normalizarEstado(estadoOriginal);
-    const r2 = await CalabozosStateBridge.confirmarRecuperacion(codigoSala, r1.ticket, adminKey);
+    const r2 = await CalabozosStateBridge.confirmarRecuperacion(codigoSala, r1.ticket, tok);
     if(!r2.ok){
-      const msgs={
-        "ticket_expirado":"El ticket expiró. Reintentá.",
-        "ticket_invalido":"Ticket inválido",
-        "auth":"Clave incorrecta",
-        "accion_invalida":"El servidor NO tiene el endpoint confirmarRecuperacion. Actualizá el backend.",
-        "estado_no_recuperable":"El estado del servidor no es recuperable."
-      };
+      const msgs={ "ticket_expirado":"El ticket expiró. Reintentá.", "ticket_invalido":"Ticket inválido", "pin_requerido":"PIN incorrecto", "estado_no_recuperable":"El estado del servidor no es recuperable." };
       throw new Error(msgs[r2.error]||r2.error);
     }
     sessionTokenDocente = r2.hostToken;
@@ -1373,26 +1342,14 @@ async function recuperarHost(){
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
     p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
-      onPeerConnected: (id,name,jid)=>{
-        agregarMensaje(`🔗 ${name} conectado`,"system");
-        const clave = (jid || name || id).toUpperCase();
-        if(!partida.estadoJuego.jugadores[clave]){
-          partida.estadoJuego.jugadores[clave] = {
-            x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
-            ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:id
-          };
-        }
-        enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo();
-      },
+      onPeerConnected: (id,name,jid)=>{ agregarMensaje(`🔗 ${name} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
       onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(id,msg),
       onPeerDisconnected: ()=>{actualizarContadorP2P();renderizarTodo()},
       onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
     });
     p2pHost.start();
     iniciarPollingDocente(codigoSala, sessionTokenDocente);
-    $("btn-crear").hidden=true;
-    $("btn-traspaso").style.display="inline-block";
-    $("btn-cerrar-sala").style.display="inline-block";
+    $("btn-crear").hidden=true; $("btn-traspaso").style.display="inline-block"; $("btn-cerrar-sala").style.display="inline-block";
     mostrarInfoSala();
     publicarEstado("host-recuperado");
     $("btn-recuperar-host").style.display = "none";
@@ -1400,37 +1357,20 @@ async function recuperarHost(){
   }catch(e){alert("Error: "+e.message)}
 }
 
-/* ============================================================ CONFIG UI */
-function guardarGasUrl(){
-  const v = $("cfg-gas-url").value.trim();
-  const ak = $("cfg-admin-key") ? $("cfg-admin-key").value.trim() : "";
-  if(v) { localStorage.setItem(CLAVE_GAS, v); CONFIG.appsScriptUrl = v; }
-  if(ak) { adminKey = ak; localStorage.setItem(CLAVE_ADMIN_KEY, ak); }
-  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl, adminKey });
-  alert("Guardado\n\nURL: " + CONFIG.appsScriptUrl + "\nADMIN_KEY: " + (adminKey ? adminKey.slice(0,8)+"..." : "(vacía)"));
-}
-
 /* ============================================================ ARRANQUE */
-window.addEventListener("DOMContentLoaded", async () => {
+async function inicializarApp(){
   detectarModo();
   aplicarModoVisual();
-  $("cfg-gas-url").value = CONFIG.appsScriptUrl || "";
-  if ($("cfg-admin-key")) $("cfg-admin-key").value = adminKey || "";
   $("cfg-ollama").value = (localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,"");
-  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl, adminKey });
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl });
   renderizarTodo();
 
   try {
     const w = await CalabozosStateBridge.whoami();
-    esDocenteVerificado = Boolean(w && w.esDocente);
-    if (esDocenteVerificado) {
-      log("Docente verificado vía Google: " + (w.email || ""));
-    } else if (w && w.requiereAdminKey) {
-      log("Google no verifica. ADMIN_KEY disponible. Se pedirá al crear sala.");
-    } else if (w && w.via === "sin_configurar") {
-      log("⚠ Servidor sin DOCENTES_AUTORIZADOS ni ADMIN_KEY.");
+    if (!w.accesoConfigurado) {
+      log("⚠ El servidor no tiene CLASS_CODE/ADMIN_PIN configurados. Ejecutá configurarAcceso() en Apps Script.");
     }
-  } catch(_) { esDocenteVerificado = false; }
+  } catch(_) {}
 
   if (modo === "docente") {
     iniciarOllama();
@@ -1439,6 +1379,17 @@ window.addEventListener("DOMContentLoaded", async () => {
     const sala = new URLSearchParams(location.search).get("sala");
     if (sala) { $("input-sala").value = sala.toUpperCase(); unirseSalaAlumno(); }
     $("btn-canjear").style.display = "inline-block";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  // Si ya hay gateToken, ocultar overlay e inicializar. Si no, esperar a ingresarClase().
+  if (gateToken) {
+    $("gate-overlay").style.display = "none";
+    inicializarApp();
+  } else {
+    $("gate-input").addEventListener("keypress", e => { if(e.key==="Enter") ingresarClase(); });
+    setTimeout(()=>{ try{$("gate-input").focus()}catch(_){} }, 100);
   }
 });
 
