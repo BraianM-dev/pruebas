@@ -1,7 +1,6 @@
 window.CalabozosStateBridge = (function () {
     const config = {
         appsScriptUrl: "",
-        adminKey: "",
         iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
             { urls: "stun:stun1.l.google.com:19302" }
@@ -37,11 +36,13 @@ window.CalabozosStateBridge = (function () {
     const api = {
         ping:                  ()                              => getJSON({ accion: "ping", _: Date.now() }),
         whoami:                ()                              => getJSON({ accion: "whoami", _: Date.now() }),
-        unirseSala:            (sala, nombre, jid)             => getJSON({ accion: "unirse", sala, nombre, jugadorId: jid || "", _: Date.now() }),
-        crearSala:             (sala, adminKey)                => postJSON({ accion: "crear", sala }, { adminKey: adminKey || config.adminKey || "" }),
+        enterClass:            (codigo)                        => postJSON({ accion: "enterClass" }, { codigo }),
+        adminLogin:            (pin)                           => postJSON({ accion: "adminLogin" }, { pin }),
+        unirseSala:            (sala, nombre, jid, gateToken)  => getJSON({ accion: "unirse", sala, nombre, jugadorId: jid || "", gateToken: gateToken || "", _: Date.now() }),
+        crearSala:             (sala, adminToken)              => postJSON({ accion: "crear", sala }, { adminToken }),
         sync:                  (sala, tok, rev, seq)           => postJSON({ accion: "sync", sala }, { sessionToken: tok, rev, seq }),
         syncHost:              (sala, hostToken, rev, seq)     => postJSON({ accion: "sync", sala }, { hostToken, rev, seq }),
-        syncDocente:           (sala, adminKey)                => postJSON({ accion: "syncDocente", sala }, { adminKey: adminKey || config.adminKey || "" }),
+        syncDocente:           (sala, adminToken)              => postJSON({ accion: "syncDocente", sala }, { adminToken }),
         listarJugadores:       (sala, hostToken)               => postJSON({ accion: "listarJugadores", sala }, { hostToken }),
         publicarEstado:        (sala, hostToken, snapshot)     => postCheckAuth({ accion: "publicar", sala }, { hostToken, snapshot }),
         enviarMensaje:         (sala, tok, m)                  => postJSON({ accion: "enviar", sala }, Object.assign({ sessionToken: tok }, m)),
@@ -51,8 +52,8 @@ window.CalabozosStateBridge = (function () {
         sigack:                (sala, payload)                 => postJSON({ accion: "sigack", sala }, payload),
         genTraspaso:           (sala, hostToken)               => postJSON({ accion: "genTraspaso", sala }, { hostToken }),
         canjeTraspaso:         (sala, tok, codigo)             => postJSON({ accion: "canjeTraspaso", sala }, { sessionToken: tok, codigo }),
-        solicitarRecuperacion: (sala, adminKey)                => postJSON({ accion: "solicitarRecuperacion", sala }, { adminKey: adminKey || config.adminKey || "" }),
-        confirmarRecuperacion: (sala, ticket, adminKey)        => postJSON({ accion: "confirmarRecuperacion", sala }, { ticket, adminKey: adminKey || config.adminKey || "" }),
+        solicitarRecuperacion: (sala, adminToken)              => postJSON({ accion: "solicitarRecuperacion", sala }, { adminToken }),
+        confirmarRecuperacion: (sala, ticket, adminToken)      => postJSON({ accion: "confirmarRecuperacion", sala }, { ticket, adminToken }),
         kickPeer:              (sala, hostToken, peerId)       => postJSON({ accion: "kick", sala }, { hostToken, peerId }),
         kickJugador:           (sala, hostToken, jugadorId)    => postJSON({ accion: "kickJugador", sala }, { hostToken, jugadorId })
     };
@@ -68,6 +69,7 @@ window.CalabozosStateBridge = (function () {
         const onRejoin   = op.onRejoin   || (() => {});
         const nombre     = op.nombre     || "Alumno";
         const jugadorId  = op.jugadorId  || "";
+        const gateToken  = op.gateToken  || "";
         async function tick() {
             try {
                 const r = await api.sync(sala, tokenActual, ultRev, ultSeq);
@@ -77,11 +79,11 @@ window.CalabozosStateBridge = (function () {
                     if (r.mensajes && r.mensajes.length) { ultSeq = r.ultimoSeq; onMensajes(r.mensajes); }
                 } else if (r.error === "auth") {
                     try {
-                        const re = await api.unirseSala(sala, nombre, jugadorId);
+                        const re = await api.unirseSala(sala, nombre, jugadorId, gateToken);
                         if (re.ok) { tokenActual = re.sessionToken; onRejoin(re); intBase = 2000; }
                         else {
                             const e = new Error(re.error); e.code = re.error; onError(e);
-                            if (re.error === "baneado") return;
+                            if (re.error === "baneado" || re.error === "codigo_clase_requerido") return;
                         }
                     } catch (e) {
                         const err = new Error("rejoin:" + e.message); err.code = e.code || "rejoin_failed"; onError(err);
