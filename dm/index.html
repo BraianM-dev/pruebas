@@ -164,7 +164,6 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 .celda.ene{box-shadow:inset 0 0 0 1px #df7e7e}
 .celda .pl{display:block;color:#0b5f9d;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .celda .en{display:block;color:#a12c2c;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
 @media(max-width:900px){#main{grid-template-columns:140px 1fr 140px}}
 @media(max-width:768px){
   body{padding:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -237,7 +236,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
     <div id="lista-jugadores"><p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p></div>
   </div>
   <div id="camara-ar">
-    <iframe id="ar-game-frame" src="../index.html"
+    <iframe id="ar-game-frame" src="../Juego/index.html"
             allow="camera *; microphone *" allowfullscreen></iframe>
   </div>
   <div class="panel" id="panel-enemigos">
@@ -264,6 +263,10 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <div class="row">
     <label>URL Apps Script:</label>
     <input type="text" id="cfg-gas-url" style="flex:1 1 200px" placeholder="https://script.google.com/.../exec">
+  </div>
+  <div class="row">
+    <label>ADMIN_KEY:</label>
+    <input type="text" id="cfg-admin-key" style="flex:1 1 200px" placeholder="(configurarAdminKey en Apps Script)">
     <button class="btn" onclick="guardarGasUrl()">Guardar</button>
   </div>
   <div class="row">
@@ -305,9 +308,10 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 const PUERTO_OLLAMA = 11434;
 const GRUPO_RADIO = 99;
 const TAM_MAPA = 6;
-const CLAVE_PARTIDA = "calabozos.partida.v15";
+const CLAVE_PARTIDA = "calabozos.partida.v16";
 const CLAVE_OLLAMA = "calabozos.ollama.url";
 const CLAVE_GAS = "calabozos.gas.url";
+const CLAVE_ADMIN_KEY = "calabozos.adminKey";
 const MAPAS = [
   {id:"inicios",codigo:"I",nombre:"Inicios"},
   {id:"castillo",codigo:"C",nombre:"Castillo"},
@@ -329,6 +333,7 @@ let sessionTokenDocente = localStorage.getItem("calabozos.hostToken") || "";
 let sessionTokenAlumno = "";
 let peerIdAlumno = "";
 let jugadorIdAlumno = localStorage.getItem("calabozos.jugadorId") || "";
+let adminKey = localStorage.getItem(CLAVE_ADMIN_KEY) || "";
 let esDocenteVerificado = false;
 let nombreAlumno = "Alumno";
 let partida = cargarPartida();
@@ -387,7 +392,6 @@ function normalizarEstado(e){
 }
 function guardarPartida(){try{partida.historial=historial;localStorage.setItem(CLAVE_PARTIDA,JSON.stringify(partida))}catch(e){}}
 
-/* Validación estricta de estado (pre-normalize) */
 function validarEstadoOriginal(e){
   if(!e||typeof e!=="object"||Array.isArray(e))return false;
   const validos=["inicios","castillo","ruinas","pantano","bosque","bosque_ruinas"];
@@ -460,42 +464,75 @@ function generarCodigo(){
 /* ============================================================ CREAR SALA */
 async function crearSalaDocente(){
   if(!CONFIG.appsScriptUrl){alert("Configurá URL de Apps Script primero");return}
-  try{
-    const w=await CalabozosStateBridge.whoami();
-    esDocenteVerificado=Boolean(w&&w.esDocente);
-  }catch(_){esDocenteVerificado=false}
-  if(!esDocenteVerificado){
-    alert(
-      "El servidor no te reconoce como docente.\n\n" +
-      "Verificá:\n" +
-      "  1. Estás logueado con una cuenta de DOCENTES_AUTORIZADOS\n" +
-      "  2. El deployment es 'Ejecutar como: Yo' + 'Cualquier persona con cuenta de Google'\n" +
-      "  3. Ejecutaste configurarDocentes() en Apps Script"
-    );
+
+  let info = { esDocente: false, requiereAdminKey: false, via: "" };
+  try {
+    const w = await CalabozosStateBridge.whoami();
+    info.esDocente = Boolean(w && w.esDocente);
+    info.requiereAdminKey = Boolean(w && w.requiereAdminKey);
+    info.via = (w && w.via) || "";
+  } catch(e) {
+    alert("No se pudo contactar el servidor.\n\n" + e.message);
     return;
   }
-  const cod=generarCodigo();
-  try{
-    const r=await CalabozosStateBridge.crearSala(cod);
-    if(!r.ok)throw new Error(r.error||"Error");
-    codigoSala=cod; sessionTokenDocente=r.hostToken;
-    localStorage.setItem("calabozos.hostToken",sessionTokenDocente);
-    $("btn-crear").hidden=true; $("btn-traspaso").style.display="inline-block";
+
+  esDocenteVerificado = info.esDocente;
+
+  if (!info.esDocente) {
+    if (!adminKey) {
+      adminKey = prompt(
+        "El servidor no te reconoce como docente (puede pasar si Google no expone tu email).\n\n" +
+        "Ingresá la ADMIN_KEY configurada en Apps Script.\n\n" +
+        "Si no la tenés:\n" +
+        "  1. Abrí Apps Script → Editor\n" +
+        "  2. Ejecutá configurarAdminKey()\n" +
+        "  3. Copiá la clave del Logger\n\n" +
+        "ADMIN_KEY:",
+        ""
+      );
+      if (!adminKey) return;
+      adminKey = adminKey.trim();
+      localStorage.setItem(CLAVE_ADMIN_KEY, adminKey);
+      if($("cfg-admin-key")) $("cfg-admin-key").value = adminKey;
+      CalabozosStateBridge.configurar({ adminKey });
+    }
+  }
+
+  const cod = generarCodigo();
+  try {
+    const r = await CalabozosStateBridge.crearSala(cod, adminKey);
+    if (!r.ok) {
+      const msgs = {
+        "auth": "Clave incorrecta. Borrá 'calabozos.adminKey' del localStorage y reintentá.",
+        "admin_key_no_configurada": "El servidor no tiene ADMIN_KEY ni identidad configurada. Ejecutá configurarAdminKey() en Apps Script.",
+        "requiere_login_docente": "No autorizado.",
+        "rate_limit_crear": "Demasiadas salas creadas. Esperá una hora.",
+        "sala_existente": "Ese código ya existe. Reintentá."
+      };
+      throw new Error(msgs[r.error] || r.error);
+    }
+    codigoSala = cod;
+    sessionTokenDocente = r.hostToken;
+    localStorage.setItem("calabozos.hostToken", sessionTokenDocente);
+    $("btn-crear").hidden = true;
+    $("btn-traspaso").style.display = "inline-block";
     mostrarInfoSala();
-    p2pHost=new CalabozosStateBridge.P2PHost(cod,sessionTokenDocente,{
-      onPeerConnected:(id,name,jid)=>{agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
-      onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(msg),
-      onPeerDisconnected:()=>{agregarMensaje(`🔌 peer desconectado`,"system");actualizarContadorP2P()},
-      onHostRevoked:()=>{
+    p2pHost = new CalabozosStateBridge.P2PHost(cod, sessionTokenDocente, {
+      onPeerConnected: (id, name, jid) => { agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system"); enviarEstadoPorP2P(id); actualizarContadorP2P(); },
+      onPeerMessage: (id, msg) => procesarMensajeP2PPeer(msg),
+      onPeerDisconnected: () => { agregarMensaje(`🔌 peer desconectado`,"system"); actualizarContadorP2P(); },
+      onHostRevoked: () => {
         if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
-        agregarMensaje("⚠ Ya no sos host (transferiste el control)","system");
+        agregarMensaje("⚠ Ya no sos host","system");
         $("btn-crear").hidden=false; $("btn-traspaso").style.display="none";
       }
     });
     p2pHost.start();
     publicarEstado("sala-creada");
-    log("Sala creada: "+cod);
-  }catch(e){alert("Error: "+e.message)}
+    log("Sala creada: " + cod + " (auth: " + r.via + ")");
+  } catch(e) {
+    alert("Error: " + e.message);
+  }
 }
 function mostrarInfoSala(){
   const info=$("sala-info");
@@ -596,7 +633,6 @@ async function unirseSalaAlumno(){
     info.textContent="✗ "+e.message; info.className="sala-info error";
   }
 }
-
 function iniciarP2P(token){
   p2pPeer=new CalabozosStateBridge.P2PPeer(codigoSala,token,peerIdAlumno,nombreAlumno,jugadorIdAlumno,{
     onConnected:()=>{
@@ -1068,10 +1104,11 @@ async function canjearTraspaso(){
 async function recuperarHost(){
   if(!codigoSala){alert("Ingresá el código de la sala primero");return}
   try{
-    const r1=await CalabozosStateBridge.solicitarRecuperacion(codigoSala);
+    const r1 = await CalabozosStateBridge.solicitarRecuperacion(codigoSala, adminKey);
     if(!r1.ok){
       const msgs={
-        "requiere_login_docente":"No estás autenticado como docente.",
+        "auth":"Clave incorrecta o no autorizado",
+        "admin_key_no_configurada":"Ejecutá configurarAdminKey() en Apps Script",
         "publicaciones_recientes":"La sala tuvo publicaciones recientes. Esperá 90s.",
         "sala_invalida":"La sala expiró"
       };
@@ -1079,75 +1116,83 @@ async function recuperarHost(){
     }
     let estadoOriginal=null;
     try{
-      const sr=await CalabozosStateBridge.syncDocente(codigoSala);
+      const sr = await CalabozosStateBridge.syncDocente(codigoSala, adminKey);
       if(sr.ok&&sr.estado) estadoOriginal=sr.estado;
     }catch(_){}
     if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){
       alert("No se pudo leer un estado válido. El host anterior sigue activo.");
       return;
     }
-    const estadoRecuperado=normalizarEstado(estadoOriginal);
-    const r2=await CalabozosStateBridge.confirmarRecuperacion(codigoSala,r1.ticket);
+    const estadoRecuperado = normalizarEstado(estadoOriginal);
+    const r2 = await CalabozosStateBridge.confirmarRecuperacion(codigoSala, r1.ticket, adminKey);
     if(!r2.ok){
       const msgs={
         "ticket_expirado":"El ticket expiró. Reintentá.",
         "ticket_invalido":"Ticket inválido",
+        "auth":"Clave incorrecta",
         "estado_no_recuperable":"El estado del servidor no es recuperable."
       };
       throw new Error(msgs[r2.error]||r2.error);
     }
-    sessionTokenDocente=r2.hostToken;
-    localStorage.setItem("calabozos.hostToken",sessionTokenDocente);
-    partida.estadoJuego=estadoRecuperado;
+    sessionTokenDocente = r2.hostToken;
+    localStorage.setItem("calabozos.hostToken", sessionTokenDocente);
+    partida.estadoJuego = estadoRecuperado;
     guardarPartida();
-    modo="docente"; aplicarModoVisual();
+    modo = "docente"; aplicarModoVisual();
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
-    p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
-      onPeerConnected:(id,name,jid)=>{agregarMensaje(`🔗 ${name} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
-      onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(msg),
-      onPeerDisconnected:()=>actualizarContadorP2P(),
-      onHostRevoked:()=>{
-        if(p2pHost){p2pHost.stop();p2pHost=null}
-        agregarMensaje("⚠ Ya no sos host","system");
-      }
+    p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
+      onPeerConnected: (id,name,jid)=>{agregarMensaje(`🔗 ${name} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
+      onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(msg),
+      onPeerDisconnected: ()=>actualizarContadorP2P(),
+      onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); }
     });
     p2pHost.start();
     publicarEstado("host-recuperado");
-    $("btn-recuperar-host").style.display="none";
+    $("btn-recuperar-host").style.display = "none";
     alert("¡Recuperaste el control!");
   }catch(e){alert("Error: "+e.message)}
 }
 
 /* ============================================================ CONFIG UI */
 function guardarGasUrl(){
-  const v=$("cfg-gas-url").value.trim();
-  if(!v)return;
-  localStorage.setItem(CLAVE_GAS,v); CONFIG.appsScriptUrl=v;
-  CalabozosStateBridge.configurar(CONFIG);
-  alert("URL guardada");
+  const v = $("cfg-gas-url").value.trim();
+  const ak = $("cfg-admin-key") ? $("cfg-admin-key").value.trim() : "";
+  if(v) { localStorage.setItem(CLAVE_GAS, v); CONFIG.appsScriptUrl = v; }
+  if(ak) { adminKey = ak; localStorage.setItem(CLAVE_ADMIN_KEY, ak); }
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl, adminKey });
+  alert("Guardado\n\nURL: " + CONFIG.appsScriptUrl + "\nADMIN_KEY: " + (adminKey ? adminKey.slice(0,8)+"..." : "(vacía)"));
 }
 
 /* ============================================================ ARRANQUE */
-window.addEventListener("DOMContentLoaded",async()=>{
+window.addEventListener("DOMContentLoaded", async () => {
   detectarModo();
   aplicarModoVisual();
-  $("cfg-gas-url").value=CONFIG.appsScriptUrl||"";
-  $("cfg-ollama").value=(localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,"");
-  CalabozosStateBridge.configurar(CONFIG);
+  $("cfg-gas-url").value = CONFIG.appsScriptUrl || "";
+  if ($("cfg-admin-key")) $("cfg-admin-key").value = adminKey || "";
+  $("cfg-ollama").value = (localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,"");
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl, adminKey });
   renderizarTodo();
-  try{
-    const w=await CalabozosStateBridge.whoami();
-    esDocenteVerificado=Boolean(w&&w.esDocente);
-    if(esDocenteVerificado)log("Docente verificado: "+(w.email||""));
-  }catch(_){esDocenteVerificado=false}
-  if(modo==="docente"){
+
+  try {
+    const w = await CalabozosStateBridge.whoami();
+    esDocenteVerificado = Boolean(w && w.esDocente);
+    if (esDocenteVerificado) {
+      log("Docente verificado vía Google: " + (w.email || ""));
+    } else if (w && w.requiereAdminKey) {
+      log("Google no verifica. ADMIN_KEY disponible. Se pedirá al crear sala.");
+    } else if (w && w.via === "sin_configurar") {
+      log("⚠ Servidor sin DOCENTES_AUTORIZADOS ni ADMIN_KEY.");
+    }
+  } catch(_) { esDocenteVerificado = false; }
+
+  if (modo === "docente") {
     iniciarOllama();
-  }else{
+  } else {
     ajustarInput(false);
-    const sala=new URLSearchParams(location.search).get("sala");
-    if(sala){$("input-sala").value=sala.toUpperCase();unirseSalaAlumno()}
-    $("btn-canjear").style.display="inline-block";
+    const sala = new URLSearchParams(location.search).get("sala");
+    if (sala) { $("input-sala").value = sala.toUpperCase(); unirseSalaAlumno(); }
+    $("btn-canjear").style.display = "inline-block";
   }
 });
 
