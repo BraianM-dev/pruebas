@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Calabozos y Código · Dungeon Master</title>
+<link rel="icon" type="image/png" href="https://braianm-dev.github.io/pruebas/oa/assets/logo-calabozos-codigo.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -161,14 +162,13 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 .celda .pl{display:block;color:#0b5f9d;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .celda .en{display:block;color:#a12c2c;font-weight:800;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Gate overlay */
 #gate-overlay{
   position:fixed;inset:0;background:var(--fondo);z-index:9999;
   display:flex;align-items:center;justify-content:center;padding:16px
 }
 #gate-card{
   background:var(--panel);border:2px solid var(--dorado);border-radius:12px;
-  padding:28px 24px;max-width:400px;width:100%;text-align:center
+  padding:24px 22px;max-width:420px;width:100%;text-align:center
 }
 #gate-card h2{color:var(--dorado);font-size:1.3rem;margin-bottom:6px}
 #gate-card p{color:var(--tenue);font-size:.82rem;margin-bottom:16px}
@@ -178,7 +178,17 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 }
 #gate-error{color:var(--rojo);font-size:.75rem;margin-top:10px;display:none}
 
-/* Accessibility floating panel */
+#rol-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:10000;align-items:center;justify-content:center;padding:16px
+}
+#rol-card{
+  background:var(--panel);border:2px solid var(--dorado);border-radius:12px;
+  padding:24px;max-width:400px;width:100%;text-align:center
+}
+#rol-card h2{color:var(--dorado);margin-bottom:16px;font-size:1.2rem}
+#rol-card .btn{width:100%;padding:14px;margin-bottom:10px;font-size:.9rem}
+
 #a11y-panel{
   display:none;position:fixed;top:52px;right:10px;z-index:1000;
   background:var(--panel);border:1px solid var(--dorado);border-radius:10px;
@@ -219,18 +229,36 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 </head>
 <body>
 
-<!-- ==================== GATE OVERLAY ==================== -->
+<!-- GATE OVERLAY -->
 <div id="gate-overlay">
   <div id="gate-card">
+    <img src="https://braianm-dev.github.io/pruebas/oa/assets/logo-calabozos-codigo.png" alt="Calabozos y Código" style="max-width:170px;margin-bottom:12px;">
     <h2>🏰 Calabozos y Código</h2>
     <p>Ingresá el código de clase para continuar</p>
     <input id="gate-input" type="text" placeholder="CÓDIGO" autocapitalize="characters" autocomplete="off">
     <button class="btn primary" onclick="ingresarClase()" style="width:100%">Ingresar</button>
     <p id="gate-error"></p>
+    <div style="margin-top:18px;font-size:.7rem;color:var(--tenue);line-height:1.8;">
+      <a href="privacidad.html" target="_blank" style="color:var(--dorado);">Privacidad</a>
+      &nbsp;·&nbsp;
+      <a href="licencia.html" target="_blank" style="color:var(--dorado);">Licencia</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/BraianM-dev/pruebas" target="_blank" style="color:var(--dorado);">Código fuente</a>
+    </div>
   </div>
 </div>
 
-<!-- ==================== HEADER ==================== -->
+<!-- ROL MODAL -->
+<div id="rol-modal">
+  <div id="rol-card">
+    <h2>¿Cómo querés participar?</h2>
+    <button class="btn primary" onclick="elegirRol('jugador')">🎮 Jugador (con micro:bit)</button>
+    <button class="btn" onclick="elegirRol('espectador')" style="background:var(--panel2);">👁️ Espectador (solo mirar y chatear)</button>
+    <p style="color:var(--tenue);font-size:.75rem;margin-top:12px;">Los espectadores también pueden enviar mensajes.</p>
+  </div>
+</div>
+
+<!-- HEADER -->
 <div id="header">
   <span class="title">🏰 Calabozos y Código · DM</span>
   <div class="acciones">
@@ -241,7 +269,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   </div>
 </div>
 
-<!-- ==================== PANEL ACCESIBILIDAD ==================== -->
+<!-- PANEL A11Y -->
 <div id="a11y-panel">
   <h3>Accesibilidad</h3>
   <div class="row">
@@ -265,7 +293,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   </div>
 </div>
 
-<!-- ==================== SESSION ==================== -->
+<!-- SESSION -->
 <div id="session">
   <span id="modo-indicador" class="badge-modo modo-docente">👨‍🏫 DOCENTE</span>
   <div id="panel-docente" style="display:contents">
@@ -285,7 +313,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <button class="btn" id="btn-toggle-modo" onclick="alternarModo()">Cambiar a alumno</button>
 </div>
 
-<!-- ==================== MAIN ==================== -->
+<!-- MAIN -->
 <div id="main">
   <div class="panel" id="panel-jugadores">
     <h2>⚔️ Héroes</h2>
@@ -301,13 +329,13 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   </div>
 </div>
 
-<!-- ==================== CHAT ==================== -->
+<!-- CHAT -->
 <div id="zona-narracion">
   <h3>📜 Narración</h3>
   <div id="chat"></div>
 </div>
 
-<!-- ==================== ACCIONES ==================== -->
+<!-- ACCIONES -->
 <div id="barra">
   <input type="text" id="user-input" placeholder="Esperando conexión..." disabled onkeypress="onEnter(event)">
   <button class="btn primary" id="btn-enviar" onclick="enviarMensaje()" disabled>Enviar</button>
@@ -316,7 +344,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <button class="btn accion-btn" onclick="accionCurar()">💚 Curar</button>
 </div>
 
-<!-- ==================== CONFIGURACIÓN AVANZADA ==================== -->
+<!-- CONFIG AVANZADA -->
 <details class="settings">
   <summary>⚙️ Configuración avanzada</summary>
   <div class="row">
@@ -335,7 +363,7 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
   <textarea id="log" readonly></textarea>
 </details>
 
-<!-- ==================== TABLERO ==================== -->
+<!-- TABLERO -->
 <dialog id="tablero">
   <h2>Tablero del grupo</h2>
   <div class="row" style="margin-bottom:8px">
@@ -360,10 +388,11 @@ dialog#tablero h2{font-size:16px;color:#4e3e1f;margin-bottom:8px}
 const PUERTO_OLLAMA = 11434;
 const GRUPO_RADIO = 99;
 const TAM_MAPA = 6;
-const CLAVE_PARTIDA = "calabozos.partida.v20";
+const CLAVE_PARTIDA = "calabozos.partida.v21";
 const CLAVE_OLLAMA = "calabozos.ollama.url";
 const CLAVE_GATE = "calabozos.gateToken";
 const CLAVE_ADMIN = "calabozos.adminToken";
+const CLAVE_ROL = "calabozos.rolAlumno";
 const MAPAS = [
   {id:"inicios",codigo:"I",nombre:"Inicios"},
   {id:"castillo",codigo:"C",nombre:"Castillo"},
@@ -374,9 +403,21 @@ const MAPAS = [
 ];
 const MAPAS_ID = Object.fromEntries(MAPAS.map(m=>[m.id,m]));
 
-const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbxZ86EH7efGkpXnQg5e3BNsRO66kjSFDzuoJa3FIgcpHJajR9rrcU4r3hK8gdHmzlYZ/exec";
+const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyxZ86EH7efGkpXnQg5e3BNsRO66kjSFDzuoJa3FIgcpHJajR9rrcU4r3hK8gdHmzlYZ/exec";
 
 const CONFIG = { appsScriptUrl: APPS_SCRIPT_URL_DEFAULT, arFrameId: "ar-game-frame" };
+
+/* Tabla de personajes — debe coincidir con main_jugador.py */
+const PERSONAJES = {
+  GUERRERO:  {hp:30, atk:8,  def:6, acc:"ESPADA",  emoji:"⚔️"},
+  MAGO:      {hp:20, atk:10, def:3, acc:"BASTON",  emoji:"🧙"},
+  ARQUERO:   {hp:22, atk:7,  def:4, acc:"ARCO",    emoji:"🏹"},
+  CURADOR:   {hp:25, atk:4,  def:5, acc:"CETRO",   emoji:"💚"},
+  PICARO:    {hp:18, atk:9,  def:3, acc:"DAGAS",   emoji:"🗡️"},
+  BARBARO:   {hp:35, atk:11, def:2, acc:"HACHA",   emoji:"🪓"},
+  PALADIN:   {hp:28, atk:6,  def:8, acc:"ESCUDO",  emoji:"🛡️"},
+  NIGROMANTE:{hp:22, atk:9,  def:4, acc:"LIBRO",   emoji:"💀"}
+};
 
 /* ============================================================ ESTADO */
 let modo = "docente";
@@ -387,6 +428,7 @@ let sessionTokenDocente = localStorage.getItem("calabozos.hostToken") || "";
 let sessionTokenAlumno = "";
 let peerIdAlumno = "";
 let jugadorIdAlumno = localStorage.getItem("calabozos.jugadorId") || "";
+let rolAlumno = localStorage.getItem(CLAVE_ROL) || "";
 let nombreAlumno = "Alumno";
 let partida = cargarPartida();
 let historial = partida.historial;
@@ -398,6 +440,7 @@ let pollingGAS = false, debouncePub = null;
 let pollingDocenteId = null, ultRevDoc = 0, ultSeqDoc = 0;
 let microbitPort = null, lectorMicrobit = null, serialAbierto = false;
 let colaSerie = Promise.resolve();
+let espectadoresConectados = [];
 
 /* ============================================================ DEDUPLICACIÓN */
 const _recientes = [];
@@ -443,9 +486,16 @@ function normalizarEstado(e){
   s.turno=txt(e.turno,40); s.ultimoEvento=txt(e.ultimoEvento,160);
   if(e.ultimoDado)s.ultimoDado={jugador:txt(e.ultimoDado.jugador,12),valor:Number(e.ultimoDado.valor)};
   if(e.jugadores)Object.entries(e.jugadores).forEach(([id,j])=>{
-    s.jugadores[id]={ultimaConexion:j.ultimaConexion||"",ultimoDado:Number.isFinite(Number(j.ultimoDado))?Number(j.ultimoDado):null,
+    s.jugadores[id]={
+      ultimaConexion:j.ultimaConexion||"",ultimoDado:Number.isFinite(Number(j.ultimoDado))?Number(j.ultimoDado):null,
       x:int(j.x,0,TAM_MAPA-1,0),y:int(j.y,0,TAM_MAPA-1,0),mapaId:MAPAS_ID[j.mapaId]?j.mapaId:s.mapaActual,
-      peerId: j.peerId || null};
+      peerId: j.peerId || null,
+      tipo: j.tipo === "espectador" ? "espectador" : "jugador",
+      personaje: PERSONAJES[j.personaje] ? j.personaje : null,
+      hp: int(j.hp, 0, 999, 0), hpMax: int(j.hpMax, 1, 999, 1),
+      nivel: int(j.nivel, 1, 99, 1), ataque: int(j.ataque, 0, 999, 0), defensa: int(j.defensa, 0, 999, 0),
+      accesorio: txt(j.accesorio, 20), emoji: txt(j.emoji, 8)
+    };
   });
   if(e.enemigos)Object.entries(e.enemigos).forEach(([id,en])=>{
     const vm=int(en.vidaMaxima,1,999,1),v=int(en.vida,0,vm,vm);
@@ -472,20 +522,17 @@ function validarEstadoOriginal(e){
   return true;
 }
 
-/* ============================================================ GATE (código de clase) */
+/* ============================================================ GATE */
 async function ingresarClase(){
-  const input = $("gate-input");
+  const el = $("gate-input");
   const errEl = $("gate-error");
-  const codigo = input.value.trim();
+  const codigo = el.value.trim();
   if(!codigo){ errEl.textContent="Escribí el código"; errEl.style.display="block"; return; }
   errEl.style.display="none";
   try{
     const r = await CalabozosStateBridge.enterClass(codigo);
     if(!r.ok){
-      const msgs = {
-        "codigo_incorrecto":"Código incorrecto",
-        "acceso_no_configurado":"El docente debe configurar el acceso en Apps Script (configurarAcceso)"
-      };
+      const msgs = { "codigo_incorrecto":"Código incorrecto", "acceso_no_configurado":"El docente debe ejecutar setupAcceso() en Apps Script" };
       errEl.textContent = msgs[r.error] || r.error;
       errEl.style.display="block";
       return;
@@ -494,7 +541,6 @@ async function ingresarClase(){
     localStorage.setItem(CLAVE_GATE, gateToken);
     $("gate-overlay").style.display = "none";
     log("Acceso concedido");
-    // Ahora sí inicializar la app
     inicializarApp();
   }catch(e){
     errEl.textContent = "No se pudo conectar: " + e.message;
@@ -502,7 +548,7 @@ async function ingresarClase(){
   }
 }
 
-/* ============================================================ ADMIN (PIN docente) */
+/* ============================================================ ADMIN */
 async function pedirPinDocente(){
   if(adminToken) return adminToken;
   const pin = prompt("PIN docente:");
@@ -510,20 +556,22 @@ async function pedirPinDocente(){
   try{
     const r = await CalabozosStateBridge.adminLogin(pin);
     if(!r.ok){
-      const msgs = {
-        "pin_incorrecto":"PIN incorrecto",
-        "acceso_no_configurado":"El docente debe configurar el acceso en Apps Script"
-      };
+      const msgs = { "pin_incorrecto":"PIN incorrecto", "acceso_no_configurado":"El docente debe configurar acceso en Apps Script" };
       alert(msgs[r.error] || r.error);
       return null;
     }
     adminToken = r.adminToken;
     sessionStorage.setItem(CLAVE_ADMIN, adminToken);
     return adminToken;
-  }catch(e){
-    alert("Error: " + e.message);
-    return null;
-  }
+  }catch(e){ alert("Error: " + e.message); return null; }
+}
+
+/* ============================================================ ROL */
+function elegirRol(rol){
+  rolAlumno = rol;
+  localStorage.setItem(CLAVE_ROL, rol);
+  $("rol-modal").style.display = "none";
+  unirseSalaAlumno();
 }
 
 /* ============================================================ ACCESIBILIDAD */
@@ -576,7 +624,7 @@ function restablecerA11y(){
   $("a11y-contraste").classList.remove("on");
   $("a11y-anim").checked=true;
 }
-function toggleFullscreen(){const el=$("camara-area");if(!document.fullscreenElement)(el.requestFullscreen||el.webkitRequestFullscreen).call(el);else(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
+function toggleFullscreen(){const el=$("camara-ar");if(!document.fullscreenElement)(el.requestFullscreen||el.webkitRequestFullscreen).call(el);else(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
 
 /* ============================================================ MODO/SALA */
 function detectarModo(){
@@ -598,7 +646,7 @@ function aplicarModoVisual(){
 function alternarModo(){
   if(generando)return;
   modo=modo==="docente"?"alumno":"docente";
-  detenerP2P(); detenerGAS(); codigoSala="";
+  detenerP2P(); detenerGAS(); detenerPollingDocente(); codigoSala="";
   aplicarModoVisual();
   if(modo==="docente"){iniciarOllama();ajustarInput(true)}else ajustarInput(false);
 }
@@ -616,11 +664,7 @@ async function crearSalaDocente(){
   try{
     const r = await CalabozosStateBridge.crearSala(cod, tok);
     if(!r.ok){
-      const msgs = {
-        "pin_requerido":"PIN docente requerido. Volvé a intentar.",
-        "rate_limit_crear":"Demasiadas salas creadas. Esperá una hora.",
-        "sala_existente":"Ese código ya existe. Reintentá."
-      };
+      const msgs = { "pin_requerido":"PIN docente requerido.", "rate_limit_crear":"Demasiadas salas. Esperá una hora.", "sala_existente":"Ese código ya existe. Reintentá." };
       throw new Error(msgs[r.error] || r.error);
     }
     codigoSala = cod;
@@ -637,7 +681,8 @@ async function crearSalaDocente(){
         if(!partida.estadoJuego.jugadores[clave]){
           partida.estadoJuego.jugadores[clave] = {
             x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
-            ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:id
+            ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:id,
+            tipo:"jugador", personaje:null, hp:0, hpMax:0, nivel:1, ataque:0, defensa:0, accesorio:"", emoji:""
           };
         } else {
           partida.estadoJuego.jugadores[clave].peerId = id;
@@ -658,9 +703,7 @@ async function crearSalaDocente(){
     iniciarPollingDocente(cod, sessionTokenDocente);
     publicarEstado("sala-creada");
     log("Sala creada: " + cod);
-  } catch(e) {
-    alert("Error: " + e.message);
-  }
+  } catch(e) { alert("Error: " + e.message); }
 }
 function resetearBotonesDocente(){
   $("btn-crear").hidden = false;
@@ -703,22 +746,29 @@ async function cerrarSalaDocente(){
   } catch(e) { alert("Error al cerrar: " + e.message); }
 }
 
-/* ============================================================ UNIRSE (alumno) */
+/* ============================================================ UNIRSE */
 async function unirseSalaAlumno(){
   const c=$("input-sala").value.trim().toUpperCase();
   if(c.length<4){alert("Código inválido");return}
   codigoSala=c;
   const info=$("alumno-sala-info");
   info.textContent="Validando..."; info.className="sala-info";
+  
+  if(!rolAlumno){
+    $("rol-modal").style.display = "flex";
+    return;
+  }
+  
   if(!nombreAlumno||nombreAlumno==="Alumno"){
     nombreAlumno=prompt("Tu nombre (o apodo):","Alumno")||"Alumno";
   }
-  if(!jugadorIdAlumno){
+  if(rolAlumno==="jugador" && !jugadorIdAlumno){
     jugadorIdAlumno=(prompt("Tu ID de jugador (micro:bit, ej. P01):","")||"").toUpperCase().slice(0,12);
     if(jugadorIdAlumno)localStorage.setItem("calabozos.jugadorId",jugadorIdAlumno);
   }
+  
   try{
-    const r=await CalabozosStateBridge.unirseSala(c,nombreAlumno,jugadorIdAlumno,gateToken);
+    const r=await CalabozosStateBridge.unirseSala(c,nombreAlumno,jugadorIdAlumno,gateToken,rolAlumno);
     if(!r.ok){
       const msgMap={
         "codigo_clase_requerido":"❌ Tu sesión de clase expiró. Recargá la página e ingresá el código de nuevo.",
@@ -737,9 +787,9 @@ async function unirseSalaAlumno(){
     p2pPeer=new CalabozosStateBridge.P2PPeer(c,sessionTokenAlumno,peerIdAlumno,nombreAlumno,jugadorIdAlumno,{
       onConnected:()=>{
         p2pConectado=true;
-        info.textContent=`✓ P2P · ${c}`; info.className="sala-info";
+        info.textContent=`✓ P2P · ${c} (${rolAlumno})`; info.className="sala-info";
         [...chat.querySelectorAll(".msg.system")].forEach(el=>{if(el.textContent.includes("vía GAS"))el.remove();});
-        agregarMensaje("🔗 Conectado al DM (P2P)","system");
+        agregarMensaje(`🔗 Conectado al DM (P2P) como ${rolAlumno}`,"system");
         $("p2p-badge").style.display="inline-flex"; $("p2p-badge").textContent="⚡ P2P";
         detenerGAS();
       },
@@ -793,7 +843,7 @@ function iniciarP2P(token){
     onConnected:()=>{
       p2pConectado=true;
       $("p2p-badge").style.display="inline-flex"; $("p2p-badge").textContent="⚡ P2P";
-      $("alumno-sala-info").textContent=`✓ P2P · ${codigoSala}`;
+      $("alumno-sala-info").textContent=`✓ P2P · ${codigoSala} (${rolAlumno})`;
       $("alumno-sala-info").className="sala-info";
       detenerGAS();
       agregarMensaje("🔗 Reconectado al nuevo host","system");
@@ -820,12 +870,13 @@ function iniciarP2P(token){
 function iniciarGAS(c){
   if(pollingGAS||!sessionTokenAlumno)return;
   CalabozosStateBridge.iniciarPolling(c,sessionTokenAlumno,{
-    nombre:nombreAlumno, jugadorId:jugadorIdAlumno, gateToken:gateToken,
+    nombre:nombreAlumno, jugadorId:jugadorIdAlumno, gateToken:gateToken, rol:rolAlumno,
     onEstado:(e)=>aplicarEstadoRemoto(e),
     onMensajes:(msgs)=>msgs.forEach(m=>{
       if(m.tipo==="chat"&&m.autor!==nombreAlumno){
         if(yaEstaEnChat(m.autor,m.texto))return;
-        agregarMensaje(`🎓 ${m.autor}: ${m.texto}`,"user");
+        const icono = m.rol === "espectador" ? "👁" : "🎓";
+        agregarMensaje(`${icono} ${m.autor}: ${m.texto}`,"user");
       }
     }),
     onRejoin:(re)=>{
@@ -833,6 +884,7 @@ function iniciarGAS(c){
       peerIdAlumno=re.peerId;
       log("Sesión renovada");
     },
+    onSalaCerrada:()=>mostrarSalaCerrada(),
     onError:(e)=>{
       if(e.code==="baneado"){
         pollingGAS=false; sessionTokenAlumno=""; ajustarInput(false);
@@ -853,6 +905,13 @@ function iniciarGAS(c){
   pollingGAS=true;
 }
 function detenerGAS(){CalabozosStateBridge.detenerPolling();pollingGAS=false}
+function mostrarSalaCerrada(){
+  detenerP2P(); detenerGAS();
+  sessionTokenAlumno=""; peerIdAlumno=""; codigoSala="";
+  ajustarInput(false);
+  alert("🔒 El docente cerró la sala.\n\nVas a volver al inicio para unirte a una nueva sala.");
+  location.href = location.pathname + "?modo=alumno";
+}
 
 /* ============================================================ POLLING DOCENTE */
 function iniciarPollingDocente(sala, hostToken) {
@@ -862,6 +921,14 @@ function iniciarPollingDocente(sala, hostToken) {
     if (!hostToken || !sala) return;
     try {
       const rj = await CalabozosStateBridge.listarJugadores(sala, hostToken);
+      if (rj && rj.error === "sala_invalida") {
+        detenerPollingDocente();
+        if (p2pHost) { p2pHost.stop(); p2pHost = null; }
+        codigoSala = ""; sessionTokenDocente = "";
+        resetearBotonesDocente();
+        agregarMensaje("🔒 Sala cerrada o expirada","system");
+        return;
+      }
       if (rj && rj.ok && Array.isArray(rj.jugadores)) actualizarJugadoresDesdeLista(rj.jugadores);
       const rs = await CalabozosStateBridge.syncHost(sala, hostToken, ultRevDoc, ultSeqDoc);
       if (rs && rs.ok && Array.isArray(rs.mensajes) && rs.mensajes.length) {
@@ -869,7 +936,8 @@ function iniciarPollingDocente(sala, hostToken) {
         rs.mensajes.forEach(m => {
           if (m.tipo !== "chat") return;
           if (yaEstaEnChat(m.autor, m.texto)) return;
-          agregarMensaje(`🎓 ${m.autor}: ${m.texto}`, "user");
+          const icono = m.rol === "espectador" ? "👁" : "🎓";
+          agregarMensaje(`${icono} ${m.autor}: ${m.texto}`, "user");
           historial.push({ role: "user", content: `[${m.autor}] ${m.texto}`, tipo: "chat" });
         });
         guardarPartida();
@@ -882,22 +950,39 @@ function iniciarPollingDocente(sala, hostToken) {
 function actualizarJugadoresDesdeLista(jugadores) {
   const e = partida.estadoJuego;
   let cambios = false;
+  const espects = [];
   jugadores.forEach(j => {
-    const clave = (j.jugadorId || j.nombre || j.peerId || "").toUpperCase();
-    if (!clave) return;
+    const rol = j.rol === "espectador" ? "espectador" : "jugador";
+    if (rol === "espectador") {
+      espects.push({ nombre: j.nombre, peerId: j.peerId });
+      return;
+    }
+    const clave = (j.jugadorId || j.peerId || "").toUpperCase();
+    if (!/^[A-Z0-9_-]{1,12}$/.test(clave)) return;
     if (!e.jugadores[clave]) {
-      e.jugadores[clave] = { x:0, y:0, mapaId:e.mapaActual, ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:j.peerId };
+      e.jugadores[clave] = {
+        x:0, y:0, mapaId:e.mapaActual, ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:j.peerId,
+        tipo:"jugador", personaje:null, hp:0, hpMax:0, nivel:1, ataque:0, defensa:0, accesorio:"", emoji:""
+      };
       cambios = true;
     } else {
       if (e.jugadores[clave].peerId !== j.peerId) { e.jugadores[clave].peerId = j.peerId; cambios = true; }
       e.jugadores[clave].ultimaConexion = new Date().toISOString();
     }
   });
-  if (cambios) renderizarTodo();
+  espectadoresConectados = espects;
+  renderizarTodo();
 }
 function detenerPollingDocente() {
   if (pollingDocenteId) { clearTimeout(pollingDocenteId); pollingDocenteId = null; }
   ultRevDoc = 0; ultSeqDoc = 0;
+}
+function detenerP2P(){
+  if(p2pHost){p2pHost.stop();p2pHost=null}
+  if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
+  detenerPollingDocente();
+  p2pConectado=false;
+  $("p2p-badge").style.display="none";
 }
 
 /* ============================================================ PUBLICAR */
@@ -933,19 +1018,27 @@ function enviarEstadoPorP2P(peerId){
 function procesarMensajeP2PPeer(peerId, msg){
   if(msg.tipo==="chat"){
     const autor = msg.autor || "Alumno";
-    const clave = autor.toUpperCase();
-    if(!partida.estadoJuego.jugadores[clave]){
-      partida.estadoJuego.jugadores[clave] = { x:0, y:0, mapaId:partida.estadoJuego.mapaActual, ultimaConexion:new Date().toISOString(), ultimoDado:null, peerId:peerId||null };
-    } else {
-      if(peerId) partida.estadoJuego.jugadores[clave].peerId = peerId;
-      partida.estadoJuego.jugadores[clave].ultimaConexion = new Date().toISOString();
+    const rol = msg.rol === "espectador" ? "espectador" : "jugador";
+    if(rol === "jugador"){
+      const clave = autor.toUpperCase();
+      if(!partida.estadoJuego.jugadores[clave]){
+        partida.estadoJuego.jugadores[clave] = {
+          x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+          ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:peerId||null,
+          tipo:"jugador", personaje:null, hp:0, hpMax:0, nivel:1, ataque:0, defensa:0, accesorio:"", emoji:""
+        };
+      } else {
+        if(peerId) partida.estadoJuego.jugadores[clave].peerId = peerId;
+        partida.estadoJuego.jugadores[clave].ultimaConexion = new Date().toISOString();
+      }
     }
     if(yaEstaEnChat(autor, msg.texto))return;
-    agregarMensaje(`🎓 ${autor}: ${msg.texto}`,"user");
+    const icono = rol === "espectador" ? "👁" : "🎓";
+    agregarMensaje(`${icono} ${autor}: ${msg.texto}`,"user");
     historial.push({role:"user",content:`[${autor}] ${msg.texto}`,tipo:"chat"});
     guardarPartida();
     renderizarTodo();
-    if(p2pHost)p2pHost.broadcast({tipo:"chat",autor,texto:msg.texto});
+    if(p2pHost)p2pHost.broadcast({tipo:"chat",autor,texto:msg.texto,rol});
   }
 }
 function aplicarEstadoRemoto(estado){
@@ -978,29 +1071,77 @@ function obtenerPeerIdJugador(clave, jugador) {
   }
   return null;
 }
+function renderJugadorCard(id, j) {
+  const esJug = (j.tipo || "jugador") === "jugador";
+  const d = document.createElement("div");
+  d.className = "tarjeta";
+  const emoji = j.emoji || (esJug ? "🎭" : "👁");
+  const persTxt = j.personaje ? `${j.personaje}` : (esJug ? "Sin personaje" : "Espectador");
+  const hpPct = j.hpMax > 0 ? Math.max(0, Math.min(100, (j.hp / j.hpMax) * 100)) : 0;
+  const accesorio = j.accesorio ? ` · ${j.accesorio}` : "";
+  d.innerHTML = `
+    <h3>${emoji} ${id}</h3>
+    <small>📍 ${coord(j.x,j.y)}${esJug && j.personaje ? ` · ${persTxt}${accesorio}` : ""}</small>
+    ${esJug ? `
+      <div class="vida-fondo" style="margin-top:4px;">
+        <div style="height:100%;width:${hpPct}%;background:linear-gradient(90deg,#c62828,#4CAF50);text-align:center;font-size:.55rem;line-height:10px;color:#fff;">
+          ${j.hp}/${j.hpMax}
+        </div>
+      </div>
+      <small>⚔ ${j.ataque || 0} · 🛡 ${j.defensa || 0} · ⭐ Nv.${j.nivel || 1}</small>
+    ` : `<small>👁 Solo observa</small>`}
+  `;
+  if (modo === "docente" && sessionTokenDocente && p2pHost) {
+    const pid = obtenerPeerIdJugador(id, j);
+    if (pid) {
+      const btn = document.createElement("button");
+      btn.className = "btn danger";
+      btn.style.cssText = "padding:2px 6px;font-size:.65rem;margin-top:4px;";
+      btn.textContent = "Expulsar";
+      btn.onclick = () => kickJugador(pid);
+      d.appendChild(btn);
+    }
+    if (esJug) {
+      const effDiv = document.createElement("div");
+      effDiv.style.cssText = "display:flex;gap:2px;margin-top:4px;flex-wrap:wrap;";
+      const mkBtn = (label, tipo) => {
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.style.cssText = "padding:1px 5px;font-size:.6rem;";
+        b.textContent = label;
+        b.onclick = () => {
+          const amt = parseInt(prompt("Cantidad:", tipo === "levelup" ? "1" : "5")) || 0;
+          if (amt > 0) aplicarEfecto(id, tipo, amt);
+        };
+        return b;
+      };
+      effDiv.appendChild(mkBtn("−HP", "damage"));
+      effDiv.appendChild(mkBtn("+HP", "heal"));
+      effDiv.appendChild(mkBtn("+Nv", "levelup"));
+      d.appendChild(effDiv);
+    }
+  }
+  return d;
+}
 function renderizarTodo(){
   const e=partida.estadoJuego;
   listaJugadores.replaceChildren();
   const act=Object.entries(e.jugadores).filter(([,j])=>{
     const t=Date.parse(j.ultimaConexion); return Number.isFinite(t)&&Date.now()-t<90000;
   });
-  if(!act.length)listaJugadores.innerHTML='<p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p>';
-  else act.forEach(([id,j])=>{
-    const d=document.createElement("div"); d.className="tarjeta";
-    d.innerHTML=`<h3>🎭 ${id}</h3><small>📍 ${coord(j.x,j.y)}</small><br><small>${j.ultimoDado?"🎲 "+j.ultimoDado:"Sin tiradas"}</small>`;
-    if(modo==="docente"&&sessionTokenDocente&&p2pHost){
-      const pid = obtenerPeerIdJugador(id, j);
-      if(pid){
-        const btn=document.createElement("button");
-        btn.className="btn danger";
-        btn.style.cssText="padding:2px 6px;font-size:.65rem;margin-top:3px";
-        btn.textContent="Expulsar";
-        btn.onclick=()=>kickJugador(pid);
-        d.appendChild(btn);
-      }
-    }
-    listaJugadores.appendChild(d);
-  });
+  const jugadoresAct = act.filter(([,j]) => (j.tipo || "jugador") === "jugador");
+  if (!act.length) {
+    listaJugadores.innerHTML = '<p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p>';
+  } else {
+    jugadoresAct.forEach(([id,j]) => listaJugadores.appendChild(renderJugadorCard(id, j)));
+  }
+  if (espectadoresConectados.length) {
+    const sep = document.createElement("p");
+    sep.style.cssText = "color:var(--tenue);font-size:.65rem;text-align:center;margin:6px 0 4px;";
+    sep.textContent = `👁 ${espectadoresConectados.length} espectador${espectadoresConectados.length===1?"":"es"} conectado${espectadoresConectados.length===1?"":"s"}`;
+    listaJugadores.appendChild(sep);
+  }
+  
   listaEnemigos.replaceChildren();
   const ene=Object.values(e.enemigos).filter(en=>en.activo&&en.mapaId===e.mapaActual);
   if(!ene.length)listaEnemigos.innerHTML='<p style="color:var(--tenue);font-size:.7rem;text-align:center">Sin enemigos.</p>';
@@ -1010,22 +1151,56 @@ function renderizarTodo(){
     d.innerHTML=`<h3>👹 ${en.nombre}</h3><small>📍 ${coord(en.x,en.y)}</small><div class="vida-fondo"><div class="vida-barra" style="width:${pct}%">${en.vida}/${en.vidaMaxima}</div></div>`;
     listaEnemigos.appendChild(d);
   });
+  
   const grid=$("mapa-grid");
   if(grid){
     grid.replaceChildren();
     for(let y=0;y<TAM_MAPA;y++)for(let x=0;x<TAM_MAPA;x++){
       const c=coord(x,y);
-      const jug=Object.entries(e.jugadores).filter(([,j])=>j.x===x&&j.y===y&&j.mapaId===e.mapaActual).map(([id])=>id);
+      const jug=Object.entries(e.jugadores).filter(([,j])=>j.x===x&&j.y===y&&j.mapaId===e.mapaActual&&(j.tipo||"jugador")==="jugador").map(([id])=>id);
       const ene2=Object.values(e.enemigos).filter(en=>en.x===x&&en.y===y&&en.activo&&en.mapaId===e.mapaActual).map(en=>en.id);
       const cel=document.createElement("div");
       cel.className="celda"+(jug.length?" jug":"")+(ene2.length?" ene":"");
       cel.innerHTML=`<span style="color:#9a875d;font-size:8px">${c}</span>${jug.length?`<span class="pl">${jug.join(" ")}</span>`:""}${ene2.length?`<span class="en">⚔ ${ene2.join(" ")}</span>`:""}`;
       grid.appendChild(cel);
     }
-    $("mapa-leyenda").textContent=`Mapa: ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"} · ${Object.keys(e.jugadores).length} jugadores`;
+    $("mapa-leyenda").textContent=`Mapa: ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"} · ${jugadoresAct.length} jugadores`;
   }
   $("mapa-select").value=e.mapaActual;
 }
+
+async function aplicarEfecto(jugadorId, tipo, cantidad) {
+  const j = partida.estadoJuego.jugadores[jugadorId];
+  if (!j) return;
+  if (tipo === "damage") {
+    j.hp = Math.max(0, j.hp - cantidad);
+    agregarMensaje(`💥 ${jugadorId} recibe ${cantidad} de daño (${j.hp}/${j.hpMax} HP)`, "system");
+  } else if (tipo === "heal") {
+    j.hp = Math.min(j.hpMax, j.hp + cantidad);
+    agregarMensaje(`💚 ${jugadorId} recupera ${cantidad} HP (${j.hp}/${j.hpMax})`, "system");
+  } else if (tipo === "levelup") {
+    j.nivel += 1;
+    j.hpMax += 5;
+    j.hp = j.hpMax;
+    j.ataque += 2;
+    j.defensa += 1;
+    agregarMensaje(`⭐ ${jugadorId} subió a nivel ${j.nivel} (${j.hp}/${j.hpMax} HP, ⚔${j.ataque}, 🛡${j.defensa})`, "system");
+  }
+  publicarEstado("efecto-" + tipo);
+  if (serialAbierto) {
+    try {
+      await enviarTrama(`TX|${jugadorId}|S|${j.hp}:${j.hpMax}:${j.nivel}`);
+      if (tipo === "levelup") {
+        await enviarTrama(`TX|${jugadorId}|P|${j.ataque}:${j.defensa}`);
+      }
+      if (j.hp === 0) {
+        await enviarTrama(`TX|${jugadorId}|E|MURIO`);
+      }
+    } catch(e) { log("Radio error: " + e.message); }
+  }
+  renderizarTodo();
+}
+
 async function kickJugador(peerId){
   if(!confirm("¿Expulsar a este jugador?"))return;
   try{
@@ -1091,14 +1266,21 @@ const SYS=`Eres el Dungeon Master de «Calabozos y Código». Narra en español 
 function construirMensajes(){
   const msgs=[{role:"system",content:SYS}];
   const e=partida.estadoJuego;
-  msgs.push({role:"system",content:`Jugadores activos: ${Object.keys(e.jugadores).length}. Mapa: ${e.mapaActual}. Último evento: ${e.ultimoEvento||"ninguno"}. Última tirada: ${e.ultimoDado?e.ultimoDado.jugador+":"+e.ultimoDado.valor:"sin tirada"}.`});
+  const jugadores = Object.entries(e.jugadores).filter(([,j])=>(j.tipo||"jugador")==="jugador");
+  const detalle = jugadores.map(([id,j])=>{
+    if(!j.personaje) return `${id} (sin personaje)`;
+    return `${id}: ${j.personaje} · HP ${j.hp}/${j.hpMax} · Nv ${j.nivel} · ⚔${j.ataque} 🛡${j.defensa}`;
+  }).join("; ");
+  msgs.push({role:"system",content:`Jugadores activos: ${jugadores.length}. Detalles: ${detalle || "ninguno"}. Mapa: ${e.mapaActual}. Último evento: ${e.ultimoEvento||"ninguno"}. Última tirada: ${e.ultimoDado?e.ultimoDado.jugador+":"+e.ultimoDado.valor:"sin tirada"}. Espectadores: ${espectadoresConectados.length}.`});
   historial.slice(-14).forEach(m=>msgs.push({role:m.role,content:m.content}));
   return msgs;
 }
 function crearFallback(texto){
-  const e=partida.estadoJuego; const n=Object.keys(e.jugadores).length;
-  if(!n)return `El umbral de ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"} permanece en silencio. Cuando una micro:bit se anuncie, la aventura comenzará en A1.`;
-  return `En ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"}, ${n} aventureros exploran. La propuesta «${txt(texto,100)}» hace vibrar las runas. ¿Qué acción confirman?`;
+  const e=partida.estadoJuego;
+  const jugadores = Object.entries(e.jugadores).filter(([,j])=>(j.tipo||"jugador")==="jugador");
+  if(!jugadores.length)return `El umbral de ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"} permanece en silencio. Cuando una micro:bit se anuncie, la aventura comenzará en A1.`;
+  const detalle = jugadores.map(([id,j])=> j.personaje ? `${j.personaje} ${id} (HP ${j.hp}/${j.hpMax})` : id).join(", ");
+  return `En ${MAPAS_ID[e.mapaActual]?.nombre||"Inicios"} están ${detalle}. La propuesta «${txt(texto,100)}» hace vibrar las runas. ¿Qué acción confirman?`;
 }
 function onEnter(ev){if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();enviarMensaje()}}
 
@@ -1110,7 +1292,7 @@ async function enviarMensaje(){
   input.value="";
 
   if(modo==="alumno"&&codigoSala){
-    const msg={tipo:"chat", texto, autor: nombreAlumno};
+    const msg={tipo:"chat", texto, autor: nombreAlumno, rol: rolAlumno};
     let enviadoP2P = false;
     if(p2pConectado && p2pPeer) enviadoP2P = p2pPeer.enviar(msg);
     if(!enviadoP2P){
@@ -1118,7 +1300,7 @@ async function enviarMensaje(){
       catch(e) {
         if (String(e.message||"").indexOf("auth") >= 0) {
           try {
-            const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno, gateToken);
+            const re = await CalabozosStateBridge.unirseSala(codigoSala, nombreAlumno, jugadorIdAlumno, gateToken, rolAlumno);
             if (re.ok) { sessionTokenAlumno = re.sessionToken; peerIdAlumno = re.peerId; await CalabozosStateBridge.enviarMensaje(codigoSala, sessionTokenAlumno, {texto}); }
           } catch(_) {}
         }
@@ -1226,31 +1408,69 @@ function procesarLinea(linea){
   if(p[0]==="RX"&&p.length>=3){
     const id=txt(p[1],12).toUpperCase(), cmd=txt(p[2],8).toUpperCase(), val=txt(p.slice(3).join("|"),80);
     if(!id||!cmd)return;
-    if(!partida.estadoJuego.jugadores[id]){
-      partida.estadoJuego.jugadores[id]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:ahora(),peerId:null};
-    }
-    partida.estadoJuego.jugadores[id].ultimaConexion=ahora();
-    if(cmd==="D"){
-      partida.estadoJuego.ultimoDado={jugador:id,valor:Number(val)};
-      partida.estadoJuego.ultimoEvento=`${id} obtuvo ${val}.`;
+    
+    // Si es DADO, no crear jugador, solo loggear
+    if(id === "DADO" && cmd === "D"){
+      const dadoValor = Number(val);
+      if(!Number.isInteger(dadoValor) || dadoValor < 1 || dadoValor > 100) return;
+      const quien = partida.estadoJuego.turno || "DADO";
+      partida.estadoJuego.ultimoDado = { jugador: quien, valor: dadoValor };
+      partida.estadoJuego.ultimoEvento = `🎲 Tirada de dado: ${dadoValor} (para ${quien})`;
+      agregarMensaje(`🎲 Tirada de dado: ${dadoValor}`, "system");
       publicarEstado("dado");
-    }else if(cmd==="M"){
+      return;
+    }
+    
+    if(!partida.estadoJuego.jugadores[id]){
+      partida.estadoJuego.jugadores[id]={
+        x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:ahora(),peerId:null,
+        tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:""
+      };
+    }
+    const j=partida.estadoJuego.jugadores[id];
+    j.ultimaConexion=ahora();
+    j.tipo="jugador";
+    
+    if(cmd==="CHR" && PERSONAJES[val]){
+      const P=PERSONAJES[val];
+      j.personaje=val;
+      j.hpMax=P.hp; j.hp=P.hp;
+      j.nivel=1; j.ataque=P.atk; j.defensa=P.def;
+      j.accesorio=P.acc; j.emoji=P.emoji;
+      partida.estadoJuego.ultimoEvento=`${id} eligió ${val}.`;
+      publicarEstado("personaje-elegido");
+      // Enviar stats iniciales al jugador por radio
+      enviarTrama(`TX|${id}|S|${P.hp}:${P.hp}:1`).catch(()=>{});
+      enviarTrama(`TX|${id}|P|${P.atk}:${P.def}`).catch(()=>{});
+      agregarMensaje(`🎭 ${id} eligió ${P.emoji} ${val}`,"system");
+    } else if(cmd==="D"){
+      const dadoValor = Number(val);
+      if(!Number.isInteger(dadoValor) || dadoValor < 1 || dadoValor > 100) return;
+      j.ultimoDado = dadoValor;
+      partida.estadoJuego.ultimoDado={jugador:id,valor:dadoValor};
+      partida.estadoJuego.ultimoEvento=`${id} obtuvo ${dadoValor} en el dado.`;
+      publicarEstado("dado");
+    } else if(cmd==="M"){
       const d={N:[0,-1],S:[0,1],E:[1,0],O:[-1,0]}[val];
       if(d){
-        const j=partida.estadoJuego.jugadores[id];
         j.x=Math.max(0,Math.min(TAM_MAPA-1,j.x+d[0]));
         j.y=Math.max(0,Math.min(TAM_MAPA-1,j.y+d[1]));
         publicarEstado("movimiento");
       }
-    }else if(cmd==="J"){
-      partida.estadoJuego.ultimoEvento=`${id} se unió.`;
+    } else if(cmd==="J"){
+      partida.estadoJuego.ultimoEvento=`${id} se unió con su placa.`;
       publicarEstado("join");
-    }else if(cmd==="A"){
-      partida.estadoJuego.ultimoEvento=`${id}: ${val}.`;
-      publicarEstado("accion");
+    } else if(cmd==="A"){
+      partida.estadoJuego.ultimoEvento=`${id} eligió opción A: ${val}.`;
+      publicarEstado("opcion-a");
+      programarNarracionRadio(`El jugador ${id} eligió la opción A (${val}).`);
+    } else if(cmd==="B"){
+      partida.estadoJuego.ultimoEvento=`${id} eligió opción B: ${val}.`;
+      publicarEstado("opcion-b");
+      programarNarracionRadio(`El jugador ${id} eligió la opción B (${val}).`);
     }
     renderizarTodo();
-  }else if(p[0]==="GW"&&p[1]==="READY")log("Gateway listo (grupo "+p[2]+")");
+  } else if(p[0]==="GW"&&p[1]==="READY")log("Gateway listo (grupo "+p[2]+")");
   else if(p[0]==="TXOK")log("Radio enviada a "+p[1]);
 }
 async function enviarTrama(linea){
@@ -1261,6 +1481,15 @@ async function enviarTrama(linea){
   return colaSerie;
 }
 
+function programarNarracionRadio(evento){
+  if(modo!=="docente"||!codigoSala)return;
+  setTimeout(async()=>{
+    if(generando)return;
+    input.value = `[Evento del juego] ${evento}. Narra lo que sucede como Dungeon Master.`;
+    enviarMensaje();
+  }, 500);
+}
+
 /* ============================================================ TRASPASO */
 async function generarTraspaso(){
   if(modo!=="docente"||!codigoSala||!sessionTokenDocente){alert("No hay sala activa");return}
@@ -1268,11 +1497,7 @@ async function generarTraspaso(){
     const r=await CalabozosStateBridge.genTraspaso(codigoSala,sessionTokenDocente);
     if(!r || !r.ok){
       const err = (r && r.error) ? r.error : "error_desconocido";
-      const msgs = {
-        "auth":"Token de docente inválido. Recreá la sala.",
-        "accion_invalida":"El servidor NO tiene el endpoint genTraspaso. Actualizá el backend.",
-        "sala_invalida":"La sala expiró o no existe."
-      };
+      const msgs = { "auth":"Token de docente inválido.", "accion_invalida":"El servidor NO tiene el endpoint genTraspaso.", "sala_invalida":"La sala expiró." };
       throw new Error(msgs[err] || err);
     }
     alert(`Código de traspaso: ${r.codigo}\n\nVálido por ${r.exp} minutos.\nDáselo al alumno que debe tomar el control.`);
@@ -1301,7 +1526,7 @@ async function canjearTraspaso(){
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
     p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
-      onPeerConnected:(id,name,jid)=>{ agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
+      onPeerConnected:(id,name,jid)=>{ agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id,tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:""}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
       onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(id,msg),
       onPeerDisconnected:()=>{actualizarContadorP2P();renderizarTodo()},
       onHostRevoked:()=>{ if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
@@ -1327,11 +1552,11 @@ async function recuperarHost(){
     }
     let estadoOriginal=null;
     try{ const sr = await CalabozosStateBridge.syncDocente(codigoSala, tok); if(sr.ok&&sr.estado) estadoOriginal=sr.estado; }catch(_){}
-    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){ alert("No se pudo leer un estado válido. El host anterior sigue activo."); return; }
+    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){ alert("No se pudo leer un estado válido."); return; }
     const estadoRecuperado = normalizarEstado(estadoOriginal);
     const r2 = await CalabozosStateBridge.confirmarRecuperacion(codigoSala, r1.ticket, tok);
     if(!r2.ok){
-      const msgs={ "ticket_expirado":"El ticket expiró. Reintentá.", "ticket_invalido":"Ticket inválido", "pin_requerido":"PIN incorrecto", "estado_no_recuperable":"El estado del servidor no es recuperable." };
+      const msgs={ "ticket_expirado":"El ticket expiró.", "ticket_invalido":"Ticket inválido", "pin_requerido":"PIN incorrecto", "estado_no_recuperable":"El estado no es recuperable." };
       throw new Error(msgs[r2.error]||r2.error);
     }
     sessionTokenDocente = r2.hostToken;
@@ -1342,7 +1567,7 @@ async function recuperarHost(){
     if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
     if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
     p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
-      onPeerConnected: (id,name,jid)=>{ agregarMensaje(`🔗 ${name} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
+      onPeerConnected: (id,name,jid)=>{ agregarMensaje(`🔗 ${name} conectado`,"system"); const clave=(jid||name||id).toUpperCase(); if(!partida.estadoJuego.jugadores[clave]) partida.estadoJuego.jugadores[clave]={x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:new Date().toISOString(),ultimoDado:null,peerId:id,tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:""}; enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
       onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(id,msg),
       onPeerDisconnected: ()=>{actualizarContadorP2P();renderizarTodo()},
       onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
@@ -1368,7 +1593,7 @@ async function inicializarApp(){
   try {
     const w = await CalabozosStateBridge.whoami();
     if (!w.accesoConfigurado) {
-      log("⚠ El servidor no tiene CLASS_CODE/ADMIN_PIN configurados. Ejecutá configurarAcceso() en Apps Script.");
+      log("⚠ El servidor no tiene CLASS_CODE/ADMIN_PIN configurados. Ejecutá setupAcceso() en Apps Script.");
     }
   } catch(_) {}
 
@@ -1383,9 +1608,8 @@ async function inicializarApp(){
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  // ⚠️ FIX: configurar el bridge ANTES de cualquier llamada (enterClass, adminLogin)
   CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl });
-
+  
   if (gateToken) {
     $("gate-overlay").style.display = "none";
     inicializarApp();
