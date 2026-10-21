@@ -1383,7 +1383,9 @@ async function inicializarApp(){
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Si ya hay gateToken, ocultar overlay e inicializar. Si no, esperar a ingresarClase().
+  // ⚠️ FIX: configurar el bridge ANTES de cualquier llamada (enterClass, adminLogin)
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl });
+
   if (gateToken) {
     $("gate-overlay").style.display = "none";
     inicializarApp();
