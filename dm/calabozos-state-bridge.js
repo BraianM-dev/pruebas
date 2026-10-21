@@ -15,8 +15,6 @@ window.CalabozosStateBridge = (function () {
         return config.appsScriptUrl + "?" + qs;
     }
 
-    /* ⚠️ FIX: GAS convierte POST en GET tras redirect 302 y pierde el body.
-       Solución: enviar TODO por query string (GET). */
     async function callAPI(params, body) {
         const merged = Object.assign({}, params);
         if (body) {
@@ -41,7 +39,7 @@ window.CalabozosStateBridge = (function () {
         whoami:                ()                              => callAPI({ accion: "whoami", _: Date.now() }),
         enterClass:            (codigo)                        => callAPI({ accion: "enterClass" }, { codigo }),
         adminLogin:            (pin)                           => callAPI({ accion: "adminLogin" }, { pin }),
-        unirseSala:            (sala, nombre, jid, gateToken)  => callAPI({ accion: "unirse", sala, nombre, jugadorId: jid || "", gateToken: gateToken || "", _: Date.now() }),
+        unirseSala:            (sala, nombre, jid, gateToken, rol) => callAPI({ accion: "unirse", sala, nombre, jugadorId: jid || "", gateToken: gateToken || "", rol: rol || "jugador", _: Date.now() }),
         crearSala:             (sala, adminToken)              => callAPI({ accion: "crear", sala }, { adminToken }),
         sync:                  (sala, tok, rev, seq)           => callAPI({ accion: "sync", sala }, { sessionToken: tok, rev, seq }),
         syncHost:              (sala, hostToken, rev, seq)     => callAPI({ accion: "sync", sala }, { hostToken, rev, seq }),
@@ -70,9 +68,11 @@ window.CalabozosStateBridge = (function () {
         const onMensajes = op.onMensajes || (() => {});
         const onError    = op.onError    || (() => {});
         const onRejoin   = op.onRejoin   || (() => {});
+        const onSalaCerrada = op.onSalaCerrada || (() => {});
         const nombre     = op.nombre     || "Alumno";
         const jugadorId  = op.jugadorId  || "";
         const gateToken  = op.gateToken  || "";
+        const rol        = op.rol        || "jugador";
         async function tick() {
             try {
                 const r = await api.sync(sala, tokenActual, ultRev, ultSeq);
@@ -82,17 +82,20 @@ window.CalabozosStateBridge = (function () {
                     if (r.mensajes && r.mensajes.length) { ultSeq = r.ultimoSeq; onMensajes(r.mensajes); }
                 } else if (r.error === "auth") {
                     try {
-                        const re = await api.unirseSala(sala, nombre, jugadorId, gateToken);
+                        const re = await api.unirseSala(sala, nombre, jugadorId, gateToken, rol);
                         if (re.ok) { tokenActual = re.sessionToken; onRejoin(re); intBase = 2000; }
                         else {
                             const e = new Error(re.error); e.code = re.error; onError(e);
-                            if (re.error === "baneado" || re.error === "codigo_clase_requerido") return;
+                            if (re.error === "baneado") return;
+                            if (re.error === "sala_invalida") { onSalaCerrada(); return; }
                         }
                     } catch (e) {
                         const err = new Error("rejoin:" + e.message); err.code = e.code || "rejoin_failed"; onError(err);
                     }
                 } else if (r.error === "baneado") {
                     const e = new Error("baneado"); e.code = "baneado"; onError(e); return;
+                } else if (r.error === "sala_invalida") {
+                    onSalaCerrada(); return;
                 } else { errConsec++; onError(new Error(r.error)); }
             } catch (e) { errConsec++; onError(e); }
             pollingId = setTimeout(tick, Math.min(6000, intBase + errConsec * 800));
