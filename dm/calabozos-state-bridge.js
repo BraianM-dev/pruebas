@@ -14,48 +14,51 @@ window.CalabozosStateBridge = (function () {
             .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v)).join("&");
         return config.appsScriptUrl + "?" + qs;
     }
-    async function getJSON(p) {
-        const r = await fetch(url(p), { cache: "no-store" });
+
+    /* ⚠️ FIX: GAS convierte POST en GET tras redirect 302 y pierde el body.
+       Solución: enviar TODO por query string (GET). */
+    async function callAPI(params, body) {
+        const merged = Object.assign({}, params);
+        if (body) {
+            for (const k in body) {
+                const v = body[k];
+                if (v === undefined || v === null) continue;
+                merged[k] = (typeof v === "object") ? JSON.stringify(v) : String(v);
+            }
+        }
+        const r = await fetch(url(merged), { cache: "no-store" });
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
     }
-    async function postJSON(p, b) {
-        const r = await fetch(url(p), {
-            method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(b || {})
-        });
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-    }
-    async function postCheckAuth(p, b) {
-        const r = await postJSON(p, b);
+    async function callCheckAuth(params, body) {
+        const r = await callAPI(params, body);
         if (r.error === "auth") { const e = new Error("host_revoked"); e.code = "host_revoked"; throw e; }
         return r;
     }
 
     const api = {
-        ping:                  ()                              => getJSON({ accion: "ping", _: Date.now() }),
-        whoami:                ()                              => getJSON({ accion: "whoami", _: Date.now() }),
-        enterClass:            (codigo)                        => postJSON({ accion: "enterClass" }, { codigo }),
-        adminLogin:            (pin)                           => postJSON({ accion: "adminLogin" }, { pin }),
-        unirseSala:            (sala, nombre, jid, gateToken)  => getJSON({ accion: "unirse", sala, nombre, jugadorId: jid || "", gateToken: gateToken || "", _: Date.now() }),
-        crearSala:             (sala, adminToken)              => postJSON({ accion: "crear", sala }, { adminToken }),
-        sync:                  (sala, tok, rev, seq)           => postJSON({ accion: "sync", sala }, { sessionToken: tok, rev, seq }),
-        syncHost:              (sala, hostToken, rev, seq)     => postJSON({ accion: "sync", sala }, { hostToken, rev, seq }),
-        syncDocente:           (sala, adminToken)              => postJSON({ accion: "syncDocente", sala }, { adminToken }),
-        listarJugadores:       (sala, hostToken)               => postJSON({ accion: "listarJugadores", sala }, { hostToken }),
-        publicarEstado:        (sala, hostToken, snapshot)     => postCheckAuth({ accion: "publicar", sala }, { hostToken, snapshot }),
-        enviarMensaje:         (sala, tok, m)                  => postJSON({ accion: "enviar", sala }, Object.assign({ sessionToken: tok }, m)),
-        cerrarSala:            (sala, hostToken)               => postJSON({ accion: "cerrar", sala }, { hostToken }),
-        sigpost:               (sala, payload)                 => postJSON({ accion: "sigpost", sala }, payload),
-        sigpoll:               (sala, payload)                 => postCheckAuth({ accion: "sigpoll", sala }, payload),
-        sigack:                (sala, payload)                 => postJSON({ accion: "sigack", sala }, payload),
-        genTraspaso:           (sala, hostToken)               => postJSON({ accion: "genTraspaso", sala }, { hostToken }),
-        canjeTraspaso:         (sala, tok, codigo)             => postJSON({ accion: "canjeTraspaso", sala }, { sessionToken: tok, codigo }),
-        solicitarRecuperacion: (sala, adminToken)              => postJSON({ accion: "solicitarRecuperacion", sala }, { adminToken }),
-        confirmarRecuperacion: (sala, ticket, adminToken)      => postJSON({ accion: "confirmarRecuperacion", sala }, { ticket, adminToken }),
-        kickPeer:              (sala, hostToken, peerId)       => postJSON({ accion: "kick", sala }, { hostToken, peerId }),
-        kickJugador:           (sala, hostToken, jugadorId)    => postJSON({ accion: "kickJugador", sala }, { hostToken, jugadorId })
+        ping:                  ()                              => callAPI({ accion: "ping", _: Date.now() }),
+        whoami:                ()                              => callAPI({ accion: "whoami", _: Date.now() }),
+        enterClass:            (codigo)                        => callAPI({ accion: "enterClass" }, { codigo }),
+        adminLogin:            (pin)                           => callAPI({ accion: "adminLogin" }, { pin }),
+        unirseSala:            (sala, nombre, jid, gateToken)  => callAPI({ accion: "unirse", sala, nombre, jugadorId: jid || "", gateToken: gateToken || "", _: Date.now() }),
+        crearSala:             (sala, adminToken)              => callAPI({ accion: "crear", sala }, { adminToken }),
+        sync:                  (sala, tok, rev, seq)           => callAPI({ accion: "sync", sala }, { sessionToken: tok, rev, seq }),
+        syncHost:              (sala, hostToken, rev, seq)     => callAPI({ accion: "sync", sala }, { hostToken, rev, seq }),
+        syncDocente:           (sala, adminToken)              => callAPI({ accion: "syncDocente", sala }, { adminToken }),
+        listarJugadores:       (sala, hostToken)               => callAPI({ accion: "listarJugadores", sala }, { hostToken }),
+        publicarEstado:        (sala, hostToken, snapshot)     => callCheckAuth({ accion: "publicar", sala }, { hostToken, snapshot }),
+        enviarMensaje:         (sala, tok, m)                  => callAPI({ accion: "enviar", sala }, Object.assign({ sessionToken: tok }, m)),
+        cerrarSala:            (sala, hostToken)               => callAPI({ accion: "cerrar", sala }, { hostToken }),
+        sigpost:               (sala, payload)                 => callAPI({ accion: "sigpost", sala }, payload),
+        sigpoll:               (sala, payload)                 => callCheckAuth({ accion: "sigpoll", sala }, payload),
+        sigack:                (sala, payload)                 => callAPI({ accion: "sigack", sala }, payload),
+        genTraspaso:           (sala, hostToken)               => callAPI({ accion: "genTraspaso", sala }, { hostToken }),
+        canjeTraspaso:         (sala, tok, codigo)             => callAPI({ accion: "canjeTraspaso", sala }, { sessionToken: tok, codigo }),
+        solicitarRecuperacion: (sala, adminToken)              => callAPI({ accion: "solicitarRecuperacion", sala }, { adminToken }),
+        confirmarRecuperacion: (sala, ticket, adminToken)      => callAPI({ accion: "confirmarRecuperacion", sala }, { ticket, adminToken }),
+        kickPeer:              (sala, hostToken, peerId)       => callAPI({ accion: "kick", sala }, { hostToken, peerId }),
+        kickJugador:           (sala, hostToken, jugadorId)    => callAPI({ accion: "kickJugador", sala }, { hostToken, jugadorId })
     };
 
     let pollingId = null, ultRev = 0, ultSeq = 0, intBase = 2000, errConsec = 0;
