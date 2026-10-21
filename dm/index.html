@@ -1030,4 +1030,128 @@ async function canjearTraspaso(){
     if(!r.ok){
       const msgs={
         "codigo_incorrecto":"Código incorrecto",
-        "traspaso_ex
+        "traspaso_expirado":"Código expirado",
+        "sin_traspaso":"No hay traspaso pendiente",
+        "rate_limit":"Esperá un minuto"
+      };
+      throw new Error(msgs[r.error]||r.error);
+    }
+    sessionTokenDocente=r.hostToken;
+    localStorage.setItem("calabozos.hostToken",sessionTokenDocente);
+    partida.estadoJuego=estadoRecuperado;
+    guardarPartida();
+    renderizarTodo();
+    modo="docente"; aplicarModoVisual();
+    if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
+    if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
+    try{
+      p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
+        onPeerConnected:(id,name,jid)=>{agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
+        onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(msg),
+        onPeerDisconnected:()=>actualizarContadorP2P(),
+        onHostRevoked:()=>{
+          if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
+          agregarMensaje("⚠ Ya no sos host","system");
+          $("btn-crear").hidden=false; $("btn-traspaso").style.display="none";
+        }
+      });
+      p2pHost.start();
+      publicarEstado("host-traspasado");
+      alert("¡Ahora sos el host!");
+    }catch(err){
+      alert("Host iniciado pero P2P falló. Reintentá desde 'Recuperar host'.");
+      $("btn-recuperar-host").style.display="inline-block";
+    }
+  }catch(e){alert("Error: "+e.message)}
+}
+
+async function recuperarHost(){
+  if(!codigoSala){alert("Ingresá el código de la sala primero");return}
+  try{
+    const r1=await CalabozosStateBridge.solicitarRecuperacion(codigoSala);
+    if(!r1.ok){
+      const msgs={
+        "requiere_login_docente":"No estás autenticado como docente.",
+        "publicaciones_recientes":"La sala tuvo publicaciones recientes. Esperá 90s.",
+        "sala_invalida":"La sala expiró"
+      };
+      throw new Error(msgs[r1.error]||r1.error);
+    }
+    let estadoOriginal=null;
+    try{
+      const sr=await CalabozosStateBridge.syncDocente(codigoSala);
+      if(sr.ok&&sr.estado) estadoOriginal=sr.estado;
+    }catch(_){}
+    if(!estadoOriginal||!validarEstadoOriginal(estadoOriginal)){
+      alert("No se pudo leer un estado válido. El host anterior sigue activo.");
+      return;
+    }
+    const estadoRecuperado=normalizarEstado(estadoOriginal);
+    const r2=await CalabozosStateBridge.confirmarRecuperacion(codigoSala,r1.ticket);
+    if(!r2.ok){
+      const msgs={
+        "ticket_expirado":"El ticket expiró. Reintentá.",
+        "ticket_invalido":"Ticket inválido",
+        "estado_no_recuperable":"El estado del servidor no es recuperable."
+      };
+      throw new Error(msgs[r2.error]||r2.error);
+    }
+    sessionTokenDocente=r2.hostToken;
+    localStorage.setItem("calabozos.hostToken",sessionTokenDocente);
+    partida.estadoJuego=estadoRecuperado;
+    guardarPartida();
+    modo="docente"; aplicarModoVisual();
+    if(p2pPeer){p2pPeer.desconectar();p2pPeer=null}
+    if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false}
+    p2pHost=new CalabozosStateBridge.P2PHost(codigoSala,sessionTokenDocente,{
+      onPeerConnected:(id,name,jid)=>{agregarMensaje(`🔗 ${name} conectado`,"system");enviarEstadoPorP2P(id);actualizarContadorP2P()},
+      onPeerMessage:(id,msg)=>procesarMensajeP2PPeer(msg),
+      onPeerDisconnected:()=>actualizarContadorP2P(),
+      onHostRevoked:()=>{
+        if(p2pHost){p2pHost.stop();p2pHost=null}
+        agregarMensaje("⚠ Ya no sos host","system");
+      }
+    });
+    p2pHost.start();
+    publicarEstado("host-recuperado");
+    $("btn-recuperar-host").style.display="none";
+    alert("¡Recuperaste el control!");
+  }catch(e){alert("Error: "+e.message)}
+}
+
+/* ============================================================ CONFIG UI */
+function guardarGasUrl(){
+  const v=$("cfg-gas-url").value.trim();
+  if(!v)return;
+  localStorage.setItem(CLAVE_GAS,v); CONFIG.appsScriptUrl=v;
+  CalabozosStateBridge.configurar(CONFIG);
+  alert("URL guardada");
+}
+
+/* ============================================================ ARRANQUE */
+window.addEventListener("DOMContentLoaded",async()=>{
+  detectarModo();
+  aplicarModoVisual();
+  $("cfg-gas-url").value=CONFIG.appsScriptUrl||"";
+  $("cfg-ollama").value=(localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,"");
+  CalabozosStateBridge.configurar(CONFIG);
+  renderizarTodo();
+  try{
+    const w=await CalabozosStateBridge.whoami();
+    esDocenteVerificado=Boolean(w&&w.esDocente);
+    if(esDocenteVerificado)log("Docente verificado: "+(w.email||""));
+  }catch(_){esDocenteVerificado=false}
+  if(modo==="docente"){
+    iniciarOllama();
+  }else{
+    ajustarInput(false);
+    const sala=new URLSearchParams(location.search).get("sala");
+    if(sala){$("input-sala").value=sala.toUpperCase();unirseSalaAlumno()}
+    $("btn-canjear").style.display="inline-block";
+  }
+});
+
+window.addEventListener("resize",()=>{chat.scrollTop=chat.scrollHeight});
+</script>
+</body>
+</html>
