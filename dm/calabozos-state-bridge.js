@@ -8,14 +8,40 @@ window.CalabozosStateBridge = (function () {
     };
     function configurar(op) { Object.assign(config, op); }
 
-    function url(p) {
-        if (!config.appsScriptUrl) throw new Error("appsScriptUrl no configurada");
-        const qs = Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== "")
-            .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v)).join("&");
-        return config.appsScriptUrl + "?" + qs;
+    let jsonpCounter = 0;
+    function jsonpRequest(params) {
+        return new Promise((resolve, reject) => {
+            if (!config.appsScriptUrl) return reject(new Error("appsScriptUrl no configurada"));
+            const cbName = "AGJSONP_" + Date.now() + "_" + (++jsonpCounter) + "_" + Math.floor(Math.random()*1e6);
+            const script = document.createElement("script");
+            const timeout = setTimeout(() => {
+                cleanup();
+                reject(new Error("Timeout JSONP"));
+            }, 20000);
+            function cleanup() {
+                clearTimeout(timeout);
+                if (script.parentNode) script.parentNode.removeChild(script);
+                delete window[cbName];
+            }
+            window[cbName] = function(data) {
+                cleanup();
+                resolve(data);
+            };
+            script.onerror = function() {
+                cleanup();
+                reject(new Error("Error de red JSONP"));
+            };
+            const qs = Object.entries(params)
+                .filter(([, v]) => v !== undefined && v !== null && v !== "")
+                .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
+                .join("&");
+            script.src = config.appsScriptUrl + "?callback=" + cbName + (qs ? "&" + qs : "");
+            document.head.appendChild(script);
+        });
     }
 
-    async function callAPI(params, body) {
+    // Para llamadas "API" (acciones no GET), usamos JSONP también, ya que GAS redirige POST a GET.
+    function callAPI(params, body) {
         const merged = Object.assign({}, params);
         if (body) {
             for (const k in body) {
@@ -24,9 +50,7 @@ window.CalabozosStateBridge = (function () {
                 merged[k] = (typeof v === "object") ? JSON.stringify(v) : String(v);
             }
         }
-        const r = await fetch(url(merged), { cache: "no-store" });
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
+        return jsonpRequest(merged);
     }
     async function callCheckAuth(params, body) {
         const r = await callAPI(params, body);
