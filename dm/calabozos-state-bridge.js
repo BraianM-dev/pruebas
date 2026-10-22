@@ -27,6 +27,10 @@ window.CalabozosStateBridge = (function () {
             }, 20000);
 
             function handler(event) {
+                // Validar origen: GAS sirve desde googleusercontent.com o script.google.com
+                let hostname = "";
+                try { hostname = new URL(event.origin || "").hostname || ""; } catch (_) { return; }
+                if (!/googleusercontent\.com$/.test(hostname) && !/script\.google\.com$/.test(hostname)) return;
                 const data = event.data;
                 if (!data || data.tipo !== "ag-response") return;
                 if (data.requestId && data.requestId !== rid) return;
