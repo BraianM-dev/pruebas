@@ -684,6 +684,7 @@ async function crearSalaDocente(){
     codigoSala = cod;
     sessionTokenDocente = r.hostToken;
     localStorage.setItem("calabozos.hostToken", sessionTokenDocente);
+    localStorage.setItem("calabozos.codigoSalaDocente", cod);
     $("btn-crear").hidden = true;
     $("btn-traspaso").style.display = "inline-block";
     $("btn-cerrar-sala").style.display = "inline-block";
@@ -754,6 +755,7 @@ async function cerrarSalaDocente(){
     detenerPollingDocente(); detenerGAS();
     codigoSala = ""; sessionTokenDocente = "";
     localStorage.removeItem("calabozos.hostToken");
+    localStorage.removeItem("calabozos.codigoSalaDocente");
     resetearBotonesDocente();
     agregarMensaje("🔒 Sala cerrada","system");
     log("Sala cerrada");
@@ -939,6 +941,8 @@ function iniciarPollingDocente(sala, hostToken) {
         detenerPollingDocente();
         if (p2pHost) { p2pHost.stop(); p2pHost = null; }
         codigoSala = ""; sessionTokenDocente = "";
+        localStorage.removeItem("calabozos.hostToken");
+        localStorage.removeItem("calabozos.codigoSalaDocente");
         resetearBotonesDocente();
         agregarMensaje("🔒 Sala cerrada o expirada","system");
         return;
@@ -967,11 +971,13 @@ function actualizarJugadoresDesdeLista(jugadores) {
   const espects = [];
   jugadores.forEach(j => {
     const rol = j.rol === "espectador" ? "espectador" : "jugador";
-    if (rol === "espectador") {
+    // Un espectador NUNCA debe agregarse a e.jugadores.
+    // Tampoco agregamos entradas sin jugadorId real (las placas siempre lo tienen).
+    if (rol === "espectador" || !j.jugadorId) {
       espects.push({ nombre: j.nombre, peerId: j.peerId });
       return;
     }
-    const clave = (j.jugadorId || j.peerId || "").toUpperCase();
+    const clave = j.jugadorId.toUpperCase();
     if (!/^[A-Z0-9_-]{1,12}$/.test(clave)) return;
     if (!e.jugadores[clave]) {
       e.jugadores[clave] = {
@@ -1144,7 +1150,7 @@ function renderizarTodo(){
     const t=Date.parse(j.ultimaConexion); return Number.isFinite(t)&&Date.now()-t<90000;
   });
   const jugadoresAct = act.filter(([,j]) => (j.tipo || "jugador") === "jugador");
-  if (!act.length) {
+  if (!jugadoresAct.length) {
     listaJugadores.innerHTML = '<p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p>';
   } else {
     jugadoresAct.forEach(([id,j]) => listaJugadores.appendChild(renderJugadorCard(id, j)));
@@ -1576,6 +1582,7 @@ async function canjearTraspaso(){
     }
     sessionTokenDocente=r.hostToken;
     localStorage.setItem("calabozos.hostToken",sessionTokenDocente);
+    localStorage.setItem("calabozos.codigoSalaDocente", codigoSala);
     partida.estadoJuego=estadoRecuperado;
     guardarPartida();
     renderizarTodo();
@@ -1618,6 +1625,7 @@ async function recuperarHost(){
     }
     sessionTokenDocente = r2.hostToken;
     localStorage.setItem("calabozos.hostToken", sessionTokenDocente);
+    localStorage.setItem("calabozos.codigoSalaDocente", codigoSala);
     partida.estadoJuego = estadoRecuperado;
     guardarPartida();
     modo = "docente"; aplicarModoVisual();
@@ -1655,6 +1663,77 @@ async function inicializarApp(){
   } catch(_) {}
 
   if (modo === "docente") {
+    // Reconexión automática si había una sala activa guardada
+    const salaGuardada = localStorage.getItem("calabozos.codigoSalaDocente");
+    const hostGuardado = localStorage.getItem("calabozos.hostToken");
+
+    if (salaGuardada && hostGuardado) {
+      codigoSala = salaGuardada;
+      sessionTokenDocente = hostGuardado;
+      log("Detectada sala previa: " + codigoSala + ". Verificando...");
+
+      try {
+        const check = await CalabozosStateBridge.syncHost(codigoSala, sessionTokenDocente, -1, 0);
+
+        if (check && check.ok) {
+          log("Sala activa. Reconectando...");
+          mostrarInfoSala();
+          $("btn-crear").hidden = true;
+          $("btn-traspaso").style.display = "inline-block";
+          $("btn-cerrar-sala").style.display = "inline-block";
+
+          if (check.estado) {
+            partida.estadoJuego = normalizarEstado(check.estado);
+            guardarPartida();
+          }
+
+          p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
+            onPeerConnected: (id, name, jid) => {
+              agregarMensaje(`🔗 ${name}${jid?" ("+jid+")":""} conectado`,"system");
+              const clave = (jid || name || id).toUpperCase();
+              if(!partida.estadoJuego.jugadores[clave]){
+                partida.estadoJuego.jugadores[clave] = {
+                  x:0, y:0, mapaId:partida.estadoJuego.mapaActual,
+                  ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:id,
+                  tipo:"jugador", personaje:null, hp:0, hpMax:0, nivel:1, ataque:0, defensa:0, accesorio:"", emoji:""
+                };
+              } else {
+                partida.estadoJuego.jugadores[clave].peerId = id;
+              }
+              enviarEstadoPorP2P(id);
+              actualizarContadorP2P();
+              renderizarTodo();
+            },
+            onPeerMessage: (id, msg) => procesarMensajeP2PPeer(id, msg),
+            onPeerDisconnected: () => { actualizarContadorP2P(); renderizarTodo(); },
+            onHostRevoked: () => {
+              if(p2pHost){p2pHost.broadcast({tipo:"host-changed"});setTimeout(()=>{if(p2pHost){p2pHost.stop();p2pHost=null}},150)}
+              agregarMensaje("⚠ Ya no sos host","system");
+              resetearBotonesDocente();
+            }
+          });
+          p2pHost.start();
+          iniciarPollingDocente(codigoSala, sessionTokenDocente);
+          publicarEstado("reconexion-docente");
+          agregarMensaje(`🔗 Reconectado a la sala ${codigoSala}`,"system");
+        } else {
+          log("Sala previa no válida. Limpiando...");
+          localStorage.removeItem("calabozos.codigoSalaDocente");
+          localStorage.removeItem("calabozos.hostToken");
+          codigoSala = "";
+          sessionTokenDocente = "";
+          resetearBotonesDocente();
+        }
+      } catch (e) {
+        log("Error al verificar sala previa: " + e.message);
+        localStorage.removeItem("calabozos.codigoSalaDocente");
+        localStorage.removeItem("calabozos.hostToken");
+        codigoSala = "";
+        sessionTokenDocente = "";
+        resetearBotonesDocente();
+      }
+    }
+
     iniciarOllama();
   } else {
     ajustarInput(false);
