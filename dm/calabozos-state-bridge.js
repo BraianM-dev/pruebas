@@ -8,39 +8,49 @@ window.CalabozosStateBridge = (function () {
     };
     function configurar(op) { Object.assign(config, op); }
 
-    let jsonpCounter = 0;
-    function jsonpRequest(params) {
+    // --- Transporte iframe + postMessage ---
+    let iframeCounter = 0;
+    function iframeRequest(params) {
         return new Promise((resolve, reject) => {
             if (!config.appsScriptUrl) return reject(new Error("appsScriptUrl no configurada"));
-            const cbName = "AGJSONP_" + Date.now() + "_" + (++jsonpCounter) + "_" + Math.floor(Math.random()*1e6);
-            const script = document.createElement("script");
+            const rid = "rid_" + Date.now() + "_" + (++iframeCounter);
+            const iframe = document.createElement("iframe");
+            iframe.style.cssText = "display:none;width:0;height:0;border:0;";
+            iframe.setAttribute("aria-hidden", "true");
+            iframe.name = "agframe_" + rid;
+            iframe.src = buildUrl(params, rid);
+            document.body.appendChild(iframe);
+
             const timeout = setTimeout(() => {
                 cleanup();
-                reject(new Error("Timeout JSONP"));
+                reject(new Error("Timeout iframe (>20s)"));
             }, 20000);
+
+            function handler(event) {
+                const data = event.data;
+                if (!data || data.tipo !== "ag-response") return;
+                if (data.requestId && data.requestId !== rid) return;
+                cleanup();
+                resolve(data.data);
+            }
             function cleanup() {
                 clearTimeout(timeout);
-                if (script.parentNode) script.parentNode.removeChild(script);
-                delete window[cbName];
+                window.removeEventListener("message", handler);
+                if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
             }
-            window[cbName] = function(data) {
-                cleanup();
-                resolve(data);
-            };
-            script.onerror = function() {
-                cleanup();
-                reject(new Error("Error de red JSONP"));
-            };
-            const qs = Object.entries(params)
-                .filter(([, v]) => v !== undefined && v !== null && v !== "")
-                .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
-                .join("&");
-            script.src = config.appsScriptUrl + "?callback=" + cbName + (qs ? "&" + qs : "");
-            document.head.appendChild(script);
+            window.addEventListener("message", handler);
         });
     }
 
-    // Para llamadas "API" (acciones no GET), usamos JSONP también, ya que GAS redirige POST a GET.
+    function buildUrl(params, rid) {
+        const merged = Object.assign({ rid: rid }, params);
+        const qs = Object.entries(merged)
+            .filter(([, v]) => v !== undefined && v !== null && v !== "")
+            .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
+            .join("&");
+        return config.appsScriptUrl + "?" + qs;
+    }
+
     function callAPI(params, body) {
         const merged = Object.assign({}, params);
         if (body) {
@@ -50,7 +60,7 @@ window.CalabozosStateBridge = (function () {
                 merged[k] = (typeof v === "object") ? JSON.stringify(v) : String(v);
             }
         }
-        return jsonpRequest(merged);
+        return iframeRequest(merged);
     }
     async function callCheckAuth(params, body) {
         const r = await callAPI(params, body);
