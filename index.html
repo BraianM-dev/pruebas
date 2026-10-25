@@ -268,6 +268,15 @@
                 animation-mixer="clip: *; loop: repeat">
             </a-entity>
         </a-marker> 
+        <!-- Marcador de patrón personalizado para los cristales -->
+        <a-marker type="pattern" url="Marcadores/cristal.patt" id="MarcadorCristal" registerevents>
+            <a-entity
+                gltf-model="url(modelos/roca_diamante.glb)"
+                position="0 0 0"
+                scale="0.5 0.5 0.5" <!-- Ajusta la escala según tu modelo -->
+                animation-mixer>
+            </a-entity>
+        </a-marker>
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
             <a-entity
