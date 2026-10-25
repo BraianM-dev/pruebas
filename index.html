@@ -19,6 +19,22 @@
     <!-- <script src="js/conexion.js" defer></script> -->
     <script src="js/utilidades.js" defer></script>
     <script src="js/eventos.js" defer></script>
+    <script>
+  AFRAME.registerComponent('fix-fbx-material', {
+    init: function () {
+      this.el.addEventListener('model-loaded', () => {
+        const obj = this.el.getObject3D('mesh');
+        if (!obj) return;
+        obj.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.material.emissive.setHex(0x222222); // Añade brillo base si está negro
+            child.material.needsUpdate = true;
+          }
+        });
+      });
+    }
+  });
+</script>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
