@@ -277,17 +277,16 @@
         </a-marker>
 
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 11 (GLB Convertido) -->
-<!-- Marcador barcode 4x4 BCH 13,5,5, valor 11 (FBX Corregido) -->
-        <a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
-            <a-entity
-                fbx-model="src: url(modelos/evil.fbx)"
-                fix-fbx-material
-                position="0 0 0"
-                rotation="-90 0 0" 
-                scale=" 1 1 1"
-                animation-mixer="clip: *; loop: repeat">
-            </a-entity>
-        </a-marker>
+<!-- Marcador barcode 11 usando GLB (Carga texturas automáticamente) -->
+<a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
+    <a-entity
+        gltf-model="url(modelos/evil.glb)"
+        position="0 0 0"
+        rotation="-90 0 0" 
+        scale="1 1 1"
+        animation-mixer="clip: *; loop: repeat">
+    </a-entity>
+</a-marker>
                 
             <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
 <!--         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
