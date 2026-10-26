@@ -32,43 +32,7 @@
         }
         #panel-info-toggle:hover { background: rgba(30, 30, 40, 0.95); }
         #panel-info.hidden { display: none !important; }
-
-        #camera-error {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(220, 53, 69, 0.95);
-            color: white;
-            padding: 18px 24px;
-            border-radius: 10px;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 5000;
-            text-align: center;
-            max-width: 90vw;
-            display: none;
-        }
-        #camera-error.visible { display: block; }
     </style>
-
-    <script>
-        AFRAME.registerComponent('fix-fbx-material', {
-            init: function () {
-                this.el.addEventListener('model-loaded', () => {
-                    const obj = this.el.getObject3D('mesh');
-                    if (!obj) return;
-                    obj.traverse((child) => {
-                        if (child.isMesh && child.material) {
-                            child.material.emissive.setHex(0x222222);
-                            child.material.needsUpdate = true;
-                        }
-                    });
-                });
-            }
-        });
-    </script>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
@@ -80,16 +44,11 @@
         <p>FPS: <span id="fps-id">0</span></p>
     </div>
     <button id="panel-info-toggle" type="button" onclick="Utilidades.togglePanel()">Ocultar panel</button>
-
-    <div id="camera-error">
-        ⚠️ No se pudo acceder a la cámara.<br>
-        Verificá los permisos del navegador y que estés usando HTTPS.
-    </div>
+    <div id="panel-historia" style="position:fixed; bottom:0; left:0; right:0; max-height:30%; overflow-y:auto; background:rgba(0,0,0,0.7); color:#fff; padding:10px; font-family:sans-serif;"></div>
 
     <a-scene
         embedded
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true;"
         arjs="sourceType: webcam;
               debugUIEnabled: false;
               detectionMode: mono_and_matrix;
@@ -100,92 +59,186 @@
             <a-asset-item id="modelo-dragon-glb" src="modelos/dragon.glb"></a-asset-item>
             <a-asset-item id="modelo-mago-glb" src="modelos/mago.glb"></a-asset-item>
             <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
-            <img id="imgDragon" src="modelos/demo.png" crossorigin="anonymous">
+            <img id="imgDragon" src="modelos/demo.png">
             <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
-            <img id="arbol1" src="modelos/arbol1.png" crossorigin="anonymous">
-            <img id="arbol2" src="modelos/arbol2.png" crossorigin="anonymous">
+            <img id="arbol1" src="modelos/arbol1.png">
+            <img id="arbol2" src="modelos/arbol2.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
         </a-assets>
 
-        <a-marker preset="hiro" id="marker-hiro" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador de patrón: Hiro -->
+        <a-marker preset="hiro" id="Hiro" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-dragon-glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker preset="kanji" id="marker-kanji" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador de patrón: Kanji -->
+        <a-marker preset="kanji" id="Kanji" registerevents>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/dragon.fbx)"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="0" id="marker-0" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 0 -->
+        <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-mago-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="1" id="marker-1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 1 -->
+        <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/mago.fbx)"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.01 0.01 0.01"
+                animation-mixer="clip: *; loop: repeat">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="2" id="marker-2" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 2 -->
+        <a-marker type="barcode" value="2" id="Barcode_2" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-model-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="2 2 2"
+                animation-mixer>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="3" id="marker-3" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
+        <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1; height: 1"
+                material="shader: gif; src: url(modelos/fuego.gif)"
+                position="0 0.5 0"
+                rotation="-90 0 0">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="4" id="marker-4" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 4 -->
+        <a-marker type="barcode" value="4" id="Barcode_4" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.5; height: 1.5"
+                material="src: #imgDragon"
+                position="0 0.8 0"
+                rotation="-90 0 0">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="5" id="marker-5" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 5 -->
+        <a-marker type="barcode" value="5" id="Barcode_5" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo"
+                position="0 0.5 0"
+                rotation="-90 0 0">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="6" id="marker-6" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 6 -->
+        <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo2"
+                position="0 0.5 0"
+                rotation="-90 0 0">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="7" id="marker-7" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 7 -->
+        <a-marker type="barcode" value="7" id="Barcode_7" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.125; height: 2"
+                material="src: #Tablero"
+                position="0 0.5 0"
+                rotation="-90 0 0">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="8" id="marker-8" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 2 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8 (Árboles) -->
+        <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
+            <a-entity class="model-entity">
+                <a-entity position="-0.8 0 -0.3">
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+                <a-entity position="0.9 0 0.5">
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="9" id="marker-9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 9 -->
+        <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-naturaleza-glb"
+                position="0 0 0"
+                rotation="-90 5 0"
+                scale="2 2 2"
+                animation-mixer>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="10" id="marker-10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 10 -->
+        <a-marker type="barcode" value="10" id="Barcode_10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="url(modelos/esqueleto_animado.glb)"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="1 1 1"
+                animation-mixer>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="11" id="marker-11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
-            <a-entity class="model-slot" visible="false"></a-entity>
-            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 2 0"></a-entity>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 11 -->
+        <a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="url(modelos/evil.glb)"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="100 100 100"
+                animation-mixer="clip: *; loop: repeat">
+            </a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-entity camera></a-entity>
     </a-scene>
 
-    <script src="js/conexion.js"></script>
     <script src="js/utilidades.js"></script>
+    <script src="js/conexion.js"></script>
     <script src="js/eventos.js"></script>
 
     <script>
@@ -193,22 +246,6 @@
             const t = document.getElementById('Tablero');
             if (t) t.muted = !t.muted;
         });
-
-        // Diagnóstico: mostrar mensaje si la cámara falla
-        const scene = document.querySelector('a-scene');
-        if (scene) {
-            scene.addEventListener('camera-error', () => {
-                const el = document.getElementById('camera-error');
-                if (el) el.classList.add('visible');
-                console.error('[AR] No se pudo acceder a la cámara');
-                if (window.Utilidades) Utilidades.ocultarTodosSlots();
-            });
-            scene.addEventListener('arjs-video-loaded', () => {
-                const el = document.getElementById('camera-error');
-                if (el) el.classList.remove('visible');
-                console.log('[AR] Cámara cargada correctamente');
-            });
-        }
     </script>
 </body>
 </html>
