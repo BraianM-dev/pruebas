@@ -14,7 +14,6 @@ const Utilidades = {
 
     modelosAsignados: {},
     statsAsignadas: {},
-    slotsActualmenteVisibles: {},
 
     togglePanel: function (visible) {
         if (!this.UI.panel) return;
@@ -43,136 +42,26 @@ const Utilidades = {
         }
     },
 
+    // Mapea id de marcador (Hiro, Kanji, Barcode_5) a slot canónico (hiro, kanji, 5)
     slotFromMarkerId: function (markerId) {
-        if (markerId === 'marker-hiro') return 'hiro';
-        if (markerId === 'marker-kanji') return 'kanji';
-        const m = markerId.match(/^marker-(\d+)$/);
-        return m ? m[1] : markerId;
+        if (markerId === 'Hiro') return 'hiro';
+        if (markerId === 'Kanji') return 'kanji';
+        const m = markerId.match(/^Barcode_(\d+)$/);
+        return m ? m[1] : null;
     },
 
+    // Devuelve el elemento <a-marker> a partir del slot canónico
     markerElPorSlot: function (slot) {
-        const slotStr = String(slot);
-        if (slotStr === 'hiro') return document.getElementById('marker-hiro');
-        if (slotStr === 'kanji') return document.getElementById('marker-kanji');
-        return document.getElementById('marker-' + slotStr);
+        const s = String(slot);
+        if (s === 'hiro') return document.getElementById('Hiro');
+        if (s === 'kanji') return document.getElementById('Kanji');
+        return document.getElementById('Barcode_' + s);
     },
 
     infoMarcador: function (markerId) {
-        return this.modelosAsignados[this.slotFromMarkerId(markerId)] || null;
-    },
-
-    // Muestra u oculta los slots de un marcador específico
-    slotVisible: function (slot, visible) {
-        const marker = this.markerElPorSlot(slot);
-        if (!marker) return;
-        const modelSlot = marker.querySelector('.model-slot');
-        const statsSlot = marker.querySelector('.stats-slot');
-        if (modelSlot) modelSlot.setAttribute('visible', visible ? 'true' : 'false');
-        if (statsSlot) statsSlot.setAttribute('visible', visible ? 'true' : 'false');
-        this.slotsActualmenteVisibles[slot] = !!visible;
-    },
-
-    ocultarTodosSlots: function () {
-        Object.keys(this.modelosAsignados).forEach(slot => this.slotVisible(slot, false));
-    },
-
-    crearEntidadModelo: function (config) {
-        const el = document.createElement('a-entity');
-        el.setAttribute('position', config.position || '0 0 0');
-        el.setAttribute('rotation', config.rotation || '0 0 0');
-        el.setAttribute('scale', config.scale || '1 1 1');
-
-        switch (config.type) {
-            case 'gltf':
-                el.setAttribute('gltf-model', config.url);
-                if (config.animated) el.setAttribute('animation-mixer', '');
-                break;
-            case 'fbx':
-                el.setAttribute('fbx-model', 'src: url(' + config.url + ')');
-                if (config.animated) el.setAttribute('animation-mixer', 'clip: *; loop: repeat');
-                break;
-            case 'image':
-                el.setAttribute('geometry', 'primitive: plane; width: 1.5; height: 1.5');
-                el.setAttribute('material', 'src: ' + config.url + '; transparent: true; alphaTest: 0.5');
-                el.setAttribute('rotation', config.rotation || '-90 0 0');
-                break;
-            case 'video':
-                el.setAttribute('geometry', 'primitive: plane; width: 2; height: 1.2');
-                el.setAttribute('material', 'src: ' + config.url);
-                el.setAttribute('rotation', config.rotation || '-90 0 0');
-                break;
-            case 'gif':
-                el.setAttribute('geometry', 'primitive: plane; width: 1; height: 1');
-                el.setAttribute('material', 'shader: gif; src: ' + config.url);
-                el.setAttribute('rotation', config.rotation || '-90 0 0');
-                break;
-            case 'trees':
-                el.appendChild(this._crearArboles());
-                break;
-            case 'none':
-            default:
-                el.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3');
-                el.setAttribute('material', 'color: #888; opacity: 0.4');
-        }
-        return el;
-    },
-
-    _crearArboles: function () {
-        const cont = document.createElement('a-entity');
-        const p1 = document.createElement('a-entity');
-        p1.setAttribute('position', '-0.8 0 -0.3');
-        [45, -45].forEach(rot => {
-            const p = document.createElement('a-plane');
-            p.setAttribute('src', '#arbol1');
-            p.setAttribute('transparent', 'true');
-            p.setAttribute('alpha-test', '0.5');
-            p.setAttribute('width', '3');
-            p.setAttribute('height', '3');
-            p.setAttribute('position', '0 0.65 0');
-            p.setAttribute('rotation', '0 ' + rot + ' 0');
-            p1.appendChild(p);
-        });
-        cont.appendChild(p1);
-        const p2 = document.createElement('a-entity');
-        p2.setAttribute('position', '0.9 0 0.5');
-        [45, -45].forEach(rot => {
-            const p = document.createElement('a-plane');
-            p.setAttribute('src', '#arbol2');
-            p.setAttribute('transparent', 'true');
-            p.setAttribute('alpha-test', '0.5');
-            p.setAttribute('width', '3');
-            p.setAttribute('height', '3');
-            p.setAttribute('position', '0 0.55 0');
-            p.setAttribute('rotation', '0 ' + rot + ' 0');
-            p2.appendChild(p);
-        });
-        cont.appendChild(p2);
-        return cont;
-    },
-
-    asignarModelo: function (slot, config) {
-        const marker = this.markerElPorSlot(slot);
-        if (!marker) {
-            console.warn('[AR] Marker no encontrado para slot:', slot);
-            return false;
-        }
-        const modelSlot = marker.querySelector('.model-slot');
-        if (!modelSlot) return false;
-        while (modelSlot.firstChild) modelSlot.removeChild(modelSlot.firstChild);
-        const modelo = this.crearEntidadModelo(config);
-        modelSlot.appendChild(modelo);
-        // NO forzamos 'visible'. El slot hereda la visibilidad del marcador.
-        // Solo se mostrará cuando markerFound dispare slotVisible(slot, true).
-        this.modelosAsignados[slot] = config;
-        return true;
-    },
-
-    limpiarModelo: function (slot) {
-        return this.asignarModelo(slot, { type: 'none', name: 'Vacío', animated: false });
-    },
-
-    mostrarModelo: function (slot, visible) {
-        this.slotVisible(slot, visible);
+        const slot = this.slotFromMarkerId(markerId);
+        if (slot === null) return null;
+        return this.modelosAsignados[slot] || null;
     },
 
     crearPanelStats: function (stats) {
@@ -203,7 +92,7 @@ const Utilidades = {
 
         const pct = Math.max(0, Math.min(1, (stats.hp || 0) / (stats.hpMax || 1)));
         const barFill = document.createElement('a-plane');
-        barFill.setAttribute('width', String(1.6 * pct));
+        barFill.setAttribute('width', String(Math.max(0.001, 1.6 * pct)));
         barFill.setAttribute('height', '0.12');
         barFill.setAttribute('color', pct > 0.5 ? '#4CAF50' : (pct > 0.25 ? '#FFC107' : '#e94560'));
         barFill.setAttribute('position', ((1.6 * pct - 1.6) / 2) + ' 0 0.03');
@@ -226,13 +115,15 @@ const Utilidades = {
 
     asignarStats: function (slot, stats) {
         const marker = this.markerElPorSlot(slot);
-        if (!marker) return false;
+        if (!marker) {
+            console.warn('[AR] Marcador no encontrado para stats:', slot);
+            return false;
+        }
         const statsSlot = marker.querySelector('.stats-slot');
         if (!statsSlot) return false;
         while (statsSlot.firstChild) statsSlot.removeChild(statsSlot.firstChild);
         const panel = this.crearPanelStats(stats);
         statsSlot.appendChild(panel);
-        // La visibilidad ya se controla por slotVisible en markerFound/Lost
         this.statsAsignadas[slot] = stats;
         return true;
     },
@@ -244,6 +135,99 @@ const Utilidades = {
         if (!statsSlot) return;
         while (statsSlot.firstChild) statsSlot.removeChild(statsSlot.firstChild);
         delete this.statsAsignadas[slot];
+    },
+
+    // Reasigna el modelo de un slot cambiando atributos del .model-entity existente.
+    // NO se usa slot con visible=false: el modelo vive dentro del <a-marker> y AR.js
+    // maneja la visibilidad del marcador completo.
+    asignarModelo: function (slot, config) {
+        const marker = this.markerElPorSlot(slot);
+        if (!marker) {
+            console.warn('[AR] Marcador no encontrado para modelo:', slot);
+            return false;
+        }
+        const modelEntity = marker.querySelector('.model-entity');
+        if (!modelEntity) {
+            console.warn('[AR] No hay .model-entity en el marcador', slot);
+            return false;
+        }
+
+        // Limpiar componentes previos de modelo
+        modelEntity.removeAttribute('gltf-model');
+        modelEntity.removeAttribute('fbx-model');
+        modelEntity.removeAttribute('geometry');
+        modelEntity.removeAttribute('material');
+        modelEntity.removeAttribute('animation-mixer');
+
+        // Aplicar nuevo
+        switch (config.type) {
+            case 'gltf':
+                modelEntity.setAttribute('gltf-model', config.url);
+                if (config.animated) modelEntity.setAttribute('animation-mixer', '');
+                break;
+            case 'fbx':
+                modelEntity.setAttribute('fbx-model', 'src: url(' + config.url + ')');
+                if (config.animated) modelEntity.setAttribute('animation-mixer', 'clip: *; loop: repeat');
+                break;
+            case 'image':
+                modelEntity.setAttribute('geometry', 'primitive: plane; width: 1.5; height: 1.5');
+                modelEntity.setAttribute('material', 'src: ' + config.url + '; transparent: true; alphaTest: 0.5');
+                break;
+            case 'video':
+                modelEntity.setAttribute('geometry', 'primitive: plane; width: 2; height: 1.2');
+                modelEntity.setAttribute('material', 'src: ' + config.url);
+                break;
+            case 'gif':
+                modelEntity.setAttribute('geometry', 'primitive: plane; width: 1; height: 1');
+                modelEntity.setAttribute('material', 'shader: gif; src: ' + config.url);
+                break;
+            case 'trees':
+                // No soportado dinámicamente. Mantiene el actual.
+                console.warn('[AR] "trees" no soportado como modelo dinámico.');
+                return false;
+            case 'none':
+            default:
+                modelEntity.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3');
+                modelEntity.setAttribute('material', 'color: #888; opacity: 0.4');
+        }
+
+        modelEntity.setAttribute('position', config.position || '0 0 0');
+        modelEntity.setAttribute('rotation', config.rotation || '0 0 0');
+        modelEntity.setAttribute('scale', config.scale || '1 1 1');
+
+        this.modelosAsignados[slot] = config;
+        return true;
+    },
+
+    // Para mantener compatibilidad con la interfaz anterior
+    mostrarModelo: function (slot, visible) {
+        const marker = this.markerElPorSlot(slot);
+        if (!marker) return;
+        const modelEntity = marker.querySelector('.model-entity');
+        if (!modelEntity) return;
+        modelEntity.setAttribute('visible', visible ? 'true' : 'false');
+    },
+
+    limpiarModelo: function (slot) {
+        return this.asignarModelo(slot, { type: 'none', name: 'Vacío', animated: false });
+    },
+
+    // Inicializa la lista de modelos por defecto (coincide con los hardcodeados en el HTML)
+    inicializarModelosPorDefecto: function () {
+        this.modelosAsignados['hiro'] = { type: 'gltf', url: '#modelo-dragon-glb', name: 'Dragón', scale: '0.1 0.1 0.1', animated: true };
+        this.modelosAsignados['kanji'] = { type: 'fbx', url: 'modelos/dragon.fbx', name: 'Dragón FBX', scale: '0.1 0.1 0.1', animated: true };
+        this.modelosAsignados['0'] = { type: 'gltf', url: '#modelo-mago-glb', name: 'Mago', scale: '0.5 0.5 0.5', rotation: '-90 0 0', animated: true };
+        this.modelosAsignados['1'] = { type: 'fbx', url: 'modelos/mago.fbx', name: 'Mago FBX', scale: '0.01 0.01 0.01', rotation: '-90 0 0', animated: true };
+        this.modelosAsignados['2'] = { type: 'gltf', url: '#modelo-model-glb', name: 'Modelo', scale: '2 2 2', rotation: '-90 0 0', animated: true };
+        this.modelosAsignados['3'] = { type: 'gif', url: 'modelos/fuego.gif', name: 'Fuego' };
+        this.modelosAsignados['4'] = { type: 'image', url: '#imgDragon', name: 'Imagen' };
+        this.modelosAsignados['5'] = { type: 'video', url: '#videoEjemplo', name: 'Video 1' };
+        this.modelosAsignados['6'] = { type: 'video', url: '#videoEjemplo2', name: 'Video 2' };
+        this.modelosAsignados['7'] = { type: 'video', url: '#Tablero', name: 'Tablero' };
+        this.modelosAsignados['8'] = { type: 'trees', name: 'Árboles' };
+        this.modelosAsignados['9'] = { type: 'gltf', url: '#modelo-naturaleza-glb', name: 'Naturaleza', scale: '2 2 2', rotation: '-90 5 0', animated: true };
+        this.modelosAsignados['10'] = { type: 'gltf', url: 'modelos/esqueleto_animado.glb', name: 'Esqueleto', scale: '1 1 1', rotation: '-60 0 0', animated: true };
+        this.modelosAsignados['11'] = { type: 'gltf', url: 'modelos/evil.glb', name: 'Evil', scale: '100 100 100', rotation: '-60 0 0', animated: true };
     },
 
     iniciarFPS: function () {
@@ -263,29 +247,25 @@ const Utilidades = {
     }
 };
 
-window.addEventListener('load', () => {
+// Esperar a que la escena A-Frame esté lista antes de inicializar
+document.addEventListener('DOMContentLoaded', () => {
     Utilidades.iniciarFPS();
+    Utilidades.inicializarModelosPorDefecto();
+});
 
-    // Asignar modelos a los slots (no se hacen visibles hasta que el marcador sea detectado)
-    Utilidades.asignarModelo('hiro', { type: 'gltf', url: '#modelo-dragon-glb', name: 'Dragón', scale: '0.1 0.1 0.1', animated: true });
-    Utilidades.asignarModelo('kanji', { type: 'fbx', url: 'modelos/dragon.fbx', name: 'Dragón FBX', scale: '0.1 0.1 0.1', animated: true });
-    Utilidades.asignarModelo('0', { type: 'gltf', url: '#modelo-mago-glb', name: 'Mago', scale: '0.5 0.5 0.5', rotation: '-90 0 0', animated: true });
-    Utilidades.asignarModelo('1', { type: 'fbx', url: 'modelos/mago.fbx', name: 'Mago FBX', scale: '0.01 0.01 0.01', rotation: '-90 0 0', animated: true });
-    Utilidades.asignarModelo('2', { type: 'gltf', url: '#modelo-model-glb', name: 'Modelo', scale: '2 2 2', rotation: '-90 0 0', animated: true });
-    Utilidades.asignarModelo('3', { type: 'gif', url: 'modelos/fuego.gif', name: 'Fuego', rotation: '-90 0 0' });
-    Utilidades.asignarModelo('4', { type: 'image', url: '#imgDragon', name: 'Imagen', rotation: '-90 0 0' });
-    Utilidades.asignarModelo('5', { type: 'video', url: '#videoEjemplo', name: 'Video 1', rotation: '-90 0 0' });
-    Utilidades.asignarModelo('6', { type: 'video', url: '#videoEjemplo2', name: 'Video 2', rotation: '-90 0 0' });
-    Utilidades.asignarModelo('7', { type: 'video', url: '#Tablero', name: 'Tablero', rotation: '-90 0 0' });
-    Utilidades.asignarModelo('8', { type: 'trees', name: 'Árboles' });
-    Utilidades.asignarModelo('9', { type: 'gltf', url: '#modelo-naturaleza-glb', name: 'Naturaleza', scale: '2 2 2', rotation: '-90 5 0', animated: true });
-    Utilidades.asignarModelo('10', { type: 'gltf', url: 'modelos/esqueleto_animado.glb', name: 'Esqueleto', scale: '1 1 1', rotation: '-60 0 0', animated: true });
-    Utilidades.asignarModelo('11', { type: 'gltf', url: 'modelos/evil.glb', name: 'Evil', scale: '100 100 100', rotation: '-60 0 0', animated: true });
-
-    // Asegurar que todos los slots estén ocultos al inicio
-    Utilidades.ocultarTodosSlots();
-
-    if (window.Comunicacion) {
-        Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+// Cuando la escena A-Frame cargue, avisar al padre
+document.addEventListener('DOMContentLoaded', () => {
+    const scene = document.querySelector('a-scene');
+    if (!scene) return;
+    if (scene.hasLoaded) {
+        setTimeout(() => {
+            if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+        }, 300);
+    } else {
+        scene.addEventListener('loaded', () => {
+            setTimeout(() => {
+                if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+            }, 300);
+        });
     }
 });
