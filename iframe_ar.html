@@ -32,6 +32,25 @@
         }
         #panel-info-toggle:hover { background: rgba(30, 30, 40, 0.95); }
         #panel-info.hidden { display: none !important; }
+
+        #camera-error {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 53, 69, 0.95);
+            color: white;
+            padding: 18px 24px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 5000;
+            text-align: center;
+            max-width: 90vw;
+            display: none;
+        }
+        #camera-error.visible { display: block; }
     </style>
 
     <script>
@@ -62,8 +81,15 @@
     </div>
     <button id="panel-info-toggle" type="button" onclick="Utilidades.togglePanel()">Ocultar panel</button>
 
+    <div id="camera-error">
+        ⚠️ No se pudo acceder a la cámara.<br>
+        Verificá los permisos del navegador y que estés usando HTTPS.
+    </div>
+
     <a-scene
         embedded
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true;"
         arjs="sourceType: webcam;
               debugUIEnabled: false;
               detectionMode: mono_and_matrix;
@@ -85,75 +111,74 @@
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Slots de marcadores: cada uno con contenedor dinámico de modelo y de stats -->
         <a-marker preset="hiro" id="marker-hiro" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.2 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker preset="kanji" id="marker-kanji" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.2 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="0" id="marker-0" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="1" id="marker-1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="2" id="marker-2" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 2 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="3" id="marker-3" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="4" id="marker-4" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="5" id="marker-5" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="6" id="marker-6" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="7" id="marker-7" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="8" id="marker-8" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 2 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 2 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="9" id="marker-9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="10" id="marker-10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 1.5 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 1.5 0"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="11" id="marker-11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
-            <a-entity class="model-slot"></a-entity>
-            <a-entity class="stats-slot" look-at="[camera]" position="0 2 0"></a-entity>
+            <a-entity class="model-slot" visible="false"></a-entity>
+            <a-entity class="stats-slot" visible="false" look-at="[camera]" position="0 2 0"></a-entity>
         </a-marker>
 
         <a-entity camera></a-entity>
@@ -168,6 +193,22 @@
             const t = document.getElementById('Tablero');
             if (t) t.muted = !t.muted;
         });
+
+        // Diagnóstico: mostrar mensaje si la cámara falla
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+            scene.addEventListener('camera-error', () => {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.add('visible');
+                console.error('[AR] No se pudo acceder a la cámara');
+                if (window.Utilidades) Utilidades.ocultarTodosSlots();
+            });
+            scene.addEventListener('arjs-video-loaded', () => {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.remove('visible');
+                console.log('[AR] Cámara cargada correctamente');
+            });
+        }
     </script>
 </body>
 </html>
