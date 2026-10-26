@@ -1,43 +1,31 @@
 // js/eventos.js
-// Este archivo detecta cuándo un marcador entra o sale de la pantalla.
+// Detecta cuándo un marcador entra o sale del campo de visión
 
 AFRAME.registerComponent('registerevents', {
     init: function () {
-        var marcador = this.el; // El elemento HTML del marcador actual
+        const marcador = this.el;
+        const marcadorId = marcador.id;
 
-        // EVENTO: Cuando el marcador entra en el campo de visión
-        marcador.addEventListener('markerFound', function() {
-            var marcadorId = marcador.id;
-            var modeloNombre = "Desconocido";
+        marcador.addEventListener('markerFound', function () {
+            const slot = Utilidades.slotFromMarkerId(marcadorId);
+            const info = Utilidades.infoMarcador(marcadorId);
+            Utilidades.marcadorEncontrado(marcadorId, info ? info.name : 'Vacío');
 
-            // Asignamos el nombre del modelo para mostrarlo en el panel
-            if(marcadorId === "Hiro") modeloNombre = "dragon.glb";
-            if(marcadorId === "Kanji") modeloNombre = "dragon.fbx";
-            if(marcadorId === "Barcode_0") modeloNombre = "mago.glb";
-            if(marcadorId === "Barcode_1") modeloNombre = "mago.fbx";
-            if(marcadorId === "Barcode_2") modeloNombre = "model.fbx";
-            if(marcadorId === "Barcode_3") modeloNombre = "fuego.gif";
-            if(marcadorId === "Barcode_4") modeloNombre = "imagen.png";
-            if(marcadorId === "Barcode_5") modeloNombre = "video.mp4";
-            // Actualizamos la interfaz usando nuestro archivo de utilidades
-            Utilidades.marcadorEncontrado(marcadorId, modeloNombre);
-            /* Utilidades.marcadorEncontrado(marcadorId, "esperando servidor...");
-            Conexion.enviarEvento("marcador_detectado", marcadorId); */
-            
-            /* -----------------------------------------------------------------
-               GANCHO PARA PRÓXIMAS CLASES (Hardware & IoT)
-               Aquí, en el futuro, los estudiantes agregarán las peticiones fetch
-               para comunicarse con el ESP32 o enviar datos por serial/bluetooth 
-               a la placa micro:bit cuando aparezca un marcador en el juego.
-               ----------------------------------------------------------------- */
-               // ejemplo: fetch('http://IP_DEL_ESP32/marcador?id=' + marcadorId);
+            Comunicacion.enviarAlPadre({
+                action: 'marker-found',
+                markerId: marcadorId,
+                slot: slot,
+                modelInfo: info ? { name: info.name, type: info.type } : null
+            });
         });
 
-        // EVENTO: Cuando el marcador sale del campo de visión
-        marcador.addEventListener('markerLost', function() {
+        marcador.addEventListener('markerLost', function () {
             Utilidades.marcadorPerdido();
-            // Conexion.enviarEvento("marcador_perdido", marcador.id);
-            // Aquí en el futuro se podrá enviar la orden de apagar LEDs o detener motores.
+            Comunicacion.enviarAlPadre({
+                action: 'marker-lost',
+                markerId: marcadorId,
+                slot: Utilidades.slotFromMarkerId(marcadorId)
+            });
         });
     }
 });
