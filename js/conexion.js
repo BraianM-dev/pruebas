@@ -1,5 +1,4 @@
 // js/conexion.js
-// Comunicación bidireccional entre el iframe AR y el cliente DM
 
 const Comunicacion = {
 
@@ -25,6 +24,7 @@ const Comunicacion = {
 
 window.addEventListener('load', () => {
     Comunicacion.escucharComandos((cmd) => {
+        if (typeof Utilidades === 'undefined') return;
         switch (cmd.action) {
             case 'assign-model':
                 Utilidades.asignarModelo(cmd.slot, {
