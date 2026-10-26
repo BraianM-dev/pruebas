@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR.js - Multi Marcador (Hiro, Kanji, Barcode 4x4 BCH)</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <!-- ✅ Mismas URLs del index.html original que YA funcionan en tu red -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-gif-shader@1.0.3/dist/aframe-gif-shader.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
 
     <link rel="stylesheet" href="css/estilos.css">
 
@@ -33,7 +34,7 @@
 
     <div id="camera-error">⚠️ No se pudo acceder a la cámara.<br>Verificá los permisos del navegador y que estés usando HTTPS.</div>
 
-    <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true;"
+    <a-scene embedded vr-mode-ui="enabled: false"
         arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4_BCH_13_5_5; trackingMethod:best;">
 
         <a-assets>
@@ -51,48 +52,105 @@
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
         </a-assets>
 
+        <!-- ====== Modelos hardcodeados como en tu index.html original ====== -->
+        <!-- Se agrega class="model-entity" para poder reasignarlos desde el DM -->
+        <!-- Se agrega un <a-entity class="stats-slot"> vacío al lado (no visible=false, sin hijos) -->
+
         <a-marker preset="hiro" id="Hiro" registerevents>
-            <a-entity class="model-entity" gltf-model="#modelo-dragon-glb" position="0 0 0" scale="0.1 0.1 0.1" animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-dragon-glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker preset="kanji" id="Kanji" registerevents>
-            <a-entity class="model-entity" fbx-model="src: url(modelos/dragon.fbx)" position="0 0 0" scale="0.1 0.1 0.1" animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/dragon.fbx)"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
-            <a-entity class="model-entity" gltf-model="#modelo-mago-glb" position="0 0 0" rotation="-90 0 0" scale="0.5 0.5 0.5" animation-mixer></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-mago-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer></a-entity>
             <a-plane position="0 1.2 -0.01" rotation="-90 0 0" width="2.8" height="0.5" color="black" opacity="0.7"></a-plane>
             <a-text value="Nombre: Mago\nNivel: 20\nVida: 350" position="0 1.3 0" rotation="-90 0 0" color="white" align="center" width="3"></a-text>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-entity" fbx-model="src: url(modelos/mago.fbx)" position="0 0 0" rotation="-90 0 0" scale="0.01 0.01 0.01" animation-mixer="clip: *; loop: repeat"></a-entity>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/mago.fbx)"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.01 0.01 0.01"
+                animation-mixer="clip: *; loop: repeat"></a-entity>
             <a-text value="Mago" position="0 1 0" look-at="[camera]" align="center" color="yellow" width="2"></a-text>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="2" id="Barcode_2" registerevents>
-            <a-entity class="model-entity" gltf-model="#modelo-model-glb" position="0 0 0" rotation="-90 0 0" scale="2 2 2" animation-mixer></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-model-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="2 2 2"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
-            <a-entity class="model-entity" geometry="primitive: plane; width: 1; height: 1" material="shader: gif; src: url(modelos/fuego.gif)" position="0 0.5 0" rotation="-90 0 0"></a-entity>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1; height: 1"
+                material="shader:gif; src:url(modelos/fuego.gif)"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="4" id="Barcode_4" registerevents>
-            <a-entity class="model-entity" geometry="primitive: plane; width: 1.5; height: 1.5" material="src: #imgDragon" position="0 0.8 0" rotation="-90 0 0"></a-entity>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.5; height: 1.5"
+                material="src: #imgDragon"
+                position="0 0.8 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="5" id="Barcode_5" registerevents>
-            <a-entity class="model-entity" geometry="primitive: plane; width: 2; height: 1.2" material="src: #videoEjemplo" position="0 0.5 0" rotation="-90 0 0"></a-entity>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
             <a-text value="Ejemplo.mp4" position="0 -0.25 0.03" look-at="[camera]" align="center" color="yellow" width="2"></a-text>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
-            <a-entity class="model-entity" geometry="primitive: plane; width: 2; height: 1.2" material="src: #videoEjemplo2" position="0 0.5 0" rotation="-90 0 0"></a-entity>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo2"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="7" id="Barcode_7" registerevents>
-            <a-entity class="model-entity" geometry="primitive: plane; width: 1.125; height: 2" material="src: #Tablero" position="0 0.5 0" rotation="-90 0 0"></a-entity>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.125; height: 2"
+                material="src: #Tablero"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
@@ -106,18 +164,37 @@
                     <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-entity" gltf-model="#modelo-naturaleza-glb" position="0 0 0" rotation="-90 5 0" scale="2 2 2" animation-mixer></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-naturaleza-glb"
+                position="0 0 0"
+                rotation="-90 5 0"
+                scale="2 2 2"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="10" id="Barcode_10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
-            <a-entity class="model-entity" gltf-model="url(modelos/esqueleto_animado.glb)" position="0 0 0" rotation="-60 0 0" scale="1 1 1" animation-mixer></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="url(modelos/esqueleto_animado.glb)"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="1 1 1"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
-            <a-entity class="model-entity" gltf-model="url(modelos/evil.glb)" position="0 0 0" rotation="-60 0 0" scale="100 100 100" animation-mixer="clip: *; loop: repeat"></a-entity>
+            <a-entity class="model-entity"
+                gltf-model="url(modelos/evil.glb)"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="100 100 100"
+                animation-mixer="clip: *; loop: repeat"></a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
         <a-entity camera></a-entity>
@@ -125,7 +202,7 @@
 
     <script>
         // ==================================================
-        // UTILIDADES DEL IFRAME (UI, Stats, Comunicación)
+        // 1. UTILIDADES DEL IFRAME
         // ==================================================
         const Utilidades = {
             UI: {
@@ -138,6 +215,24 @@
             modelosAsignados: {},
             statsAsignadas: {},
 
+            // Nombres por defecto de los modelos (para enviar al DM)
+            nombresPorDefecto: {
+                'hiro': 'Dragón',
+                'kanji': 'Dragón FBX',
+                '0': 'Mago',
+                '1': 'Mago FBX',
+                '2': 'Modelo',
+                '3': 'Fuego',
+                '4': 'Imagen',
+                '5': 'Video 1',
+                '6': 'Video 2',
+                '7': 'Tablero',
+                '8': 'Árboles',
+                '9': 'Naturaleza',
+                '10': 'Esqueleto',
+                '11': 'Evil'
+            },
+
             togglePanel: function(visible) {
                 if (!this.UI.panel) return;
                 const mostrar = (visible !== undefined) ? visible : this.UI.panel.style.display === 'none';
@@ -149,6 +244,7 @@
                 if (this.UI.modelo) this.UI.modelo.innerText = nombreModelo || '-';
                 if (this.UI.estado) { this.UI.estado.innerText = "Detectado"; this.UI.estado.style.color = "#4CAF50"; }
             },
+
             marcadorPerdido: function () {
                 if (this.UI.marcador) this.UI.marcador.innerText = "Ninguno";
                 if (this.UI.modelo) this.UI.modelo.innerText = "-";
@@ -172,18 +268,41 @@
             infoMarcador: function (markerId) {
                 const slot = this.slotFromMarkerId(markerId);
                 if (slot === null) return null;
-                return this.modelosAsignados[slot] || null;
+                if (this.modelosAsignados[slot]) return this.modelosAsignados[slot];
+                return { name: this.nombresPorDefecto[slot] || 'Modelo', type: 'default' };
             },
 
-            // Panel de Stats sobre el modelo
             crearPanelStats: function (stats) {
                 const c = document.createElement('a-entity');
-                const bg = document.createElement('a-plane'); bg.setAttribute('width', '1.8'); bg.setAttribute('height', '0.6'); bg.setAttribute('color', '#111'); bg.setAttribute('opacity', '0.85'); c.appendChild(bg);
-                const n = document.createElement('a-text'); n.setAttribute('value', String(stats.name || 'Entidad').slice(0, 22)); n.setAttribute('align', 'center'); n.setAttribute('color', '#ffd700'); n.setAttribute('position', '0 0.2 0.02'); n.setAttribute('scale', '0.5 0.5 0.5'); c.appendChild(n);
+                const bg = document.createElement('a-plane');
+                bg.setAttribute('width', '1.8'); bg.setAttribute('height', '0.6');
+                bg.setAttribute('color', '#111'); bg.setAttribute('opacity', '0.85');
+                c.appendChild(bg);
+                const n = document.createElement('a-text');
+                n.setAttribute('value', String(stats.name || 'Entidad').slice(0, 22));
+                n.setAttribute('align', 'center'); n.setAttribute('color', '#ffd700');
+                n.setAttribute('position', '0 0.2 0.02'); n.setAttribute('scale', '0.5 0.5 0.5');
+                c.appendChild(n);
                 const pct = Math.max(0, Math.min(1, (stats.hp || 0) / (stats.hpMax || 1)));
-                const barBg = document.createElement('a-plane'); barBg.setAttribute('width', '1.6'); barBg.setAttribute('height', '0.14'); barBg.setAttribute('color', '#333'); c.appendChild(barBg);
-                const barFill = document.createElement('a-plane'); barFill.setAttribute('width', String(Math.max(0.001, 1.6 * pct))); barFill.setAttribute('height', '0.12'); barFill.setAttribute('color', pct > 0.5 ? '#4CAF50' : (pct > 0.25 ? '#FFC107' : '#e94560')); barFill.setAttribute('position', ((1.6 * pct - 1.6) / 2) + ' 0 0.03'); c.appendChild(barFill);
-                const h = document.createElement('a-text'); h.setAttribute('value', 'HP ' + (stats.hp || 0) + '/' + (stats.hpMax || 0) + ' ATK ' + (stats.atk || 0) + ' DEF ' + (stats.def || 0) + ' Nv ' + (stats.nivel || 1)); h.setAttribute('align', 'center'); h.setAttribute('color', '#fff'); h.setAttribute('position', '0 -0.15 0.02'); h.setAttribute('scale', '0.4 0.4 0.4'); c.appendChild(h);
+                const barBg = document.createElement('a-plane');
+                barBg.setAttribute('width', '1.6'); barBg.setAttribute('height', '0.14');
+                barBg.setAttribute('color', '#333');
+                c.appendChild(barBg);
+                const barFill = document.createElement('a-plane');
+                barFill.setAttribute('width', String(Math.max(0.001, 1.6 * pct)));
+                barFill.setAttribute('height', '0.12');
+                barFill.setAttribute('color', pct > 0.5 ? '#4CAF50' : (pct > 0.25 ? '#FFC107' : '#e94560'));
+                barFill.setAttribute('position', ((1.6 * pct - 1.6) / 2) + ' 0 0.03');
+                c.appendChild(barFill);
+                const h = document.createElement('a-text');
+                h.setAttribute('value',
+                    'HP ' + (stats.hp || 0) + '/' + (stats.hpMax || 0) +
+                    ' ATK ' + (stats.atk || 0) +
+                    ' DEF ' + (stats.def || 0) +
+                    ' Nv ' + (stats.nivel || 1));
+                h.setAttribute('align', 'center'); h.setAttribute('color', '#fff');
+                h.setAttribute('position', '0 -0.15 0.02'); h.setAttribute('scale', '0.4 0.4 0.4');
+                c.appendChild(h);
                 return c;
             },
 
@@ -213,13 +332,14 @@
                 delete this.statsAsignadas[slot];
             },
 
-            // Cambia los atributos del .model-entity existente (para el DM)
             asignarModelo: function (slot, config) {
                 const marker = this.markerElPorSlot(slot);
-                if (!marker) { console.warn('[AR] Marcador no encontrado para modelo:', slot); return false; }
+                if (!marker) { console.warn('[AR] Marcador no encontrado:', slot); return false; }
                 const modelEntity = marker.querySelector('.model-entity');
                 if (!modelEntity) { console.warn('[AR] No hay .model-entity en', slot); return false; }
 
+                // Limpiar hijos y atributos previos
+                while (modelEntity.firstChild) modelEntity.removeChild(modelEntity.firstChild);
                 modelEntity.removeAttribute('gltf-model');
                 modelEntity.removeAttribute('fbx-model');
                 modelEntity.removeAttribute('geometry');
@@ -228,12 +348,30 @@
                 modelEntity.removeAttribute('animation');
 
                 switch (config.type) {
-                    case 'gltf': modelEntity.setAttribute('gltf-model', config.url); if (config.animated) modelEntity.setAttribute('animation-mixer', ''); break;
-                    case 'fbx': modelEntity.setAttribute('fbx-model', 'src: url(' + config.url + ')'); if (config.animated) modelEntity.setAttribute('animation-mixer', 'clip: *; loop: repeat'); break;
-                    case 'image': modelEntity.setAttribute('geometry', 'primitive: plane; width: 1.5; height: 1.5'); modelEntity.setAttribute('material', 'src: ' + config.url + '; transparent: true; alphaTest: 0.5'); break;
-                    case 'video': modelEntity.setAttribute('geometry', 'primitive: plane; width: 2; height: 1.2'); modelEntity.setAttribute('material', 'src: ' + config.url); break;
-                    case 'gif': modelEntity.setAttribute('geometry', 'primitive: plane; width: 1; height: 1'); modelEntity.setAttribute('material', 'shader: gif; src: ' + config.url); break;
-                    case 'none': default: modelEntity.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3'); modelEntity.setAttribute('material', 'color: #888; opacity: 0.4');
+                    case 'gltf':
+                        modelEntity.setAttribute('gltf-model', config.url);
+                        if (config.animated) modelEntity.setAttribute('animation-mixer', '');
+                        break;
+                    case 'fbx':
+                        modelEntity.setAttribute('fbx-model', 'src: url(' + config.url + ')');
+                        if (config.animated) modelEntity.setAttribute('animation-mixer', 'clip: *; loop: repeat');
+                        break;
+                    case 'image':
+                        modelEntity.setAttribute('geometry', 'primitive: plane; width: 1.5; height: 1.5');
+                        modelEntity.setAttribute('material', 'src: ' + config.url + '; transparent: true; alphaTest: 0.5');
+                        break;
+                    case 'video':
+                        modelEntity.setAttribute('geometry', 'primitive: plane; width: 2; height: 1.2');
+                        modelEntity.setAttribute('material', 'src: ' + config.url);
+                        break;
+                    case 'gif':
+                        modelEntity.setAttribute('geometry', 'primitive: plane; width: 1; height: 1');
+                        modelEntity.setAttribute('material', 'shader: gif; src: ' + config.url);
+                        break;
+                    case 'none':
+                    default:
+                        modelEntity.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3');
+                        modelEntity.setAttribute('material', 'color: #888; opacity: 0.4');
                 }
                 modelEntity.setAttribute('position', config.position || '0 0 0');
                 modelEntity.setAttribute('rotation', config.rotation || '0 0 0');
@@ -250,14 +388,19 @@
                 m.setAttribute('visible', visible ? 'true' : 'false');
             },
 
-            limpiarModelo: function (slot) { return this.asignarModelo(slot, { type: 'none', name: 'Vacío' }); },
+            limpiarModelo: function (slot) {
+                return this.asignarModelo(slot, { type: 'none', name: 'Vacío' });
+            },
 
             iniciarFPS: function () {
                 let frames = 0, ultimo = performance.now();
                 const loop = () => {
                     frames++;
                     const ahora = performance.now();
-                    if (ahora >= ultimo + 1000) { if (this.UI.fps) this.UI.fps.innerText = frames; frames = 0; ultimo = ahora; }
+                    if (ahora >= ultimo + 1000) {
+                        if (this.UI.fps) this.UI.fps.innerText = frames;
+                        frames = 0; ultimo = ahora;
+                    }
                     requestAnimationFrame(loop);
                 };
                 loop();
@@ -266,33 +409,48 @@
         window.Utilidades = Utilidades;
 
         // ==================================================
-        // COMUNICACIÓN CON EL PADRE (DM)
+        // 2. COMUNICACIÓN CON EL PADRE (DM)
         // ==================================================
         const Comunicacion = {
             enviarAlPadre: function (msg) {
-                try { window.parent.postMessage(Object.assign({ source: 'ar-frame' }, msg), '*'); } catch (e) { console.warn('[AR] postMessage error:', e); }
+                try { window.parent.postMessage(Object.assign({ source: 'ar-frame' }, msg), '*'); }
+                catch (e) { console.warn('[AR] postMessage error:', e); }
             }
         };
         window.Comunicacion = Comunicacion;
 
         // Escuchar comandos del DM
-        window.addEventListener('message', (e) => {
+        window.addEventListener('message', function (e) {
             if (!e.data || e.data.target !== 'ar-frame') return;
             const cmd = e.data;
-            switch (cmd.action) {
-                case 'assign-model': Utilidades.asignarModelo(cmd.slot, { type: cmd.modelType || 'gltf', url: cmd.modelUrl, name: cmd.modelName || 'Modelo', scale: cmd.scale, rotation: cmd.rotation, position: cmd.position, animated: cmd.animated !== false }); break;
-                case 'show-model': Utilidades.mostrarModelo(cmd.slot, true); break;
-                case 'hide-model': Utilidades.mostrarModelo(cmd.slot, false); break;
-                case 'assign-stats': Utilidades.asignarStats(cmd.slot, cmd.stats); break;
-                case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
-                case 'clear-model': Utilidades.limpiarModelo(cmd.slot); break;
-                case 'toggle-panel': Utilidades.togglePanel(cmd.visible !== false); break;
-                default: console.warn('[AR] Comando desconocido:', cmd.action);
+            try {
+                switch (cmd.action) {
+                    case 'assign-model':
+                        Utilidades.asignarModelo(cmd.slot, {
+                            type: cmd.modelType || 'gltf',
+                            url: cmd.modelUrl,
+                            name: cmd.modelName || 'Modelo',
+                            scale: cmd.scale,
+                            rotation: cmd.rotation,
+                            position: cmd.position,
+                            animated: cmd.animated !== false
+                        });
+                        break;
+                    case 'show-model': Utilidades.mostrarModelo(cmd.slot, true); break;
+                    case 'hide-model': Utilidades.mostrarModelo(cmd.slot, false); break;
+                    case 'assign-stats': Utilidades.asignarStats(cmd.slot, cmd.stats); break;
+                    case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
+                    case 'clear-model': Utilidades.limpiarModelo(cmd.slot); break;
+                    case 'toggle-panel': Utilidades.togglePanel(cmd.visible !== false); break;
+                    default: console.warn('[AR] Comando desconocido:', cmd.action);
+                }
+            } catch (err) {
+                console.warn('[AR] Error ejecutando comando:', err);
             }
         });
 
         // ==================================================
-        // REGISTRO DE EVENTOS DE MARCADOR
+        // 3. REGISTRO DE EVENTOS DE MARCADOR
         // ==================================================
         if (typeof AFRAME !== 'undefined') {
             AFRAME.registerComponent('registerevents', {
@@ -304,13 +462,22 @@
                         const slot = Utilidades.slotFromMarkerId(marcadorId);
                         const info = slot !== null ? Utilidades.infoMarcador(marcadorId) : null;
                         Utilidades.marcadorEncontrado(marcadorId, info ? info.name : '');
-                        Comunicacion.enviarAlPadre({ action: 'marker-found', markerId: marcadorId, slot: slot, modelInfo: info });
+                        Comunicacion.enviarAlPadre({
+                            action: 'marker-found',
+                            markerId: marcadorId,
+                            slot: slot,
+                            modelInfo: info
+                        });
                     });
 
                     marcador.addEventListener('markerLost', function () {
                         Utilidades.marcadorPerdido();
                         const slot = Utilidades.slotFromMarkerId(marcadorId);
-                        Comunicacion.enviarAlPadre({ action: 'marker-lost', markerId: marcadorId, slot: slot });
+                        Comunicacion.enviarAlPadre({
+                            action: 'marker-lost',
+                            markerId: marcadorId,
+                            slot: slot
+                        });
                     });
                 }
             });
@@ -319,22 +486,36 @@
         }
 
         // ==================================================
-        // CLICK PARA SILENCIAR VIDEO Y ARRANQUE
+        // 4. ARRANQUE
         // ==================================================
-        document.addEventListener("click", () => { const t = document.getElementById('Tablero'); if (t) t.muted = !t.muted; });
+        document.addEventListener("click", function () {
+            const t = document.getElementById('Tablero');
+            if (t) t.muted = !t.muted;
+        });
+
         Utilidades.iniciarFPS();
 
         const scene = document.querySelector('a-scene');
         if (scene) {
-            const avisar = () => { Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' }); };
+            const avisar = function () { Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' }); };
             if (scene.hasLoaded) setTimeout(avisar, 300);
-            else scene.addEventListener('loaded', () => setTimeout(avisar, 300));
-            scene.addEventListener('camera-error', () => { const el = document.getElementById('camera-error'); if (el) el.classList.add('visible'); });
-            scene.addEventListener('arjs-video-loaded', () => { const el = document.getElementById('camera-error'); if (el) el.classList.remove('visible'); });
+            else scene.addEventListener('loaded', function () { setTimeout(avisar, 300); });
+
+            scene.addEventListener('camera-error', function () {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.add('visible');
+            });
+            scene.addEventListener('arjs-video-loaded', function () {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.remove('visible');
+            });
         }
 
         if (typeof AFRAME === 'undefined') {
-            document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;top:0;left:0;right:0;padding:12px;background:#dc3545;color:#fff;font-family:sans-serif;z-index:9999;">⚠️ A-Frame no se pudo cargar desde el CDN.</div>');
+            document.body.insertAdjacentHTML('afterbegin',
+                '<div style="position:fixed;top:0;left:0;right:0;padding:12px;background:#dc3545;color:#fff;font-family:sans-serif;z-index:99999;">' +
+                '⚠️ A-Frame no se cargó desde el CDN. Revisá la conexión.' +
+                '</div>');
         }
     </script>
 </body>
