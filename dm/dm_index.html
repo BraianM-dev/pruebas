@@ -614,7 +614,40 @@ function accionCurar(){if(!generando){input.value="Uso una poción de curación.
 
 /* ============================================================ MICRO:BIT */
 const STX=0x02,ETX=0x03; let bufSerial=[];
-async function conectarMicrobit(){ if(!("serial" in navigator)){alert("Web Serial no disponible. Usá Chrome/Edge en PC.");return} try{ microbitPort=await navigator.serial.requestPort(); await microbitPort.open({baudRate:115200,dataBits:8,stopBits:1,parity:"none",flowControl:"none"}); serialAbierto=true; $("mb-status").textContent="Conectado"; $("mb-status").style.color="var(--verde)"; $("btn-microbit-off").disabled=false; $("btn-microbit").disabled=true; leerSerial(); await enviarTrama("WEB|HELLO|"+GRUPO_RADIO); await enviarTrama("TX|ALL|Q|1"); }catch(e){alert("Error micro:bit: "+e.message)} }
+async function conectarMicrobit() {
+  console.log('[DM] conectarMicrobit() llamado');
+  if (!("serial" in navigator)) {
+    alert("Web Serial no disponible. Usá Chrome/Edge en PC.");
+    console.error('[DM] Web Serial no soportado');
+    return;
+  }
+  try {
+    console.log('[DM] Abriendo chooser de puertos seriales...');
+    microbitPort = await navigator.serial.requestPort();
+    console.log('[DM] Puerto seleccionado:', microbitPort);
+
+    console.log('[DM] Abriendo puerto a 115200 baud...');
+    await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    serialAbierto = true;
+    console.log('[DM] Puerto abierto OK');
+
+    $("mb-status").textContent = "Conectado";
+    $("mb-status").style.color = "var(--verde)";
+    $("btn-microbit-off").disabled = false;
+    $("btn-microbit").disabled = true;
+
+    leerSerial();
+    console.log('[DM] Leyendo del puerto serie...');
+
+    await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
+    await enviarTrama("TX|ALL|Q|1");
+    console.log('[DM] Handshake enviado. Esperando GW|READY...');
+    log('[DM] Gateway conectado, esperando READY');
+  } catch (e) {
+    console.error('[DM] Error micro:bit:', e);
+    alert("Error micro:bit: " + e.message);
+  }
+}
 async function desconectarMicrobit(){ serialAbierto=false; try{if(lectorMicrobit)await lectorMicrobit.cancel()}catch(_){} try{await colaSerie}catch(_){} try{if(microbitPort)await microbitPort.close()}catch(_){} microbitPort=null; lectorMicrobit=null; $("mb-status").textContent="Sin conectar"; $("mb-status").style.color="var(--tenue)"; $("btn-microbit-off").disabled=true; $("btn-microbit").disabled=false; }
 async function leerSerial(){ const lector=microbitPort.readable.getReader(); lectorMicrobit=lector; try{ while(serialAbierto){ const {value,done}=await lector.read(); if(done)break; for(const b of value)procesarByte(b); } } catch(e){log("Serial error: "+e.message)} finally{try{lector.releaseLock()}catch(_){}} }
 function procesarByte(b){ if(b===STX){bufSerial=[];return} if(b===ETX){ if(bufSerial.length>1){ const datos=bufSerial.slice(0,-1); const chk=bufSerial[bufSerial.length-1]; if(xor(datos)===chk){ try{procesarLinea(new TextDecoder().decode(new Uint8Array(datos)))}catch(_){} } } bufSerial=[]; return; } bufSerial.push(b); if(bufSerial.length>512)bufSerial=[]; }
