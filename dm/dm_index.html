@@ -618,18 +618,15 @@ async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
   if (!("serial" in navigator)) {
     alert("Web Serial no disponible. Usá Chrome/Edge en PC.");
-    console.error('[DM] Web Serial no soportado');
     return;
   }
   try {
-    console.log('[DM] Abriendo chooser de puertos seriales...');
+    console.log('[DM] Abriendo chooser...');
     microbitPort = await navigator.serial.requestPort();
-    console.log('[DM] Puerto seleccionado:', microbitPort);
-
-    console.log('[DM] Abriendo puerto a 115200 baud...');
+    console.log('[DM] Puerto elegido, abriendo a 115200...');
     await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
-    console.log('[DM] Puerto abierto OK');
+    console.log('[DM] Puerto abierto');
 
     $("mb-status").textContent = "Conectado";
     $("mb-status").style.color = "var(--verde)";
@@ -637,12 +634,25 @@ async function conectarMicrobit() {
     $("btn-microbit").disabled = true;
 
     leerSerial();
-    console.log('[DM] Leyendo del puerto serie...');
-
-    await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
-    await enviarTrama("TX|ALL|Q|1");
-    console.log('[DM] Handshake enviado. Esperando GW|READY...');
     log('[DM] Gateway conectado, esperando READY');
+
+    // NUEVO: DAPLink resetea el micro:bit al abrir el puerto.
+    // Esperamos 2s a que arranque el firmware antes de mandar handshake.
+    await new Promise(r => setTimeout(r, 2000));
+
+    // NUEVO: reintentamos el handshake 3 veces
+    for (let i = 0; i < 3; i++) {
+      try {
+        await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
+        await enviarTrama("TX|ALL|Q|1");
+        console.log('[DM] Handshake enviado (intento ' + (i + 1) + ')');
+      } catch (e) {
+        console.warn('[DM] Error enviando handshake:', e);
+      }
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    console.log('[DM] Handshake completo. Esperando GW|READY...');
   } catch (e) {
     console.error('[DM] Error micro:bit:', e);
     alert("Error micro:bit: " + e.message);
