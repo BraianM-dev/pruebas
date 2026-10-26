@@ -14,6 +14,7 @@ const Utilidades = {
 
     modelosAsignados: {},
     statsAsignadas: {},
+    slotsActualmenteVisibles: {},
 
     togglePanel: function (visible) {
         if (!this.UI.panel) return;
@@ -58,6 +59,21 @@ const Utilidades = {
 
     infoMarcador: function (markerId) {
         return this.modelosAsignados[this.slotFromMarkerId(markerId)] || null;
+    },
+
+    // Muestra u oculta los slots de un marcador específico
+    slotVisible: function (slot, visible) {
+        const marker = this.markerElPorSlot(slot);
+        if (!marker) return;
+        const modelSlot = marker.querySelector('.model-slot');
+        const statsSlot = marker.querySelector('.stats-slot');
+        if (modelSlot) modelSlot.setAttribute('visible', visible ? 'true' : 'false');
+        if (statsSlot) statsSlot.setAttribute('visible', visible ? 'true' : 'false');
+        this.slotsActualmenteVisibles[slot] = !!visible;
+    },
+
+    ocultarTodosSlots: function () {
+        Object.keys(this.modelosAsignados).forEach(slot => this.slotVisible(slot, false));
     },
 
     crearEntidadModelo: function (config) {
@@ -145,7 +161,8 @@ const Utilidades = {
         while (modelSlot.firstChild) modelSlot.removeChild(modelSlot.firstChild);
         const modelo = this.crearEntidadModelo(config);
         modelSlot.appendChild(modelo);
-        modelSlot.setAttribute('visible', 'true');
+        // NO forzamos 'visible'. El slot hereda la visibilidad del marcador.
+        // Solo se mostrará cuando markerFound dispare slotVisible(slot, true).
         this.modelosAsignados[slot] = config;
         return true;
     },
@@ -155,10 +172,7 @@ const Utilidades = {
     },
 
     mostrarModelo: function (slot, visible) {
-        const marker = this.markerElPorSlot(slot);
-        if (!marker) return;
-        const modelSlot = marker.querySelector('.model-slot');
-        if (modelSlot) modelSlot.setAttribute('visible', visible ? 'true' : 'false');
+        this.slotVisible(slot, visible);
     },
 
     crearPanelStats: function (stats) {
@@ -218,6 +232,7 @@ const Utilidades = {
         while (statsSlot.firstChild) statsSlot.removeChild(statsSlot.firstChild);
         const panel = this.crearPanelStats(stats);
         statsSlot.appendChild(panel);
+        // La visibilidad ya se controla por slotVisible en markerFound/Lost
         this.statsAsignadas[slot] = stats;
         return true;
     },
@@ -251,6 +266,7 @@ const Utilidades = {
 window.addEventListener('load', () => {
     Utilidades.iniciarFPS();
 
+    // Asignar modelos a los slots (no se hacen visibles hasta que el marcador sea detectado)
     Utilidades.asignarModelo('hiro', { type: 'gltf', url: '#modelo-dragon-glb', name: 'Dragón', scale: '0.1 0.1 0.1', animated: true });
     Utilidades.asignarModelo('kanji', { type: 'fbx', url: 'modelos/dragon.fbx', name: 'Dragón FBX', scale: '0.1 0.1 0.1', animated: true });
     Utilidades.asignarModelo('0', { type: 'gltf', url: '#modelo-mago-glb', name: 'Mago', scale: '0.5 0.5 0.5', rotation: '-90 0 0', animated: true });
@@ -266,5 +282,10 @@ window.addEventListener('load', () => {
     Utilidades.asignarModelo('10', { type: 'gltf', url: 'modelos/esqueleto_animado.glb', name: 'Esqueleto', scale: '1 1 1', rotation: '-60 0 0', animated: true });
     Utilidades.asignarModelo('11', { type: 'gltf', url: 'modelos/evil.glb', name: 'Evil', scale: '100 100 100', rotation: '-60 0 0', animated: true });
 
-    Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+    // Asegurar que todos los slots estén ocultos al inicio
+    Utilidades.ocultarTodosSlots();
+
+    if (window.Comunicacion) {
+        Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+    }
 });
