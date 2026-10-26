@@ -8,32 +8,29 @@ AFRAME.registerComponent('registerevents', {
 
         marcador.addEventListener('markerFound', function () {
             const slot = Utilidades.slotFromMarkerId(marcadorId);
-            const info = Utilidades.infoMarcador(marcadorId);
-            Utilidades.marcadorEncontrado(marcadorId, info ? info.name : 'Vacío');
+            const info = slot !== null ? Utilidades.infoMarcador(marcadorId) : null;
+            Utilidades.marcadorEncontrado(marcadorId, info ? info.name : '');
 
-            // Mostrar SOLO el slot de este marcador
-            Utilidades.slotVisible(slot, true);
-
-            Comunicacion.enviarAlPadre({
-                action: 'marker-found',
-                markerId: marcadorId,
-                slot: slot,
-                modelInfo: info ? { name: info.name, type: info.type } : null
-            });
+            if (slot !== null && window.Comunicacion) {
+                Comunicacion.enviarAlPadre({
+                    action: 'marker-found',
+                    markerId: marcadorId,
+                    slot: slot,
+                    modelInfo: info ? { name: info.name, type: info.type } : null
+                });
+            }
         });
 
         marcador.addEventListener('markerLost', function () {
-            const slot = Utilidades.slotFromMarkerId(marcadorId);
             Utilidades.marcadorPerdido();
-
-            // Ocultar el slot de este marcador
-            Utilidades.slotVisible(slot, false);
-
-            Comunicacion.enviarAlPadre({
-                action: 'marker-lost',
-                markerId: marcadorId,
-                slot: slot
-            });
+            const slot = Utilidades.slotFromMarkerId(marcadorId);
+            if (slot !== null && window.Comunicacion) {
+                Comunicacion.enviarAlPadre({
+                    action: 'marker-lost',
+                    markerId: marcadorId,
+                    slot: slot
+                });
+            }
         });
     }
 });
