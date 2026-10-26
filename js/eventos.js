@@ -1,4 +1,6 @@
 // js/eventos.js
+// Detecta cuándo un marcador entra o sale del campo de visión
+// y avisa al DM (padre) por postMessage
 
 AFRAME.registerComponent('registerevents', {
     init: function () {
@@ -10,12 +12,14 @@ AFRAME.registerComponent('registerevents', {
             const info = slot !== null ? Utilidades.infoMarcador(marcadorId) : null;
             Utilidades.marcadorEncontrado(marcadorId, info ? info.name : '');
 
-            if (slot !== null && window.Comunicacion) {
+            console.log('[AR] marker-found:', marcadorId, 'slot:', slot, 'model:', info && info.name);
+
+            if (window.Comunicacion) {
                 Comunicacion.enviarAlPadre({
                     action: 'marker-found',
                     markerId: marcadorId,
                     slot: slot,
-                    modelInfo: info ? { name: info.name, type: info.type } : null
+                    modelInfo: info
                 });
             }
         });
@@ -23,7 +27,8 @@ AFRAME.registerComponent('registerevents', {
         marcador.addEventListener('markerLost', function () {
             Utilidades.marcadorPerdido();
             const slot = Utilidades.slotFromMarkerId(marcadorId);
-            if (slot !== null && window.Comunicacion) {
+
+            if (window.Comunicacion) {
                 Comunicacion.enviarAlPadre({
                     action: 'marker-lost',
                     markerId: marcadorId,
