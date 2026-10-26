@@ -776,6 +776,18 @@ function procesarLinea(linea){
     }
     renderizarTodo();
   }
+    else if(cmd==="AB"){
+      partida.estadoJuego.ultimoEvento=`${id} presionó A+B.`;
+      publicarEstado("opcion-ab");
+      agregarMensaje(`🎯 ${id} presionó A+B`, "system");
+      programarNarracionRadio(`El jugador ${id} presionó A+B (ambos botones).`);
+    }
+    else if(cmd==="L"){
+      partida.estadoJuego.ultimoEvento=`${id} tocó el logo táctil.`;
+      publicarEstado("logo-tactil");
+      agregarMensaje(`👆 ${id} tocó el logo táctil`, "system");
+      programarNarracionRadio(`El jugador ${id} tocó el logo táctil (confirmar/seleccionar).`);
+    }
   else if(p[0]==="GW"&&p[1]==="READY"){
     log("Gateway listo (grupo "+p[2]+")");
     agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
