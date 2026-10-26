@@ -1,5 +1,5 @@
 // js/conexion.js
-// Comunicación bidireccional entre el iframe AR y el cliente  DM
+// Comunicación bidireccional entre el iframe AR y el cliente DM
 
 const Comunicacion = {
 
