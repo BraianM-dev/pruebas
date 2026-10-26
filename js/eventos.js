@@ -1,5 +1,4 @@
 // js/eventos.js
-// Detecta cuándo un marcador entra o sale del campo de visión
 
 AFRAME.registerComponent('registerevents', {
     init: function () {
