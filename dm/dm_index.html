@@ -214,6 +214,7 @@
   <div class="row" id="microbit-row">
     <button class="btn primary" id="btn-microbit" onclick="conectarMicrobit()">Conectar micro:bit</button>
     <button class="btn" id="btn-microbit-off" onclick="desconectarMicrobit()" disabled>Desconectar</button>
+    <button class="btn primary" id="btn-buscar-jugadores" onclick="buscarJugadores()" disabled>🔍 Buscar jugadores</button>
     <span id="mb-status" style="color:var(--tenue);font-size:.68rem">Sin conectar</span>
   </div>
   <div class="row"><button class="btn" onclick="togglePanelAR()">Panel AR visible/oculto</button></div>
@@ -272,7 +273,13 @@ function txt(v,m){return String(v||"").trim().slice(0,m)}
 function coord(x,y){return String.fromCharCode(65+x)+String(y+1)}
 function int(v,min,max,alt){const n=Number(v);return Number.isInteger(n)&&n>=min&&n<=max?n:alt}
 function ahora(){return new Date().toISOString()}
-function log(m){const el=$("log"); if(!el)return; const t=new Date().toLocaleTimeString(); el.value+=`[${t}] ${m}\n`; el.scrollTop=el.scrollHeight}
+
+// ✅ NUEVO: log() ahora también escribe a la consola
+function log(m){
+  const el=$("log");
+  if(el){ const t=new Date().toLocaleTimeString(); el.value+=`[${t}] ${m}\n`; el.scrollTop=el.scrollHeight; }
+  console.log('[DM]', m);
+}
 
 /* ============================================================ NUEVO: bienvenida al primer jugador */
 function _bienvenidaSiEsPrimerJugador(id, j) {
@@ -280,20 +287,17 @@ function _bienvenidaSiEsPrimerJugador(id, j) {
     if (modo !== "docente") return;
     if (!j || (j.tipo || "jugador") !== "jugador") return;
 
-    // Registrar al jugador como "visto"
     if (!jugadoresVistos[id]) {
         jugadoresVistos[id] = true;
         agregarMensaje(`🎉 ${id} se ha unido como ${j.personaje || "aventurero"}`, "system");
         log(`[DM] Nuevo jugador: ${id} (${j.personaje || "sin personaje"})`);
     }
 
-    // Solo disparar bienvenida si es el primer jugador
     const jugadoresReales = Object.values(partida.estadoJuego.jugadores).filter(x => (x.tipo || "jugador") === "jugador");
     if (jugadoresReales.length >= 1 && !bienvenidaEnviada) {
         bienvenidaEnviada = true;
         setTimeout(() => {
             if (generando) { bienvenidaEnviada = false; return; }
-            const detalle = jugadoresReales.map((jug, i) => `${jug.personaje || "aventurero"}`).join(", ");
             input.value = `[Sistema] El primer jugador (${id}, ${j.personaje || "aventurero"}) se ha unido. Da la bienvenida al grupo como Dungeon Master, preséntate con tono épico, describe la entrada al calabozo de «Calabozos y Código» y pedí a los demás jugadores que se unan con su micro:bit. Cuando el docente confirme que están todos, comenzará la aventura.`;
             enviarMensaje();
         }, 1200);
@@ -537,7 +541,6 @@ async function enviarMensaje(){
   agregarMensaje(textoOriginal,"user");
   input.value="";
 
-  // Modo alumno: reenvía al DM por P2P o GAS
   if(modo==="alumno"&&codigoSala){
     const msg={tipo:"chat", texto: textoOriginal, autor: nombreAlumno, rol: rolAlumno};
     let enviadoP2P = false;
@@ -560,7 +563,6 @@ async function enviarMensaje(){
   const bub=agregarMensaje("…","ai");
   let contenido="";
 
-  // NUEVO: si el docente escribió un comando de inicio, construir un prompt expandido
   let textoParaDM = textoOriginal;
   if (modo === "docente" && COMANDO_COMENZAR.test(textoOriginal)) {
     const jugadoresReales = Object.entries(partida.estadoJuego.jugadores).filter(([,j]) => (j.tipo||"jugador") === "jugador");
@@ -614,6 +616,8 @@ function accionCurar(){if(!generando){input.value="Uso una poción de curación.
 
 /* ============================================================ MICRO:BIT */
 const STX=0x02,ETX=0x03; let bufSerial=[];
+
+// ✅ NUEVO: conectarMicrobit con delay + reintentos
 async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
   if (!("serial" in navigator)) {
@@ -632,15 +636,15 @@ async function conectarMicrobit() {
     $("mb-status").style.color = "var(--verde)";
     $("btn-microbit-off").disabled = false;
     $("btn-microbit").disabled = true;
+    $("btn-buscar-jugadores").disabled = false;
 
     leerSerial();
     log('[DM] Gateway conectado, esperando READY');
 
-    // NUEVO: DAPLink resetea el micro:bit al abrir el puerto.
+    // DAPLink resetea el micro:bit al abrir el puerto.
     // Esperamos 2s a que arranque el firmware antes de mandar handshake.
     await new Promise(r => setTimeout(r, 2000));
 
-    // NUEVO: reintentamos el handshake 3 veces
     for (let i = 0; i < 3; i++) {
       try {
         await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
@@ -658,13 +662,47 @@ async function conectarMicrobit() {
     alert("Error micro:bit: " + e.message);
   }
 }
-async function desconectarMicrobit(){ serialAbierto=false; try{if(lectorMicrobit)await lectorMicrobit.cancel()}catch(_){} try{await colaSerie}catch(_){} try{if(microbitPort)await microbitPort.close()}catch(_){} microbitPort=null; lectorMicrobit=null; $("mb-status").textContent="Sin conectar"; $("mb-status").style.color="var(--tenue)"; $("btn-microbit-off").disabled=true; $("btn-microbit").disabled=false; }
+
+async function desconectarMicrobit(){
+  serialAbierto=false;
+  try{if(lectorMicrobit)await lectorMicrobit.cancel()}catch(_){}
+  try{await colaSerie}catch(_){}
+  try{if(microbitPort)await microbitPort.close()}catch(_){}
+  microbitPort=null; lectorMicrobit=null;
+  $("mb-status").textContent="Sin conectar";
+  $("mb-status").style.color="var(--tenue)";
+  $("btn-microbit-off").disabled=true;
+  $("btn-microbit").disabled=false;
+  $("btn-buscar-jugadores").disabled=true;
+}
+
+// ✅ NUEVO: función para forzar identificación de todos los jugadores
+async function buscarJugadores() {
+  if (!serialAbierto) {
+    alert('Primero conectá el gateway micro:bit');
+    return;
+  }
+  try {
+    for (let i = 0; i < 3; i++) {
+      await enviarTrama("TX|ALL|Q|1");
+      await new Promise(r => setTimeout(r, 200));
+    }
+    log('[DM] Buscando jugadores (TX|ALL|Q|1 x3)');
+    agregarMensaje('🔍 Solicitando identificación a todos los jugadores...', 'system');
+  } catch (e) {
+    log('[DM] Error buscando jugadores: ' + e.message);
+  }
+}
+
 async function leerSerial(){ const lector=microbitPort.readable.getReader(); lectorMicrobit=lector; try{ while(serialAbierto){ const {value,done}=await lector.read(); if(done)break; for(const b of value)procesarByte(b); } } catch(e){log("Serial error: "+e.message)} finally{try{lector.releaseLock()}catch(_){}} }
 function procesarByte(b){ if(b===STX){bufSerial=[];return} if(b===ETX){ if(bufSerial.length>1){ const datos=bufSerial.slice(0,-1); const chk=bufSerial[bufSerial.length-1]; if(xor(datos)===chk){ try{procesarLinea(new TextDecoder().decode(new Uint8Array(datos)))}catch(_){} } } bufSerial=[]; return; } bufSerial.push(b); if(bufSerial.length>512)bufSerial=[]; }
 function xor(arr){return arr.reduce((a,b)=>a^b,0)}
 
+// ✅ NUEVO: procesarLinea con logging exhaustivo
 function procesarLinea(linea){
-  console.log('[DM] procesarLinea:', linea);
+  console.log('[DM] procesarLinea RAW:', JSON.stringify(linea));
+  log('[DM] linea: ' + linea);
+
   const p=linea.split("|");
   if(p[0]==="RX"&&p.length>=3){
     const id=txt(p[1],12).toUpperCase(), cmd=txt(p[2],8).toUpperCase(), val=txt(p.slice(3).join("|"),80);
@@ -687,7 +725,9 @@ function procesarLinea(linea){
         x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:ahora(),peerId:null,
         tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:"",arSlot:null
       };
-      console.log('[DM] Nuevo jugador por micro:bit:', id);
+      console.log('[DM] ✅ Nuevo jugador por micro:bit:', id);
+      log('[DM] Nuevo jugador: ' + id);
+      agregarMensaje(`⚔️ ${id} se unió por micro:bit`, "system");
     }
     const j=partida.estadoJuego.jugadores[id];
     j.ultimaConexion=ahora();
@@ -741,6 +781,7 @@ function procesarLinea(linea){
     agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
   }
   else if(p[0]==="TXOK")log("Radio enviada a "+p[1]);
+  else if(p[0]==="ERR")log("Error gateway: "+linea);
 }
 
 async function enviarTrama(linea){ if(!serialAbierto||!microbitPort)return; const data=new TextEncoder().encode(linea); const trama=new Uint8Array([STX,...data,xor([...data]),ETX]); colaSerie=colaSerie.then(async()=>{ const w=microbitPort.writable.getWriter(); try{await w.write(trama)}finally{w.releaseLock()} }); return colaSerie; }
