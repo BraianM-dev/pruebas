@@ -1,5 +1,4 @@
 // js/utilidades.js
-// Herramientas de UI, gestión de modelos y paneles de stats en AR
 
 const Utilidades = {
 
@@ -42,7 +41,6 @@ const Utilidades = {
         }
     },
 
-    // Mapea id de marcador (Hiro, Kanji, Barcode_5) a slot canónico (hiro, kanji, 5)
     slotFromMarkerId: function (markerId) {
         if (markerId === 'Hiro') return 'hiro';
         if (markerId === 'Kanji') return 'kanji';
@@ -50,7 +48,6 @@ const Utilidades = {
         return m ? m[1] : null;
     },
 
-    // Devuelve el elemento <a-marker> a partir del slot canónico
     markerElPorSlot: function (slot) {
         const s = String(slot);
         if (s === 'hiro') return document.getElementById('Hiro');
@@ -64,6 +61,19 @@ const Utilidades = {
         return this.modelosAsignados[slot] || null;
     },
 
+    // Crea dinámicamente el contenedor de stats si no existe
+    _getOrCreateStatsSlot: function (marker) {
+        let statsSlot = marker.querySelector('.stats-slot');
+        if (!statsSlot) {
+            statsSlot = document.createElement('a-entity');
+            statsSlot.className = 'stats-slot';
+            statsSlot.setAttribute('position', '0 1.5 0');
+            statsSlot.setAttribute('look-at', '[camera]');
+            marker.appendChild(statsSlot);
+        }
+        return statsSlot;
+    },
+
     crearPanelStats: function (stats) {
         const container = document.createElement('a-entity');
 
@@ -72,7 +82,6 @@ const Utilidades = {
         bg.setAttribute('height', '0.6');
         bg.setAttribute('color', '#111');
         bg.setAttribute('opacity', '0.85');
-        bg.setAttribute('position', '0 0 0');
         container.appendChild(bg);
 
         const nameText = document.createElement('a-text');
@@ -119,11 +128,9 @@ const Utilidades = {
             console.warn('[AR] Marcador no encontrado para stats:', slot);
             return false;
         }
-        const statsSlot = marker.querySelector('.stats-slot');
-        if (!statsSlot) return false;
+        const statsSlot = this._getOrCreateStatsSlot(marker);
         while (statsSlot.firstChild) statsSlot.removeChild(statsSlot.firstChild);
-        const panel = this.crearPanelStats(stats);
-        statsSlot.appendChild(panel);
+        statsSlot.appendChild(this.crearPanelStats(stats));
         this.statsAsignadas[slot] = stats;
         return true;
     },
@@ -137,9 +144,7 @@ const Utilidades = {
         delete this.statsAsignadas[slot];
     },
 
-    // Reasigna el modelo de un slot cambiando atributos del .model-entity existente.
-    // NO se usa slot con visible=false: el modelo vive dentro del <a-marker> y AR.js
-    // maneja la visibilidad del marcador completo.
+    // Cambia atributos del .model-entity existente. No crea slots ni toca visible.
     asignarModelo: function (slot, config) {
         const marker = this.markerElPorSlot(slot);
         if (!marker) {
@@ -148,18 +153,17 @@ const Utilidades = {
         }
         const modelEntity = marker.querySelector('.model-entity');
         if (!modelEntity) {
-            console.warn('[AR] No hay .model-entity en el marcador', slot);
+            console.warn('[AR] No existe .model-entity en el marcador', slot);
             return false;
         }
 
-        // Limpiar componentes previos de modelo
         modelEntity.removeAttribute('gltf-model');
         modelEntity.removeAttribute('fbx-model');
         modelEntity.removeAttribute('geometry');
         modelEntity.removeAttribute('material');
         modelEntity.removeAttribute('animation-mixer');
+        modelEntity.removeAttribute('animation');
 
-        // Aplicar nuevo
         switch (config.type) {
             case 'gltf':
                 modelEntity.setAttribute('gltf-model', config.url);
@@ -181,10 +185,6 @@ const Utilidades = {
                 modelEntity.setAttribute('geometry', 'primitive: plane; width: 1; height: 1');
                 modelEntity.setAttribute('material', 'shader: gif; src: ' + config.url);
                 break;
-            case 'trees':
-                // No soportado dinámicamente. Mantiene el actual.
-                console.warn('[AR] "trees" no soportado como modelo dinámico.');
-                return false;
             case 'none':
             default:
                 modelEntity.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3');
@@ -199,7 +199,6 @@ const Utilidades = {
         return true;
     },
 
-    // Para mantener compatibilidad con la interfaz anterior
     mostrarModelo: function (slot, visible) {
         const marker = this.markerElPorSlot(slot);
         if (!marker) return;
@@ -209,25 +208,24 @@ const Utilidades = {
     },
 
     limpiarModelo: function (slot) {
-        return this.asignarModelo(slot, { type: 'none', name: 'Vacío', animated: false });
+        return this.asignarModelo(slot, { type: 'none', name: 'Vacío' });
     },
 
-    // Inicializa la lista de modelos por defecto (coincide con los hardcodeados en el HTML)
     inicializarModelosPorDefecto: function () {
-        this.modelosAsignados['hiro'] = { type: 'gltf', url: '#modelo-dragon-glb', name: 'Dragón', scale: '0.1 0.1 0.1', animated: true };
-        this.modelosAsignados['kanji'] = { type: 'fbx', url: 'modelos/dragon.fbx', name: 'Dragón FBX', scale: '0.1 0.1 0.1', animated: true };
-        this.modelosAsignados['0'] = { type: 'gltf', url: '#modelo-mago-glb', name: 'Mago', scale: '0.5 0.5 0.5', rotation: '-90 0 0', animated: true };
-        this.modelosAsignados['1'] = { type: 'fbx', url: 'modelos/mago.fbx', name: 'Mago FBX', scale: '0.01 0.01 0.01', rotation: '-90 0 0', animated: true };
-        this.modelosAsignados['2'] = { type: 'gltf', url: '#modelo-model-glb', name: 'Modelo', scale: '2 2 2', rotation: '-90 0 0', animated: true };
+        this.modelosAsignados['hiro'] = { type: 'gltf', url: '#modelo-dragon-glb', name: 'Dragón' };
+        this.modelosAsignados['kanji'] = { type: 'fbx', url: 'modelos/dragon.fbx', name: 'Dragón FBX' };
+        this.modelosAsignados['0'] = { type: 'gltf', url: '#modelo-mago-glb', name: 'Mago' };
+        this.modelosAsignados['1'] = { type: 'fbx', url: 'modelos/mago.fbx', name: 'Mago FBX' };
+        this.modelosAsignados['2'] = { type: 'gltf', url: '#modelo-model-glb', name: 'Modelo' };
         this.modelosAsignados['3'] = { type: 'gif', url: 'modelos/fuego.gif', name: 'Fuego' };
         this.modelosAsignados['4'] = { type: 'image', url: '#imgDragon', name: 'Imagen' };
         this.modelosAsignados['5'] = { type: 'video', url: '#videoEjemplo', name: 'Video 1' };
         this.modelosAsignados['6'] = { type: 'video', url: '#videoEjemplo2', name: 'Video 2' };
         this.modelosAsignados['7'] = { type: 'video', url: '#Tablero', name: 'Tablero' };
         this.modelosAsignados['8'] = { type: 'trees', name: 'Árboles' };
-        this.modelosAsignados['9'] = { type: 'gltf', url: '#modelo-naturaleza-glb', name: 'Naturaleza', scale: '2 2 2', rotation: '-90 5 0', animated: true };
-        this.modelosAsignados['10'] = { type: 'gltf', url: 'modelos/esqueleto_animado.glb', name: 'Esqueleto', scale: '1 1 1', rotation: '-60 0 0', animated: true };
-        this.modelosAsignados['11'] = { type: 'gltf', url: 'modelos/evil.glb', name: 'Evil', scale: '100 100 100', rotation: '-60 0 0', animated: true };
+        this.modelosAsignados['9'] = { type: 'gltf', url: '#modelo-naturaleza-glb', name: 'Naturaleza' };
+        this.modelosAsignados['10'] = { type: 'gltf', url: 'modelos/esqueleto_animado.glb', name: 'Esqueleto' };
+        this.modelosAsignados['11'] = { type: 'gltf', url: 'modelos/evil.glb', name: 'Evil' };
     },
 
     iniciarFPS: function () {
@@ -247,25 +245,25 @@ const Utilidades = {
     }
 };
 
-// Esperar a que la escena A-Frame esté lista antes de inicializar
+// Avisar al padre cuando la escena esté lista
+function _avisarReady() {
+    if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     Utilidades.iniciarFPS();
     Utilidades.inicializarModelosPorDefecto();
-});
 
-// Cuando la escena A-Frame cargue, avisar al padre
-document.addEventListener('DOMContentLoaded', () => {
+    if (typeof AFRAME === 'undefined') {
+        console.warn('[AR] AFRAME no está cargado — revisar CDN');
+        return;
+    }
+
     const scene = document.querySelector('a-scene');
     if (!scene) return;
     if (scene.hasLoaded) {
-        setTimeout(() => {
-            if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
-        }, 300);
+        setTimeout(_avisarReady, 300);
     } else {
-        scene.addEventListener('loaded', () => {
-            setTimeout(() => {
-                if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
-            }, 300);
-        });
+        scene.addEventListener('loaded', () => setTimeout(_avisarReady, 300));
     }
 });
