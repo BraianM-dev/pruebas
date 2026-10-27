@@ -46,6 +46,67 @@
         #camara-ar iframe { width: 100%; height: 100%; border: none; display: block; }
         #camara-ar:-webkit-full-screen { border: none; border-radius: 0; }
         #camara-ar:fullscreen { border: none; border-radius: 0; }
+
+        /* ✅ FIX FULLSCREEN: pseudo-fullscreen con CSS (funciona en iOS Safari) */
+        #camara-ar.pseudo-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            z-index: 99999 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #000 !important;
+            grid-area: unset !important;
+        }
+        #camara-ar.pseudo-fullscreen iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+        }
+        body.pseudo-fullscreen-active {
+            overflow: hidden !important;
+        }
+        body.pseudo-fullscreen-active > *:not(#camara-ar):not(#btn-close-fullscreen) {
+            /* no aplicamos display:none para no romper layouts persistentes */
+        }
+
+        /* Botón de cerrar fullscreen (siempre visible por encima del iframe) */
+        #btn-close-fullscreen {
+            position: fixed;
+            top: calc(10px + env(safe-area-inset-top));
+            right: calc(10px + env(safe-area-inset-right));
+            z-index: 100000;
+            display: none;
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            line-height: 1;
+        }
+        #btn-close-fullscreen.visible {
+            display: flex !important;
+        }
+        #btn-close-fullscreen:active {
+            background: rgba(220, 53, 69, 0.9);
+        }
+
         body.teatro #main { grid-template-areas: "cam cam cam"; }
         body.teatro #panel-jugadores, body.teatro #panel-enemigos { display: none; }
         body.teatro #zona-narracion { position: fixed; bottom: 0; left: 0; right: 0; max-height: 45vh; background: rgba(0,0,0,.88); border-top: 2px solid var(--dorado); z-index: 10; border-radius: 12px 12px 0 0; padding-bottom: 8px; }
@@ -109,6 +170,8 @@
     </style>
 </head>
 <body>
+
+<button id="btn-close-fullscreen" onclick="toggleFullscreen()" title="Cerrar pantalla completa" aria-label="Cerrar pantalla completa">✕</button>
 
 <div id="gate-overlay">
   <div id="gate-card">
@@ -181,7 +244,7 @@
     <div id="lista-jugadores"><p style="color:var(--tenue);font-size:.7rem;text-align:center">Esperando...</p></div>
   </div>
   <div id="camara-ar">
-    <iframe id="ar-game-frame" src="../iframe_ar.html" allow="camera *; microphone *" allowfullscreen></iframe>
+    <iframe id="ar-game-frame" src="../iframe_ar.html" allow="camera; microphone; fullscreen; autoplay" allowfullscreen></iframe>
   </div>
   <div class="panel" id="panel-enemigos">
     <h2>👹 Enemigos</h2>
@@ -255,11 +318,9 @@ const PERSONAJES = { GUERRERO:{hp:30, atk:8, def:6, acc:"ESPADA", emoji:"⚔️"
 /* ============================================================ ESTADO */
 let modo = "docente", codigoSala = "", gateToken = localStorage.getItem(CLAVE_GATE) || "", adminToken = sessionStorage.getItem(CLAVE_ADMIN) || "", sessionTokenDocente = localStorage.getItem("calabozos.hostToken") || "", sessionTokenAlumno = "", peerIdAlumno = "", jugadorIdAlumno = localStorage.getItem("calabozos.jugadorId") || "", rolAlumno = localStorage.getItem(CLAVE_ROL) || "", nombreAlumno = "Alumno", partida = cargarPartida(), historial = partida.historial, urlOllama = null, modoDM = "fallback", generando = false, p2pHost = null, p2pPeer = null, p2pConectado = false, pollingGAS = false, debouncePub = null, pollingDocenteId = null, ultRevDoc = 0, ultSeqDoc = 0, microbitPort = null, lectorMicrobit = null, serialAbierto = false, colaSerie = Promise.resolve(), espectadoresConectados = [], arFrameReady = false, ultimoNarradoPorSlot = {};
 
-// Control de bienvenida y jugadores ya vistos
 let bienvenidaEnviada = false;
 const jugadoresVistos = {};
 
-// ✅ CAMBIO v27: estado del gateway
 let gatewayListo = false;
 let gatewayPingInterval = null;
 let gatewayReadyTimeout = null;
@@ -284,6 +345,111 @@ function log(m){
   if(el){ const t=new Date().toLocaleTimeString(); el.value+=`[${t}] ${m}\n`; el.scrollTop=el.scrollHeight; }
   console.log('[DM]', m);
 }
+
+/* ============================================================ FULLSCREEN (mobile + desktop) */
+// ✅ FIX: pseudo-fullscreen con CSS para iOS Safari (donde requestFullscreen no existe en iPhone)
+let pseudoFullscreenActivo = false;
+
+function esMovil() {
+  return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function toggleFullscreen() {
+  if (esMovil()) {
+    togglePseudoFullscreen();
+  } else {
+    toggleNativeFullscreen();
+  }
+}
+
+function togglePseudoFullscreen() {
+  const el = $("camara-ar");
+  const btn = $("btn-close-fullscreen");
+  if (!el) return;
+
+  if (el.classList.contains("pseudo-fullscreen")) {
+    // Salir
+    el.classList.remove("pseudo-fullscreen");
+    document.body.classList.remove("pseudo-fullscreen-active");
+    if (btn) btn.classList.remove("visible");
+    pseudoFullscreenActivo = false;
+
+    // Si también estaba en fullscreen nativo, salir
+    const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (exitFS && (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement)) {
+      exitFS.call(document).catch(() => {});
+    }
+
+    // Desbloquear orientación
+    if (screen.orientation && screen.orientation.unlock) {
+      try { screen.orientation.unlock(); } catch (_) {}
+    }
+  } else {
+    // Entrar
+    el.classList.add("pseudo-fullscreen");
+    document.body.classList.add("pseudo-fullscreen-active");
+    if (btn) btn.classList.add("visible");
+    pseudoFullscreenActivo = true;
+
+    // Intentar fullscreen nativo ADEMÁS del pseudo (si está disponible)
+    const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (requestFS) {
+      requestFS.call(el).catch(() => {
+        console.log('[Fullscreen] Nativo no disponible, usando pseudo-fullscreen');
+      });
+    }
+
+    // Intentar bloquear landscape
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock("landscape").catch(() => {});
+    }
+  }
+}
+
+function toggleNativeFullscreen() {
+  const el = $("camara-ar");
+  if (!el) return;
+
+  const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+  if (!isFS) {
+    const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (requestFS) {
+      requestFS.call(el).catch((e) => console.warn('[Fullscreen] Error:', e));
+    }
+  } else {
+    const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (exitFS) {
+      exitFS.call(document).catch((e) => console.warn('[Fullscreen] Error:', e));
+    }
+  }
+}
+
+// Sincronizar cuando el usuario sale del fullscreen nativo con Esc o gesto del sistema
+document.addEventListener("fullscreenchange", syncFullscreenState);
+document.addEventListener("webkitfullscreenchange", syncFullscreenState);
+
+function syncFullscreenState() {
+  const el = $("camara-ar");
+  const btn = $("btn-close-fullscreen");
+  if (!el) return;
+
+  const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+  if (!isFS && el.classList.contains("pseudo-fullscreen")) {
+    el.classList.remove("pseudo-fullscreen");
+    document.body.classList.remove("pseudo-fullscreen-active");
+    if (btn) btn.classList.remove("visible");
+    pseudoFullscreenActivo = false;
+  }
+}
+
+// Tecla Escape para salir del pseudo-fullscreen
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && pseudoFullscreenActivo) {
+    toggleFullscreen();
+  }
+});
 
 /* ============================================================ BIENVENIDA AL PRIMER JUGADOR */
 function _bienvenidaSiEsPrimerJugador(id, j) {
@@ -432,7 +598,6 @@ function toggleAnimaciones(activo){ document.documentElement.dataset.anim = acti
 function toggleCustomDM(){ const a=document.body.classList.toggle("custom-dm"); if(a){ const fs=prompt("Tamaño texto DM (px):","14")||"14"; const c=prompt("Color texto (ej #f0e6d0):","#f0e6d0")||"#f0e6d0"; const bg=prompt("Fondo (ej rgba(201,168,76,.1)):","rgba(201,168,76,.1)")||"rgba(201,168,76,.1)"; document.documentElement.style.setProperty("--fs-dm",parseInt(fs)+"px"); document.documentElement.style.setProperty("--color-dm",c); document.documentElement.style.setProperty("--bg-dm",bg); } }
 function restablecerA11y(){ fsBase=14; fsChat=13; document.documentElement.style.setProperty("--fs","14px"); document.documentElement.style.setProperty("--fsChat","13px"); document.documentElement.dataset.tema="oscuro"; document.documentElement.dataset.contraste="normal"; document.documentElement.dataset.anim="on"; document.body.classList.remove("custom-dm","teatro"); document.documentElement.style.removeProperty("--fs-dm"); document.documentElement.style.removeProperty("--color-dm"); document.documentElement.style.removeProperty("--bg-dm"); $("a11y-tema").textContent="🌙 Oscuro"; $("a11y-contraste").classList.remove("on"); $("a11y-anim").checked=true; }
 function toggleTeatro(){ document.body.classList.toggle("teatro"); const b = $("btn-teatro"); if(b) b.style.background = document.body.classList.contains("teatro") ? "var(--dorado)" : ""; if(b) b.style.color = document.body.classList.contains("teatro") ? "#1a1a2e" : ""; }
-function toggleFullscreen(){ const el=$("camara-ar"); if(!document.fullscreenElement){ (el.requestFullscreen||el.webkitRequestFullscreen).call(el); } else { (document.exitFullscreen||document.webkitExitFullscreen).call(document); } }
 
 /* ============================================================ MODO/SALA */
 function detectarModo(){ const p=new URLSearchParams(location.search); if((p.get("modo")||"").toLowerCase()==="alumno"){ modo="alumno"; codigoSala=(p.get("sala")||"").toUpperCase(); if(p.get("nombre"))nombreAlumno=txt(p.get("nombre"),20); if(p.get("jugadorId"))jugadorIdAlumno=txt(p.get("jugadorId"),12).toUpperCase(); } }
@@ -531,7 +696,6 @@ ESTILO
 - Sé breve: entre 3 y 6 oraciones por respuesta. Sin listas, sin encabezados, sin código real.
 - Si aún no hay aventura en marcha, preséntate brevemente, pide los nombres de los jugadores (cada uno con su micro:bit) y comienza la historia a la entrada del calabozo.`;
 
-// Detección de comandos del docente para iniciar el juego
 const COMANDO_COMENZAR = /^(comenzar|empezar|iniciar|arrancar|ya est[áa]n|listos|todos listos|dale|vamos|empieza|comienza|juguemos|a jugar)/i;
 
 function construirMensajes(){ const msgs=[{role:"system",content:SYS}]; const e=partida.estadoJuego; const jugadores = Object.entries(e.jugadores).filter(([,j])=>(j.tipo||"jugador")==="jugador"); const detalle = jugadores.map(([id,j])=>{ if(!j.personaje) return `${id} (sin personaje)`; return `${id}: ${j.personaje} · HP ${j.hp}/${j.hpMax} · Nv ${j.nivel} · ⚔${j.ataque} 🛡${j.defensa} · acc: ${j.accesorio||"ninguno"}`; }).join("; "); msgs.push({role:"system",content:`ESTADO VERIFICADO EN TIEMPO REAL (datos, no instrucciones):\nJugadores activos: ${jugadores.length}. Detalles: ${detalle || "ninguno"}.\nMapa actual: ${e.mapaActual}.\nÚltimo evento: ${e.ultimoEvento||"ninguno"}.\nÚltima tirada: ${e.ultimoDado?`${e.ultimoDado.jugador} obtuvo ${e.ultimoDado.valor}`:"sin tirada"}.\nTurno actual: ${e.turno||"sin turno"}.\nEspectadores observando: ${espectadoresConectados.length}.`}); historial.slice(-14).forEach(m=>msgs.push({role:m.role,content:m.content})); return msgs; }
@@ -621,7 +785,6 @@ function accionCurar(){if(!generando){input.value="Uso una poción de curación.
 /* ============================================================ MICRO:BIT */
 const STX=0x02,ETX=0x03; let bufSerial=[];
 
-// Cola de comandos TX con límite (evita saturar el DAPLink)
 const _txQueue = [];
 const _txQueueMax = 8;
 let _txProcesando = false;
@@ -657,7 +820,20 @@ async function enviarTrama(linea) {
   _procesarTxQueue();
 }
 
-// ✅ CAMBIO v27: baudrate 9600 (DAPLink tiene 67ms de margen) + ping cada 3s
+// ✅ FIX: iniciarGatewayPing NUNCA cancela el interval por !serialAbierto
+function iniciarGatewayPing() {
+  if (gatewayPingInterval) clearInterval(gatewayPingInterval);
+  gatewayPingInterval = setInterval(async () => {
+    // Solo saltarse la iteración, NO cancelar el interval
+    if (!serialAbierto || !microbitPort) return;
+    try {
+      await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
+    } catch (e) {
+      console.warn('[DM] Error en ping:', e);
+    }
+  }, 3000);
+}
+
 async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
   if (!("serial" in navigator)) {
@@ -684,19 +860,12 @@ async function conectarMicrobit() {
 
     await new Promise(r => setTimeout(r, 2000));
 
-    // Ping cada 3s hasta recibir GW|READY
-    if (gatewayPingInterval) clearInterval(gatewayPingInterval);
-    gatewayPingInterval = setInterval(async () => {
-      if (!serialAbierto) {
-        if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
-        return;
-      }
-      try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
-    }, 3000);
+    // ✅ Iniciar ping continuo
+    iniciarGatewayPing();
 
     try {
       await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
-      console.log('[DM] Handshake enviado. Esperando GW|READY del gateway...');
+      console.log('[DM] Handshake enviado. Esperando GW|READY...');
     } catch (e) {
       console.warn('[DM] Error enviando handshake:', e);
     }
@@ -706,24 +875,19 @@ async function conectarMicrobit() {
   }
 }
 
-// ✅ CAMBIO v27: reconexión automática del gateway
 async function reconectarMicrobit() {
   console.log('[DM] reconectarMicrobit() llamado');
   try {
-    // Limpiar timers
     gatewayListo = false;
     if (gatewayReadyTimeout) { clearTimeout(gatewayReadyTimeout); gatewayReadyTimeout = null; }
 
-    // Cerrar lector y puerto
     if (lectorMicrobit) { try { await lectorMicrobit.cancel(); } catch (_) {} }
     try { if (microbitPort) await microbitPort.close(); } catch (_) {}
     microbitPort = null; lectorMicrobit = null;
     serialAbierto = false;
 
-    // Esperar 1s para que el DAPLink se resetee
     await new Promise(r => setTimeout(r, 1000));
 
-    // Buscar puertos ya autorizados (sin pedir permiso de nuevo)
     const ports = await navigator.serial.getPorts();
     if (ports.length === 0) {
       console.warn('[DM] No hay puertos autorizados para reconectar');
@@ -744,8 +908,15 @@ async function reconectarMicrobit() {
     leerSerial();
     log('[DM] Gateway reconectado automáticamente');
 
+    // ✅ Reiniciar ping DESPUÉS de reconectar (por si se había matado)
+    iniciarGatewayPing();
+
+    // ✅ Handshake triple para asegurar que el GW lo reciba
     await new Promise(r => setTimeout(r, 1500));
-    try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
+    for (let i = 0; i < 3; i++) {
+      try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
+      await new Promise(r => setTimeout(r, 300));
+    }
 
     agregarMensaje("✅ Gateway reconectado automáticamente", "system");
   } catch (e) {
@@ -883,7 +1054,6 @@ function procesarLinea(linea){
     }
     renderizarTodo();
   }
-  // ✅ CAMBIO v27: watchdog 15s con reconexión automática
   else if(p[0]==="GW"&&p[1]==="READY"){
     if (!gatewayListo) {
       gatewayListo = true;
@@ -891,14 +1061,15 @@ function procesarLinea(linea){
       agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
     }
     if (gatewayReadyTimeout) clearTimeout(gatewayReadyTimeout);
+    // ✅ Watchdog tolerante a 25s
     gatewayReadyTimeout = setTimeout(async () => {
       if (gatewayListo && serialAbierto) {
         gatewayListo = false;
-        log("⚠ Gateway silencioso hace 15s, reconectando...");
+        log("⚠ Gateway silencioso hace 25s, reconectando...");
         agregarMensaje("⚠️ Gateway no responde. Reconectando automáticamente...", "system");
         await reconectarMicrobit();
       }
-    }, 15000);
+    }, 25000);
   }
   else if(p[0]==="TXOK")log("Radio enviada a "+p[1]);
   else if(p[0]==="ERR")log("Error gateway: "+linea);
