@@ -18,8 +18,8 @@
         .btn.primary { background: var(--dorado); color: #1a1a2e; border-color: var(--dorado); }
         .btn.danger { background: var(--rojo); color: #fff; border-color: var(--rojo); }
         .btn:disabled { opacity: .4; cursor: not-allowed; }
-        input, select { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); font-size: 16px; outline: none; }
-        input:focus, select:focus { border-color: var(--dorado); }
+        input, select, textarea { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); font-size: 16px; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--dorado); }
         #header { background: linear-gradient(90deg, var(--panel2), var(--panel)); padding: 6px 10px; border-bottom: 2px solid var(--dorado); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
         #header .title { font-weight: 700; font-size: .85rem; white-space: nowrap; }
         #header .acciones { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
@@ -55,17 +55,11 @@
         #camara-ar.pseudo-fullscreen iframe { width: 100% !important; height: 100% !important; border: none !important; }
         body.pseudo-fullscreen-active { overflow: hidden !important; }
         #btn-close-fullscreen {
-            position: fixed;
-            top: calc(10px + env(safe-area-inset-top));
-            right: calc(10px + env(safe-area-inset-right));
-            z-index: 100000; display: none;
-            width: 48px; height: 48px; min-width: 48px; min-height: 48px;
-            background: rgba(0, 0, 0, 0.75); color: #fff;
-            border: 2px solid #fff; border-radius: 50%;
-            font-size: 22px; font-weight: bold; cursor: pointer;
-            align-items: center; justify-content: center;
-            padding: 0; touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent; line-height: 1;
+            position: fixed; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+            z-index: 100000; display: none; width: 48px; height: 48px; min-width: 48px; min-height: 48px;
+            background: rgba(0, 0, 0, 0.75); color: #fff; border: 2px solid #fff; border-radius: 50%;
+            font-size: 22px; font-weight: bold; cursor: pointer; align-items: center; justify-content: center;
+            padding: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; line-height: 1;
         }
         #btn-close-fullscreen.visible { display: flex !important; }
         #btn-close-fullscreen:active { background: rgba(220, 53, 69, 0.9); }
@@ -113,6 +107,70 @@
         #a11y-panel .row { margin-bottom: 8px; }
         #a11y-panel label { font-size: .75rem; color: var(--tenue); flex: 1; }
         #a11y-panel .btn { flex: 1; text-align: center; }
+        dialog#ar-config-modal {
+            width: min(900px, calc(100vw - 20px));
+            max-height: calc(100dvh - 20px);
+            padding: 14px 16px;
+            border: 1px solid var(--dorado);
+            border-radius: 12px;
+            background: var(--panel);
+            color: var(--texto);
+        }
+        dialog#ar-config-modal::backdrop { background: rgba(0,0,0,.75); }
+        dialog#ar-config-modal h2 { font-size: 1rem; color: var(--dorado); margin-bottom: 8px; }
+        dialog#ar-config-modal .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        dialog#ar-config-modal .modelos-github {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            max-height: 90px; overflow-y: auto;
+            padding: 6px; margin-bottom: 8px;
+            border: 1px dashed var(--borde); border-radius: 6px;
+            background: rgba(0,0,0,.15);
+        }
+        dialog#ar-config-modal .modelos-github .chip {
+            padding: 3px 8px; border-radius: 4px;
+            background: var(--panel2); border: 1px solid var(--borde);
+            font-size: .65rem; cursor: pointer;
+        }
+        dialog#ar-config-modal .modelos-github .chip:hover { background: var(--dorado); color: #1a1a2e; }
+        dialog#ar-config-modal .modelos-github .placeholder { color: var(--tenue); font-size: .7rem; }
+        dialog#ar-config-modal .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 6px;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        dialog#ar-config-modal .slot-row {
+            display: grid;
+            grid-template-columns: 60px 90px 1fr 1.2fr 60px;
+            gap: 4px;
+            align-items: center;
+            background: var(--panel2);
+            border: 1px solid var(--borde);
+            border-radius: 6px;
+            padding: 4px;
+            font-size: .65rem;
+        }
+        dialog#ar-config-modal .slot-row .slot-name {
+            color: var(--dorado); font-weight: 700; text-align: center;
+        }
+        dialog#ar-config-modal .slot-row select,
+        dialog#ar-config-modal .slot-row input {
+            font-size: .65rem; padding: 3px 4px; width: 100%;
+        }
+        dialog#ar-config-modal .slot-row .btn {
+            padding: 3px 4px; font-size: .6rem;
+        }
+        dialog#ar-config-modal .log-box {
+            margin-top: 8px; padding: 6px; border-radius: 6px;
+            background: rgba(0,0,0,.2); border: 1px solid var(--borde);
+            font-family: monospace; font-size: .65rem; max-height: 80px; overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        dialog#ar-config-modal .footer {
+            display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;
+        }
         @media(max-width:900px) { #main { grid-template-columns: 140px 1fr 140px; } }
         @media(max-width:768px) {
             body { padding: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
@@ -125,6 +183,7 @@
             #zona-narracion { flex: 0 0 22vh; } .msg { font-size: .72rem; }
             #barra { padding: 4px 6px; } .accion-btn { flex: 1 1 auto; }
             #a11y-panel { width: calc(100vw - 20px); right: 10px; left: 10px; }
+            dialog#ar-config-modal .slots-grid { grid-template-columns: 1fr; }
         }
         @media(max-width:400px) { #camara-ar { height: 26vh; min-height: 130px; } .panel { max-height: 65px; } }
         @media(orientation:landscape) and (max-height:500px) { #main { grid-template-columns: 90px 1fr 90px; grid-template-areas: "heroes cam enem"; } #camara-ar { height: auto; } #zona-narracion { flex: 0 0 18vh; } }
@@ -166,8 +225,10 @@
     <button class="btn" onclick="toggleA11y()" title="Accesibilidad" aria-label="Accesibilidad">♿</button>
     <button class="btn" id="btn-nueva" onclick="iniciarNuevaAventura()">Nueva</button>
     <button class="btn" id="btn-tablero" onclick="abrirTablero()">Tablero</button>
+    <button class="btn" onclick="abrirArConfig()" title="Configurar Marcadores AR">🎯 AR</button>
     <button class="btn" onclick="toggleTeatro()" title="Modo teatro" id="btn-teatro">🎭</button>
     <button class="btn" onclick="toggleFullscreen()" title="Pantalla completa">⛶</button>
+    <button class="btn danger" onclick="logoutTotal()" title="Salir y limpiar todo">🚪 Salir</button>
   </div>
 </div>
 
@@ -260,6 +321,24 @@
   <div id="mapa-leyenda" style="margin-top:6px;font-size:.7rem;color:#5d5d5d"></div>
 </dialog>
 
+<dialog id="ar-config-modal">
+  <h2>🎯 Configuración de Marcadores AR</h2>
+  <div class="toolbar">
+    <button class="btn primary" onclick="cargarModelosDesdeGitHub()">📥 Cargar modelos desde GitHub</button>
+    <button class="btn" onclick="aplicarArConfigCompleta(true)">📤 Re-aplicar todos al AR</button>
+    <button class="btn danger" onclick="resetearAsignacionesAR()">↺ Restablecer todo</button>
+    <span id="ar-config-status" style="font-size:.65rem;color:var(--tenue);margin-left:auto">Listo</span>
+  </div>
+  <div class="modelos-github" id="ar-config-modelos">
+    <span class="placeholder">Cargá los modelos desde GitHub para asignarlos a un slot.</span>
+  </div>
+  <div class="slots-grid" id="ar-config-slots"></div>
+  <div class="log-box" id="ar-config-log"></div>
+  <div class="footer">
+    <button class="btn" onclick="cerrarArConfig()">Cerrar</button>
+  </div>
+</dialog>
+
 <script src="calabozos-state-bridge.js"></script>
 <script>
 /* ============================================================ CONFIG */
@@ -274,8 +353,10 @@ const CLAVE_ROL = "calabozos.rolAlumno";
 const MAPAS = [{id:"inicios",codigo:"I",nombre:"Inicios"},{id:"castillo",codigo:"C",nombre:"Castillo"},{id:"ruinas",codigo:"R",nombre:"Ruinas"},{id:"pantano",codigo:"P",nombre:"Pantano"},{id:"bosque",codigo:"B",nombre:"Bosque"},{id:"bosque_ruinas",codigo:"X",nombre:"Bosque con ruinas"}];
 const MAPAS_ID = Object.fromEntries(MAPAS.map(m=>[m.id,m]));
 const APPS_SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbxZ86EH7efGkpXnQg5e3BNsRO66kjSFDzuoJa3FIgcpHJajR9rrcU4r3hK8gdHmzlYZ/exec";
-const CONFIG = { appsScriptUrl: APPS_SCRIPT_URL_DEFAULT, arFrameId: "ar-game-frame" };
+const CONFIG = { appsScriptUrl: APPS_SCRIPT_URL_DEFAULT, arFrameId: "ar-game-frame", githubRepo: "BraianM-dev/pruebas", githubPath: "modelos" };
 const PERSONAJES = { GUERRERO:{hp:30, atk:8, def:6, acc:"ESPADA", emoji:"⚔️"}, MAGO:{hp:20, atk:10, def:3, acc:"BASTON", emoji:"🧙"}, ARQUERO:{hp:22, atk:7, def:4, acc:"ARCO", emoji:"🏹"}, CURADOR:{hp:25, atk:4, def:5, acc:"CETRO", emoji:"💚"}, PICARO:{hp:18, atk:9, def:3, acc:"DAGAS", emoji:"🗡️"}, BARBARO:{hp:35, atk:11, def:2, acc:"HACHA", emoji:"🪓"}, PALADIN:{hp:28, atk:6, def:8, acc:"ESCUDO", emoji:"🛡️"}, NIGROMANTE:{hp:22, atk:9, def:4, acc:"LIBRO", emoji:"💀"} };
+
+const SLOTS_AR = ["hiro", "kanji", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
 
 /* ============================================================ ESTADO */
 let modo = "docente", codigoSala = "", gateToken = localStorage.getItem(CLAVE_GATE) || "", adminToken = sessionStorage.getItem(CLAVE_ADMIN) || "", sessionTokenDocente = localStorage.getItem("calabozos.hostToken") || "", sessionTokenAlumno = "", peerIdAlumno = "", jugadorIdAlumno = localStorage.getItem("calabozos.jugadorId") || "", rolAlumno = localStorage.getItem(CLAVE_ROL) || "", nombreAlumno = "Alumno", partida = cargarPartida(), historial = partida.historial, urlOllama = null, modoDM = "fallback", generando = false, p2pHost = null, p2pPeer = null, p2pConectado = false, pollingGAS = false, debouncePub = null, pollingDocenteId = null, ultRevDoc = 0, ultSeqDoc = 0, microbitPort = null, lectorMicrobit = null, serialAbierto = false, colaSerie = Promise.resolve(), espectadoresConectados = [], arFrameReady = false, ultimoNarradoPorSlot = {};
@@ -287,16 +368,15 @@ let gatewayListo = false;
 let gatewayPingInterval = null;
 let gatewayReadyTimeout = null;
 
-/* ============================================================ DEDUPLICACIÓN */
+let modelosGithubCache = null;
+
 const _recientes = [];
 function yaEstaEnChat(autor, texto) { const ahora = Date.now(); while (_recientes.length && ahora - _recientes[0].ts > 15000) _recientes.shift(); const clave = (autor || "") + "::" + (texto || ""); const existe = _recientes.some(m => m.clave === clave); if (!existe) _recientes.push({ clave, ts: ahora }); return existe; }
 
-/* ============================================================ DOM */
 const $ = id => document.getElementById(id);
 const chat = $("chat"), input = $("user-input"), btnEnviar = $("btn-enviar");
 const listaJugadores = $("lista-jugadores"), listaEnemigos = $("lista-enemigos");
 
-/* ============================================================ UTIL */
 function txt(v,m){return String(v||"").trim().slice(0,m)}
 function coord(x,y){return String.fromCharCode(65+x)+String(y+1)}
 function int(v,min,max,alt){const n=Number(v);return Number.isInteger(n)&&n>=min&&n<=max?n:alt}
@@ -307,78 +387,51 @@ function log(m){
   if(el){ const t=new Date().toLocaleTimeString(); el.value+=`[${t}] ${m}\n`; el.scrollTop=el.scrollHeight; }
   console.log('[DM]', m);
 }
-
-/* ============================================================ FULLSCREEN (mobile + desktop) */
-let pseudoFullscreenActivo = false;
-
-function esMovil() {
-  return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function toggleFullscreen() {
-  if (esMovil()) togglePseudoFullscreen();
-  else toggleNativeFullscreen();
-}
-
-function togglePseudoFullscreen() {
-  const el = $("camara-ar");
-  const btn = $("btn-close-fullscreen");
+function logAr(m){
+  const el = $("ar-config-log");
   if (!el) return;
+  const t = new Date().toLocaleTimeString();
+  el.textContent += `[${t}] ${m}\n`;
+  el.scrollTop = el.scrollHeight;
+}
 
+/* ============================================================ FULLSCREEN */
+let pseudoFullscreenActivo = false;
+function esMovil() { return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent); }
+function toggleFullscreen() { if (esMovil()) togglePseudoFullscreen(); else toggleNativeFullscreen(); }
+function togglePseudoFullscreen() {
+  const el = $("camara-ar"); const btn = $("btn-close-fullscreen");
+  if (!el) return;
   if (el.classList.contains("pseudo-fullscreen")) {
     el.classList.remove("pseudo-fullscreen");
     document.body.classList.remove("pseudo-fullscreen-active");
     if (btn) btn.classList.remove("visible");
     pseudoFullscreenActivo = false;
-
     const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-    if (exitFS && (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement)) {
-      exitFS.call(document).catch(() => {});
-    }
-    if (screen.orientation && screen.orientation.unlock) {
-      try { screen.orientation.unlock(); } catch (_) {}
-    }
+    if (exitFS && (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement)) { exitFS.call(document).catch(() => {}); }
+    if (screen.orientation && screen.orientation.unlock) { try { screen.orientation.unlock(); } catch (_) {} }
   } else {
     el.classList.add("pseudo-fullscreen");
     document.body.classList.add("pseudo-fullscreen-active");
     if (btn) btn.classList.add("visible");
     pseudoFullscreenActivo = true;
-
     const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if (requestFS) {
-      requestFS.call(el).catch(() => {
-        console.log('[Fullscreen] Nativo no disponible, usando pseudo-fullscreen');
-      });
-    }
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock("landscape").catch(() => {});
-    }
+    if (requestFS) requestFS.call(el).catch(() => {});
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
   }
 }
-
 function toggleNativeFullscreen() {
-  const el = $("camara-ar");
-  if (!el) return;
+  const el = $("camara-ar"); if (!el) return;
   const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-
-  if (!isFS) {
-    const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if (requestFS) requestFS.call(el).catch((e) => console.warn('[Fullscreen] Error:', e));
-  } else {
-    const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-    if (exitFS) exitFS.call(document).catch((e) => console.warn('[Fullscreen] Error:', e));
-  }
+  if (!isFS) { const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen; if (requestFS) requestFS.call(el).catch(() => {}); }
+  else { const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen; if (exitFS) exitFS.call(document).catch(() => {}); }
 }
-
 document.addEventListener("fullscreenchange", syncFullscreenState);
 document.addEventListener("webkitfullscreenchange", syncFullscreenState);
-
 function syncFullscreenState() {
-  const el = $("camara-ar");
-  const btn = $("btn-close-fullscreen");
+  const el = $("camara-ar"); const btn = $("btn-close-fullscreen");
   if (!el) return;
   const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-
   if (!isFS && el.classList.contains("pseudo-fullscreen")) {
     el.classList.remove("pseudo-fullscreen");
     document.body.classList.remove("pseudo-fullscreen-active");
@@ -386,23 +439,18 @@ function syncFullscreenState() {
     pseudoFullscreenActivo = false;
   }
 }
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && pseudoFullscreenActivo) toggleFullscreen();
-});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pseudoFullscreenActivo) toggleFullscreen(); });
 
 /* ============================================================ BIENVENIDA */
 function _bienvenidaSiEsPrimerJugador(id, j) {
     if (bienvenidaEnviada) return;
     if (modo !== "docente") return;
     if (!j || (j.tipo || "jugador") !== "jugador") return;
-
     if (!jugadoresVistos[id]) {
         jugadoresVistos[id] = true;
         agregarMensaje(`🎉 ${id} se ha unido como ${j.personaje || "aventurero"}`, "system");
         log(`[DM] Nuevo jugador: ${id} (${j.personaje || "sin personaje"})`);
     }
-
     const jugadoresReales = Object.values(partida.estadoJuego.jugadores).filter(x => (x.tipo || "jugador") === "jugador");
     if (jugadoresReales.length >= 1 && !bienvenidaEnviada) {
         bienvenidaEnviada = true;
@@ -418,7 +466,13 @@ function _bienvenidaSiEsPrimerJugador(id, j) {
 function configurarAR() {
   window.addEventListener('message', (e) => {
     if (!e.data) return;
-    if (e.data.source === 'ar-frame' && e.data.action === 'ar-frame-ready') { arFrameReady = true; log('[AR] Iframe listo'); sincronizarTodoAR(); return; }
+    if (e.data.source === 'ar-frame' && e.data.action === 'ar-frame-ready') {
+      arFrameReady = true;
+      log('[AR] Iframe listo');
+      sincronizarTodoAR();
+      aplicarArConfigCompleta();
+      return;
+    }
     if (e.data.source !== 'ar-frame') return;
     procesarEventoAR(e.data);
   });
@@ -438,13 +492,14 @@ function procesarEventoAR(msg) {
 
     const slot = String(msg.slot);
     const estado = partida.estadoJuego;
+    const arCfg = (estado.arConfig && estado.arConfig[slot]) || null;
 
     let entidad = null, tipoEntidad = null, idEntidad = null;
     for (const [id, j] of Object.entries(estado.jugadores)) { if (String(j.arSlot) === slot) { entidad = j; tipoEntidad = 'jugador'; idEntidad = id; break; } }
     if (!entidad) { for (const [id, en] of Object.entries(estado.enemigos)) { if (String(en.arSlot) === slot) { entidad = en; tipoEntidad = 'enemigo'; idEntidad = id; break; } } }
 
-    if (!entidad) {
-      const nombreModelo = (msg.modelInfo && msg.modelInfo.name) ? msg.modelInfo.name : 'Criatura';
+    if (!entidad && arCfg && arCfg.type === 'enemy') {
+      const nombreModelo = arCfg.name || ((msg.modelInfo && msg.modelInfo.name) ? msg.modelInfo.name : 'Criatura');
       const nuevoId = 'enemigo_' + slot;
       if (!Object.values(estado.enemigos).some(en => en.arSlot === slot)) {
         estado.enemigos[nuevoId] = {
@@ -466,6 +521,10 @@ function procesarEventoAR(msg) {
     if (entidad) {
       const stats = { name: tipoEntidad === 'jugador' ? '🎭 ' + idEntidad : '👹 ' + (entidad.nombre || idEntidad), hp: tipoEntidad === 'jugador' ? (entidad.hp || 0) : (entidad.vida || 0), hpMax: tipoEntidad === 'jugador' ? (entidad.hpMax || 1) : (entidad.vidaMaxima || 1), atk: entidad.ataque || 0, def: entidad.defensa || 0, nivel: entidad.nivel || 1 };
       enviarComandoAR({ action: 'assign-stats', slot: slot, stats: stats });
+    } else {
+      if (arCfg && (arCfg.type === 'player' || arCfg.type === 'object' || arCfg.type === 'creature' || arCfg.type === 'none')) {
+        enviarComandoAR({ action: 'clear-stats', slot: slot });
+      }
     }
 
     const nombreModelo = (msg.modelInfo && msg.modelInfo.name) ? msg.modelInfo.name : 'algo';
@@ -474,8 +533,6 @@ function procesarEventoAR(msg) {
     actualizarActividadGateway(descripcion);
     programarNarracionRadio(descripcion);
     renderizarTodo();
-  } else if (msg.action === 'marker-lost') {
-    // Persistimos el enemigo
   }
 }
 
@@ -512,20 +569,313 @@ function actualizarActividadGateway(texto) {
   if (el) el.textContent = "Último: " + txt(texto, 80);
 }
 
+/* ============================================================ AR CONFIG */
+function abrirArConfig() {
+  const dlg = $("ar-config-modal");
+  if (!dlg) return;
+  renderizarArConfigSlots();
+  dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+}
+function cerrarArConfig() {
+  const dlg = $("ar-config-modal");
+  if (!dlg) return;
+  dlg.close ? dlg.close() : dlg.removeAttribute("open");
+}
+function tipoLabel(t) {
+  switch (t) {
+    case 'enemy': return '👹 Enemigo';
+    case 'player': return '🎭 Héroe';
+    case 'object': return '📦 Objeto';
+    case 'creature': return '🐾 Criatura';
+    case 'none': return '— Vacío';
+    default: return '— Vacío';
+  }
+}
+function renderizarArConfigSlots() {
+  const grid = $("ar-config-slots");
+  if (!grid) return;
+  grid.replaceChildren();
+  const cfg = partida.estadoJuego.arConfig || {};
+  SLOTS_AR.forEach(slot => {
+    const item = cfg[slot] || {};
+    const row = document.createElement("div");
+    row.className = "slot-row";
+    row.dataset.slot = slot;
+    row.innerHTML = `
+      <span class="slot-name">${slot}</span>
+      <select class="slot-type">
+        <option value="none">— Vacío</option>
+        <option value="enemy">👹 Enemigo</option>
+        <option value="player">🎭 Héroe</option>
+        <option value="object">📦 Objeto</option>
+        <option value="creature">🐾 Criatura</option>
+      </select>
+      <input class="slot-label" placeholder="Nombre visible" value="${item.name || ''}">
+      <input class="slot-model" placeholder="modelos/archivo.glb" value="${item.model || ''}">
+      <button class="btn" type="button">Aplicar</button>
+    `;
+    const sel = row.querySelector(".slot-type");
+    sel.value = item.type || "none";
+    row.querySelector("button").addEventListener("click", () => {
+      const type = row.querySelector(".slot-type").value;
+      const name = row.querySelector(".slot-label").value.trim();
+      const model = row.querySelector(".slot-model").value.trim();
+      aplicarSlotAr(slot, type, name, model);
+    });
+    grid.appendChild(row);
+  });
+}
+function detectarTipoModelo(model) {
+  if (!model) return 'gltf';
+  if (model.startsWith('#')) return 'gltf';
+  if (/\.glb$|\.gltf$/i.test(model)) return 'gltf';
+  if (/\.fbx$/i.test(model)) return 'fbx';
+  if (/\.gif$/i.test(model)) return 'gif';
+  if (/\.(png|jpg|jpeg|webp)$/i.test(model)) return 'image';
+  if (/\.mp4$/i.test(model)) return 'video';
+  return 'gltf';
+}
+function normalizarRutaModelo(model) {
+  if (!model) return '';
+  if (model.startsWith('#')) return model;
+  if (model.startsWith('modelos/')) return model;
+  if (/^https?:\/\//i.test(model)) return model;
+  return 'modelos/' + model;
+}
+function aplicarSlotAr(slot, type, name, model) {
+  if (!partida.estadoJuego.arConfig) partida.estadoJuego.arConfig = {};
+  const cfgItem = { type: type, name: name || (type === 'none' ? 'Vacío' : 'Modelo'), model: model };
+
+  if (type === 'none' || !model) {
+    enviarComandoAR({ action: 'clear-model', slot: slot });
+    enviarComandoAR({ action: 'clear-stats', slot: slot });
+  } else {
+    const modelType = detectarTipoModelo(model);
+    const modelUrl = normalizarRutaModelo(model);
+    enviarComandoAR({
+      action: 'assign-model',
+      slot: slot,
+      modelType: modelType,
+      modelUrl: modelUrl,
+      modelName: name || 'Modelo',
+      scale: cfgItem.scale || undefined,
+      rotation: cfgItem.rotation || undefined,
+      position: cfgItem.position || undefined,
+      animated: true
+    });
+    enviarComandoAR({ action: 'clear-stats', slot: slot });
+  }
+  partida.estadoJuego.arConfig[slot] = cfgItem;
+  guardarPartida();
+  publicarEstado("ar-config-" + slot);
+  logAr(`✅ Slot ${slot} → ${tipoLabel(type)} · ${cfgItem.name} · ${model || '—'}`);
+  const status = $("ar-config-status");
+  if (status) status.textContent = "Guardado en slot " + slot;
+}
+function aplicarArConfigCompleta(mostrarLog) {
+  const cfg = partida.estadoJuego.arConfig || {};
+  let aplicados = 0;
+  SLOTS_AR.forEach(slot => {
+    const item = cfg[slot];
+    if (item && item.type !== 'none' && item.model) {
+      const modelType = detectarTipoModelo(item.model);
+      const modelUrl = normalizarRutaModelo(item.model);
+      enviarComandoAR({
+        action: 'assign-model',
+        slot: slot,
+        modelType: modelType,
+        modelUrl: modelUrl,
+        modelName: item.name || 'Modelo',
+        scale: item.scale || undefined,
+        rotation: item.rotation || undefined,
+        position: item.position || undefined,
+        animated: true
+      });
+      aplicados++;
+    }
+  });
+  if (mostrarLog) logAr(`📤 Re-aplicados ${aplicados} slots al AR`);
+}
+async function cargarModelosDesdeGitHub() {
+  const cont = $("ar-config-modelos");
+  const status = $("ar-config-status");
+  if (!cont) return;
+  if (status) status.textContent = "Consultando GitHub…";
+  cont.innerHTML = '<span class="placeholder">Consultando GitHub…</span>';
+  try {
+    const url = `https://api.github.com/repos/${CONFIG.githubRepo}/contents/${CONFIG.githubPath}`;
+    const resp = await fetch(url, { headers: { "Accept": "application/vnd.github+json" } });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    const modelos = data
+      .filter(f => f.type === "file" && /\.(glb|gltf|fbx|png|jpg|jpeg|webp|gif|mp4)$/i.test(f.name))
+      .map(f => ({ nombre: f.name, ruta: f.path, url: f.download_url }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    modelosGithubCache = modelos;
+    cont.replaceChildren();
+    if (!modelos.length) {
+      cont.innerHTML = '<span class="placeholder">No se encontraron modelos en ' + CONFIG.githubPath + '/</span>';
+      if (status) status.textContent = "Sin modelos";
+      return;
+    }
+    modelos.forEach(m => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.textContent = m.nombre;
+      chip.title = m.ruta;
+      chip.addEventListener("click", () => {
+        const slot = prompt("¿A qué slot querés asignar «" + m.nombre + "»?\n(Escribí: hiro, kanji o un número 0-11)", "");
+        if (!slot) return;
+        const s = String(slot).trim().toLowerCase();
+        if (!SLOTS_AR.includes(s)) { alert("Slot inválido"); return; }
+        const row = document.querySelector(`.slot-row[data-slot="${s}"]`);
+        if (!row) return;
+        row.querySelector(".slot-model").value = m.ruta;
+        const nameInput = row.querySelector(".slot-label");
+        if (!nameInput.value) nameInput.value = m.nombre.replace(/\.[^.]+$/, "");
+        const typeSel = row.querySelector(".slot-type");
+        if (typeSel.value === "none") typeSel.value = "object";
+        logAr(`📥 Modelo «${m.nombre}» asignado al slot ${s} (apretá Aplicar)`);
+      });
+      cont.appendChild(chip);
+    });
+    if (status) status.textContent = modelos.length + " modelos cargados";
+  } catch (err) {
+    cont.innerHTML = '<span class="placeholder">Error al consultar GitHub: ' + err.message + '</span>';
+    if (status) status.textContent = "Error GitHub";
+    logAr("❌ Error GitHub: " + err.message);
+  }
+}
+function resetearAsignacionesAR() {
+  if (!confirm("¿Restablecer todas las asignaciones de marcadores a los modelos por defecto del HTML?")) return;
+  // Limpiar todos los slots en el iframe
+  SLOTS_AR.forEach(slot => {
+    enviarComandoAR({ action: 'clear-model', slot: slot });
+    enviarComandoAR({ action: 'clear-stats', slot: slot });
+  });
+  partida.estadoJuego.arConfig = {};
+  guardarPartida();
+  renderizarArConfigSlots();
+  // Recargar el iframe para restaurar los modelos por defecto del HTML
+  setTimeout(() => {
+    const iframe = document.getElementById(CONFIG.arFrameId);
+    if (iframe && iframe.contentWindow) {
+      try { iframe.contentWindow.location.reload(); } catch (_) {}
+    }
+  }, 200);
+  publicarEstado("ar-config-reset");
+  logAr("↺ Asignaciones restablecidas a los defaults del HTML");
+  const status = $("ar-config-status");
+  if (status) status.textContent = "Restablecido";
+}
+
+/* ============================================================ LOGOUT TOTAL */
+async function logoutTotal() {
+  if (!confirm("¿Cerrar la sala, desconectar todo y volver al login?\n\nSe borra la partida, el cache y todas las sesiones.")) return;
+  log("🚪 Logout total iniciado…");
+
+  if (codigoSala && sessionTokenDocente) {
+    try { await CalabozosStateBridge.cerrarSala(codigoSala, sessionTokenDocente); log("Sala cerrada."); }
+    catch (e) { log("Error al cerrar sala: " + e.message); }
+  }
+  try { detenerP2P(); } catch (_) {}
+  try { detenerGAS(); } catch (_) {}
+  try { detenerPollingDocente(); } catch (_) {}
+
+  urlOllama = null;
+  modoDM = "fallback";
+  generando = false;
+  log("Ollama desconectado.");
+
+  try { if (typeof desconectarMicrobit === "function") { await desconectarMicrobit(); log("Micro:bit desconectada."); } }
+  catch (e) { log("Error al desconectar micro:bit: " + e.message); }
+
+  try {
+    const iframe = document.getElementById(CONFIG.arFrameId);
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ target: 'ar-frame', action: 'stop-camera' }, '*');
+      log("Cámara detenida.");
+    }
+  } catch (e) { log("Error al detener cámara: " + e.message); }
+
+  try {
+    const clavesLs = Object.keys(localStorage).filter(k => k.startsWith("calabozos."));
+    clavesLs.forEach(k => localStorage.removeItem(k));
+    const clavesSs = Object.keys(sessionStorage).filter(k => k.startsWith("calabozos."));
+    clavesSs.forEach(k => sessionStorage.removeItem(k));
+    log("Cache borrado (" + (clavesLs.length + clavesSs.length) + " claves).");
+  } catch (e) { log("Error al borrar cache: " + e.message); }
+
+  codigoSala = ""; sessionTokenDocente = ""; sessionTokenAlumno = ""; gateToken = ""; adminToken = "";
+  rolAlumno = ""; jugadorIdAlumno = "";
+  partida = crearPartidaVacia(); historial = partida.historial;
+  arFrameReady = false; gatewayListo = false;
+
+  setTimeout(() => { location.href = location.pathname; }, 400);
+}
+
 /* ============================================================ PARTIDA */
-function crearEstadoVacio(){ return {revision:0,mapaActual:"inicios",ultimoDado:null,turno:"",ultimoEvento:"",jugadores:{},enemigos:{},mapas:Object.fromEntries(MAPAS.map(m=>[m.id,{visitas:m.id==="inicios"?1:0}]))}; }
+function crearEstadoVacio(){
+  return {
+    revision: 0, mapaActual: "inicios", ultimoDado: null, turno: "", ultimoEvento: "",
+    jugadores: {}, enemigos: {}, arConfig: {},
+    mapas: Object.fromEntries(MAPAS.map(m => [m.id, { visitas: m.id === "inicios" ? 1 : 0 }]))
+  };
+}
 function crearPartidaVacia(){ return {id:crypto.randomUUID?crypto.randomUUID():"p-"+Date.now(),historial:[],resumen:"",mensajesResumidos:0,estadoJuego:crearEstadoVacio()}; }
 function cargarPartida(){ try{const raw=localStorage.getItem(CLAVE_PARTIDA); if(!raw)return crearPartidaVacia(); const g=JSON.parse(raw); return Object.assign(crearPartidaVacia(),{historial:Array.isArray(g.historial)?g.historial:[],resumen:txt(g.resumen,5000),mensajesResumidos:Number(g.mensajesResumidos)||0,estadoJuego:normalizarEstado(g.estadoJuego)}); }catch(e){return crearPartidaVacia()} }
-function normalizarEstado(e){ const s=crearEstadoVacio(); if(!e||typeof e!=="object")return s; s.revision=int(e.revision,0,999999,0); s.mapaActual=MAPAS_ID[e.mapaActual]?e.mapaActual:"inicios"; s.turno=txt(e.turno,40); s.ultimoEvento=txt(e.ultimoEvento,160); if(e.ultimoDado)s.ultimoDado={jugador:txt(e.ultimoDado.jugador,12),valor:Number(e.ultimoDado.valor)}; if(e.jugadores)Object.entries(e.jugadores).forEach(([id,j])=>{ s.jugadores[id]={ ultimaConexion:j.ultimaConexion||"",ultimoDado:Number.isFinite(Number(j.ultimoDado))?Number(j.ultimoDado):null, x:int(j.x,0,TAM_MAPA-1,0),y:int(j.y,0,TAM_MAPA-1,0),mapaId:MAPAS_ID[j.mapaId]?j.mapaId:s.mapaActual, peerId: j.peerId || null, tipo: j.tipo === "espectador" ? "espectador" : "jugador", personaje: PERSONAJES[j.personaje] ? j.personaje : null, hp: int(j.hp, 0, 999, 0), hpMax: int(j.hpMax, 1, 999, 1), nivel: int(j.nivel, 1, 99, 1), ataque: int(j.ataque, 0, 999, 0), defensa: int(j.defensa, 0, 999, 0), accesorio: txt(j.accesorio, 20), emoji: txt(j.emoji, 8), arSlot: (j.arSlot !== undefined && j.arSlot !== null && j.arSlot !== "") ? txt(j.arSlot, 8) : null }; }); if(e.enemigos)Object.entries(e.enemigos).forEach(([id,en])=>{ const vm=int(en.vidaMaxima,1,999,1),v=int(en.vida,0,vm,vm); s.enemigos[id]={id,nombre:txt(en.nombre,60)||id,mapaId:MAPAS_ID[en.mapaId]?en.mapaId:s.mapaActual, x:int(en.x,0,TAM_MAPA-1,0),y:int(en.y,0,TAM_MAPA-1,0),vida:v,vidaMaxima:vm,activo:v>0,derrotado:v===0, arSlot: (en.arSlot !== undefined && en.arSlot !== null && en.arSlot !== "") ? txt(en.arSlot, 8) : null}; }); return s; }
+function normalizarEstado(e){
+  const s = crearEstadoVacio();
+  if (!e || typeof e !== "object") return s;
+  s.revision = int(e.revision, 0, 999999, 0);
+  s.mapaActual = MAPAS_ID[e.mapaActual] ? e.mapaActual : "inicios";
+  s.turno = txt(e.turno, 40);
+  s.ultimoEvento = txt(e.ultimoEvento, 160);
+  if (e.ultimoDado) s.ultimoDado = { jugador: txt(e.ultimoDado.jugador, 12), valor: Number(e.ultimoDado.valor) };
+  if (e.jugadores) Object.entries(e.jugadores).forEach(([id, j]) => {
+    s.jugadores[id] = {
+      ultimaConexion: j.ultimaConexion || "",
+      ultimoDado: Number.isFinite(Number(j.ultimoDado)) ? Number(j.ultimoDado) : null,
+      x: int(j.x, 0, TAM_MAPA - 1, 0), y: int(j.y, 0, TAM_MAPA - 1, 0),
+      mapaId: MAPAS_ID[j.mapaId] ? j.mapaId : s.mapaActual,
+      peerId: j.peerId || null,
+      tipo: j.tipo === "espectador" ? "espectador" : "jugador",
+      personaje: PERSONAJES[j.personaje] ? j.personaje : null,
+      hp: int(j.hp, 0, 999, 0), hpMax: int(j.hpMax, 1, 999, 1),
+      nivel: int(j.nivel, 1, 99, 1), ataque: int(j.ataque, 0, 999, 0), defensa: int(j.defensa, 0, 999, 0),
+      accesorio: txt(j.accesorio, 20), emoji: txt(j.emoji, 8),
+      arSlot: (j.arSlot !== undefined && j.arSlot !== null && j.arSlot !== "") ? txt(j.arSlot, 8) : null
+    };
+  });
+  if (e.enemigos) Object.entries(e.enemigos).forEach(([id, en]) => {
+    const vm = int(en.vidaMaxima, 1, 999, 1), v = int(en.vida, 0, vm, vm);
+    s.enemigos[id] = { id, nombre: txt(en.nombre, 60) || id, mapaId: MAPAS_ID[en.mapaId] ? en.mapaId : s.mapaActual,
+      x: int(en.x, 0, TAM_MAPA - 1, 0), y: int(en.y, 0, TAM_MAPA - 1, 0),
+      vida: v, vidaMaxima: vm, activo: v > 0, derrotado: v === 0,
+      arSlot: (en.arSlot !== undefined && en.arSlot !== null && en.arSlot !== "") ? txt(en.arSlot, 8) : null };
+  });
+  if (e.arConfig && typeof e.arConfig === "object") {
+    Object.entries(e.arConfig).forEach(([slot, item]) => {
+      if (!SLOTS_AR.includes(String(slot))) return;
+      if (!item || typeof item !== "object") return;
+      s.arConfig[String(slot)] = {
+        type: ['enemy','player','object','creature','none'].includes(item.type) ? item.type : 'none',
+        name: txt(item.name, 60) || '',
+        model: txt(item.model, 200) || '',
+        scale: txt(item.scale, 40) || undefined,
+        rotation: txt(item.rotation, 40) || undefined,
+        position: txt(item.position, 40) || undefined
+      };
+    });
+  }
+  return s;
+}
 function guardarPartida(){try{partida.historial=historial;localStorage.setItem(CLAVE_PARTIDA,JSON.stringify(partida))}catch(e){}}
 
-/* ============================================================ GATE */
+/* ============================================================ GATE / ADMIN / ROL */
 async function ingresarClase(){ const el = $("gate-input"); const errEl = $("gate-error"); const codigo = el.value.trim(); if(!codigo){ errEl.textContent="Escribí el código"; errEl.style.display="block"; return; } errEl.style.display="none"; try{ const r = await CalabozosStateBridge.enterClass(codigo); if(!r.ok){ const msgs = { "codigo_incorrecto":"Código incorrecto", "acceso_no_configurado":"Ejecutá setupAcceso() en Apps Script" }; errEl.textContent = msgs[r.error] || r.error; errEl.style.display="block"; return; } gateToken = r.gateToken; localStorage.setItem(CLAVE_GATE, gateToken); $("gate-overlay").style.display = "none"; log("Acceso concedido"); inicializarApp(); }catch(e){ errEl.textContent = "No se pudo conectar: " + e.message; errEl.style.display="block"; } }
-
-/* ============================================================ ADMIN */
 async function pedirPinDocente(){ if(adminToken) return adminToken; const pin = prompt("PIN docente:"); if(!pin) return null; try{ const r = await CalabozosStateBridge.adminLogin(pin); if(!r.ok){ const msgs = { "pin_incorrecto":"PIN incorrecto", "acceso_no_configurado":"El docente debe configurar acceso en Apps Script" }; alert(msgs[r.error] || r.error); return null; } adminToken = r.adminToken; sessionStorage.setItem(CLAVE_ADMIN, adminToken); return adminToken; }catch(e){ alert("Error: " + e.message); return null; } }
-
-/* ============================================================ ROL */
 function elegirRol(rol){ rolAlumno = rol; localStorage.setItem(CLAVE_ROL, rol); $("rol-modal").style.display = "none"; unirseSalaAlumno(); }
 
 /* ============================================================ ACCESIBILIDAD */
@@ -552,7 +902,37 @@ function mostrarInfoSala(){ const info=$("sala-info"); const url=`${location.ori
 function actualizarContadorP2P(){ if(!p2pHost)return; const n=p2pHost.peersConectados().length; $("p2p-badge").style.display=n>0?"inline-flex":"none"; $("p2p-badge").textContent=`⚡ ${n} P2P`; const info=$("sala-info"); if(info&&codigoSala&&!info.hidden){ const url=`${location.origin}${location.pathname}?modo=alumno&sala=${codigoSala}`; info.innerHTML=`Sala <strong>${codigoSala}</strong> · ${n} P2P · <span style="cursor:pointer;text-decoration:underline" onclick="navigator.clipboard.writeText('${url}');alert('URL copiada')">copiar URL</span>`; } }
 
 /* ============================================================ CERRAR SALA */
-async function cerrarSalaDocente(){ if(!codigoSala || !sessionTokenDocente){alert("No hay sala activa");return} if(!confirm("¿Cerrar la sala? Todos los alumnos se desconectarán.")) return; try { const r = await CalabozosStateBridge.cerrarSala(codigoSala, sessionTokenDocente); if(!r.ok && r.error !== "auth") throw new Error(r.error || "Error"); if(p2pHost){ try{p2pHost.broadcast({tipo:"host-changed"})}catch(_){}; p2pHost.stop(); p2pHost=null; } detenerPollingDocente(); detenerGAS(); codigoSala = ""; sessionTokenDocente = ""; localStorage.removeItem("calabozos.hostToken"); localStorage.removeItem("calabozos.codigoSalaDocente"); resetearBotonesDocente(); agregarMensaje("🔒 Sala cerrada","system"); log("Sala cerrada"); } catch(e) { alert("Error al cerrar: " + e.message); } }
+async function cerrarSalaDocente(){
+  if(!codigoSala || !sessionTokenDocente){ alert("No hay sala activa"); return; }
+  if(!confirm("¿Cerrar la sala? Todos los alumnos se desconectarán y las asignaciones AR se resetearán.")) return;
+  try {
+    const r = await CalabozosStateBridge.cerrarSala(codigoSala, sessionTokenDocente);
+    if(!r.ok && r.error !== "auth") throw new Error(r.error || "Error");
+    if(p2pHost){ try{p2pHost.broadcast({tipo:"host-changed"})}catch(_){}; p2pHost.stop(); p2pHost=null; }
+    detenerPollingDocente();
+    detenerGAS();
+    codigoSala = "";
+    sessionTokenDocente = "";
+    localStorage.removeItem("calabozos.hostToken");
+    localStorage.removeItem("calabozos.codigoSalaDocente");
+    resetearBotonesDocente();
+    agregarMensaje("🔒 Sala cerrada","system");
+    log("Sala cerrada");
+    // Limpiar asignaciones AR
+    partida.estadoJuego.arConfig = {};
+    guardarPartida();
+    SLOTS_AR.forEach(slot => {
+      enviarComandoAR({ action: 'clear-model', slot: slot });
+      enviarComandoAR({ action: 'clear-stats', slot: slot });
+    });
+    setTimeout(() => {
+      const iframe = document.getElementById(CONFIG.arFrameId);
+      if (iframe && iframe.contentWindow) { try { iframe.contentWindow.location.reload(); } catch(_) {} }
+    }, 200);
+  } catch(e) {
+    alert("Error al cerrar: " + e.message);
+  }
+}
 
 /* ============================================================ UNIRSE */
 async function unirseSalaAlumno(){ const c=$("input-sala").value.trim().toUpperCase(); if(c.length<4){alert("Código inválido");return} codigoSala=c; const info=$("alumno-sala-info"); info.textContent="Validando..."; info.className="sala-info"; if(!rolAlumno){ $("rol-modal").style.display = "flex"; return; } if(!nombreAlumno||nombreAlumno==="Alumno"){ nombreAlumno=prompt("Tu nombre (o apodo):","Alumno")||"Alumno"; } if(rolAlumno==="jugador" && !jugadorIdAlumno){ jugadorIdAlumno=(prompt("Tu ID de jugador (micro:bit, ej. P01):","")||"").toUpperCase().slice(0,12); if(jugadorIdAlumno)localStorage.setItem("calabozos.jugadorId",jugadorIdAlumno); } try{ const r=await CalabozosStateBridge.unirseSala(c,nombreAlumno,jugadorIdAlumno,gateToken,rolAlumno); if(!r.ok){ const msgMap={ "codigo_clase_requerido":"❌ Tu sesión de clase expiró. Recargá la página.", "baneado":"❌ Fuiste expulsado. Esperá unos minutos.", "jugador_id_duplicado":"❌ Ya hay otra sesión con tu ID. Esperá 30 min.", "rate_limit_global":"⏳ Demasiados intentos. Esperá un minuto.", "rate_limit_codigo":"⏳ Demasiados intentos con este código.", "sala_llena":"❌ Sala llena (máx. 40).", "sala_invalida":"❌ Sala no encontrada o expirada." }; throw new Error(msgMap[r.error]||r.error); } sessionTokenAlumno=r.sessionToken; peerIdAlumno=r.peerId; info.textContent="Conectando P2P..."; p2pPeer=new CalabozosStateBridge.P2PPeer(c,sessionTokenAlumno,peerIdAlumno,nombreAlumno,jugadorIdAlumno,{ onConnected:()=>{ p2pConectado=true; info.textContent=`✓ P2P · ${c} (${rolAlumno})`; info.className="sala-info"; [...chat.querySelectorAll(".msg.system")].forEach(el=>{if(el.textContent.includes("vía GAS"))el.remove();}); agregarMensaje(`🔗 Conectado al DM (P2P) como ${rolAlumno}`,"system"); $("p2p-badge").style.display="inline-flex"; $("p2p-badge").textContent="⚡ P2P"; detenerGAS(); }, onMessage:(msg)=>{ if(msg.tipo==="estado")aplicarEstadoRemoto(msg.estado); else if(msg.tipo==="chat")agregarMensaje(msg.texto,"ai"); else if(msg.tipo==="kick"){ p2pPeer&&p2pPeer.desconectar(); p2pPeer=null; p2pConectado=false; sessionTokenAlumno=""; $("p2p-badge").style.display="none"; info.textContent="❌ Fuiste expulsado"; info.className="sala-info error"; ajustarInput(false); } else if(msg.tipo==="host-changed"){ p2pPeer&&p2pPeer.desconectar(); p2pPeer=null; p2pConectado=false; $("p2p-badge").style.display="none"; agregarMensaje("🔄 El host cambió. Reconectando...","system"); setTimeout(()=>{ if(!p2pConectado&&sessionTokenAlumno) iniciarP2P(sessionTokenAlumno); },2500); } }, onDisconnected:()=>{ p2pConectado=false; $("p2p-badge").style.display="none"; info.textContent=`⚠ P2P perdido · usando GAS`; info.className="sala-info error"; iniciarGAS(c); } }); const timeout=setTimeout(()=>{ if(!p2pConectado){ info.textContent=`✓ En sala ${c} (GAS)`; info.className="sala-info"; if(![...chat.querySelectorAll(".msg.system")].some(el=>el.textContent.includes("vía GAS"))){ agregarMensaje("🔗 Conectado vía GAS (fallback)","system"); } iniciarGAS(c); } },20000); p2pPeer.conectar().then(()=>clearTimeout(timeout)).catch(()=>{ clearTimeout(timeout); if(!p2pConectado){ info.textContent=`✓ En sala ${c} (GAS)`; info.className="sala-info"; if(![...chat.querySelectorAll(".msg.system")].some(el=>el.textContent.includes("vía GAS"))){ agregarMensaje("🔗 Conectado vía GAS (fallback)","system"); } iniciarGAS(c); } }); ajustarInput(true); }catch(e){ info.textContent="✗ "+e.message; info.className="sala-info error"; } }
@@ -570,11 +950,11 @@ function detenerPollingDocente() { if (pollingDocenteId) { clearTimeout(pollingD
 function detenerP2P(){ if(p2pHost){p2pHost.stop();p2pHost=null} if(p2pPeer){p2pPeer.desconectar();p2pPeer=null} detenerPollingDocente(); p2pConectado=false; $("p2p-badge").style.display="none"; }
 
 /* ============================================================ PUBLICAR */
-function construirSnapshot(){ const e=partida.estadoJuego; return { revision:e.revision, mapaActual:e.mapaActual, ultimoDado:e.ultimoDado, turno:e.turno, ultimoEvento:e.ultimoEvento, jugadores:e.jugadores, enemigos:e.enemigos, recentMessages:historial.slice(-30).map(m=>({role:m.role,content:txt(m.content,800),tipo:m.tipo||"chat"})) }; }
+function construirSnapshot(){ const e=partida.estadoJuego; return { revision:e.revision, mapaActual:e.mapaActual, ultimoDado:e.ultimoDado, turno:e.turno, ultimoEvento:e.ultimoEvento, jugadores:e.jugadores, enemigos:e.enemigos, arConfig: e.arConfig || {}, recentMessages:historial.slice(-30).map(m=>({role:m.role,content:txt(m.content,800),tipo:m.tipo||"chat"})) }; }
 function publicarEstado(motivo){ if(modo!=="docente"||!codigoSala||!sessionTokenDocente)return; partida.estadoJuego.revision++; const snap=construirSnapshot(); if(p2pHost){ const n=p2pHost.broadcast({tipo:"estado",estado:snap}); if(n>0)log(`[P2P] estado a ${n} peers`); } clearTimeout(debouncePub); debouncePub=setTimeout(async()=>{ try{ await CalabozosStateBridge.publicarEstado(codigoSala,sessionTokenDocente,snap); }catch(e){ if(e.code==="host_revoked"||e.message==="host_revoked"){ p2pHost&&p2pHost.stop(); p2pHost=null; agregarMensaje("⚠ Transferiste el control","system"); resetearBotonesDocente(); } else log("Publicar GAS falló: "+e.message); } },p2pHost&&p2pHost.peersConectados().length?1500:500); }
 function enviarEstadoPorP2P(peerId){ if(!p2pHost)return; p2pHost.enviarA(peerId,{tipo:"estado",estado:construirSnapshot()}); }
 function procesarMensajeP2PPeer(peerId, msg){ if(msg.tipo==="chat"){ const autor = msg.autor || "Alumno"; const rol = msg.rol === "espectador" ? "espectador" : "jugador"; if(rol === "jugador"){ const clave = autor.toUpperCase(); if(!partida.estadoJuego.jugadores[clave]){ partida.estadoJuego.jugadores[clave] = { x:0, y:0, mapaId:partida.estadoJuego.mapaActual, ultimaConexion: new Date().toISOString(), ultimoDado:null, peerId:peerId||null, tipo:"jugador", personaje:null, hp:0, hpMax:0, nivel:1, ataque:0, defensa:0, accesorio:"", emoji:"", arSlot:null }; _bienvenidaSiEsPrimerJugador(clave, partida.estadoJuego.jugadores[clave]); } else { if(peerId) partida.estadoJuego.jugadores[clave].peerId = peerId; partida.estadoJuego.jugadores[clave].ultimaConexion = new Date().toISOString(); } } if(yaEstaEnChat(autor, msg.texto))return; const icono = rol === "espectador" ? "👁" : "🎓"; agregarMensaje(`${icono} ${autor}: ${msg.texto}`,"user"); historial.push({role:"user",content:`[${autor}] ${msg.texto}`,tipo:"chat"}); guardarPartida(); renderizarTodo(); if(p2pHost)p2pHost.broadcast({tipo:"chat",autor,texto:msg.texto,rol}); } }
-function aplicarEstadoRemoto(estado){ if(!estado) return; partida.estadoJuego = normalizarEstado(estado); renderizarTodo(); if (Array.isArray(estado.recentMessages) && estado.recentMessages.length) { estado.recentMessages.forEach(m => { if (m.tipo === "evento") return; const tipo = m.role === "assistant" ? "ai" : "user"; const autor = tipo === "ai" ? "DM" : "alumno"; if (yaEstaEnChat(autor, m.content)) return; const yaEsta = [...chat.querySelectorAll(".msg")].some(el => el.textContent === m.content && el.classList.contains(tipo)); if (!yaEsta) agregarMensaje(m.content, tipo); }); } }
+function aplicarEstadoRemoto(estado){ if(!estado) return; partida.estadoJuego = normalizarEstado(estado); renderizarTodo(); if (arFrameReady) aplicarArConfigCompleta(); if (Array.isArray(estado.recentMessages) && estado.recentMessages.length) { estado.recentMessages.forEach(m => { if (m.tipo === "evento") return; const tipo = m.role === "assistant" ? "ai" : "user"; const autor = tipo === "ai" ? "DM" : "alumno"; if (yaEstaEnChat(autor, m.content)) return; const yaEsta = [...chat.querySelectorAll(".msg")].some(el => el.textContent === m.content && el.classList.contains(tipo)); if (!yaEsta) agregarMensaje(m.content, tipo); }); } }
 
 /* ============================================================ RENDER */
 function agregarMensaje(texto,tipo){ const d=document.createElement("div"); d.className="msg "+tipo; d.textContent=texto; chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d; }
@@ -723,8 +1103,7 @@ function accionAtacar(){if(!generando){input.value="Ataco al enemigo más cercan
 function accionCurar(){if(!generando){input.value="Uso una poción de curación. ¿Qué sucede?";enviarMensaje()}}
 
 /* ============================================================ MICRO:BIT */
-let bufSerial = [];   // ahora acumula bytes hasta \n
-
+let bufSerial = [];
 const _txQueue = [];
 const _txQueueMax = 8;
 let _txProcesando = false;
@@ -736,119 +1115,76 @@ async function _procesarTxQueue() {
     while (_txQueue.length > 0) {
       if (!serialAbierto || !microbitPort) break;
       const trama = _txQueue.shift();
-      try {
-        const w = microbitPort.writable.getWriter();
-        try { await w.write(trama); } finally { w.releaseLock(); }
-      } catch (e) {
-        console.warn('[DM] Error escribiendo al puerto:', e);
-      }
+      try { const w = microbitPort.writable.getWriter(); try { await w.write(trama); } finally { w.releaseLock(); } }
+      catch (e) { console.warn('[DM] Error escribiendo al puerto:', e); }
       await new Promise(r => setTimeout(r, 30));
     }
-  } finally {
-    _txProcesando = false;
-  }
+  } finally { _txProcesando = false; }
 }
-
-// ✅ Protocolo con \n (más robusto que STX/ETX)
 async function enviarTrama(linea) {
   if (!serialAbierto || !microbitPort) return;
   const data = new TextEncoder().encode(linea + "\n");
-  if (_txQueue.length >= _txQueueMax) {
-    _txQueue.shift();
-  }
+  if (_txQueue.length >= _txQueueMax) _txQueue.shift();
   _txQueue.push(data);
   setTimeout(_procesarTxQueue, 0);
 }
-
 function iniciarGatewayPing() {
   if (gatewayPingInterval) clearInterval(gatewayPingInterval);
   gatewayPingInterval = setInterval(async () => {
     if (!serialAbierto || !microbitPort) return;
     try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (e) {}
-  }, 5000);   // cada 5s
+  }, 5000);
 }
-
 async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
-  if (!("serial" in navigator)) {
-    alert("Web Serial no disponible. Usá Chrome/Edge en PC.");
-    return;
-  }
+  if (!("serial" in navigator)) { alert("Web Serial no disponible. Usá Chrome/Edge en PC."); return; }
   try {
     console.log('[DM] Abriendo chooser...');
     microbitPort = await navigator.serial.requestPort();
-    console.log('[DM] Puerto elegido, abriendo a 9600...');
+    console.log('[DM] Puerto elegido, abriendo a 115200...');
     await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
     gatewayListo = false;
-    console.log('[DM] Puerto abierto');
-
     $("mb-status").textContent = "Conectado";
     $("mb-status").style.color = "var(--verde)";
     $("btn-microbit-off").disabled = false;
     $("btn-microbit").disabled = true;
     $("btn-buscar-jugadores").disabled = false;
-
     leerSerial();
     log('[DM] Gateway conectado, esperando READY');
-
     await new Promise(r => setTimeout(r, 2000));
-
     iniciarGatewayPing();
-
-    try {
-      await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
-      console.log('[DM] Handshake enviado. Esperando GW|READY...');
-    } catch (e) {
-      console.warn('[DM] Error enviando handshake:', e);
-    }
-  } catch (e) {
-    console.error('[DM] Error micro:bit:', e);
-    alert("Error micro:bit: " + e.message);
-  }
+    try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); console.log('[DM] Handshake enviado. Esperando GW|READY...'); }
+    catch (e) { console.warn('[DM] Error enviando handshake:', e); }
+  } catch (e) { console.error('[DM] Error micro:bit:', e); alert("Error micro:bit: " + e.message); }
 }
-
 async function reconectarMicrobit() {
   console.log('[DM] reconectarMicrobit() llamado');
   try {
     gatewayListo = false;
     if (gatewayReadyTimeout) { clearTimeout(gatewayReadyTimeout); gatewayReadyTimeout = null; }
-
     if (lectorMicrobit) { try { await lectorMicrobit.cancel(); } catch (_) {} }
     try { if (microbitPort) await microbitPort.close(); } catch (_) {}
-    microbitPort = null; lectorMicrobit = null;
-    serialAbierto = false;
-
+    microbitPort = null; lectorMicrobit = null; serialAbierto = false;
     await new Promise(r => setTimeout(r, 1000));
-
     const ports = await navigator.serial.getPorts();
     if (ports.length === 0) {
-      console.warn('[DM] No hay puertos autorizados para reconectar');
       $("mb-status").textContent = "Desconectado";
       $("mb-status").style.color = "var(--rojo)";
       agregarMensaje("⚠️ Gateway desconectado. Tocá 'Conectar micro:bit' para reconectar.", "system");
       if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
       return;
     }
-
     microbitPort = ports[0];
     await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
-
     $("mb-status").textContent = "Reconectado";
     $("mb-status").style.color = "var(--verde)";
-
     leerSerial();
     log('[DM] Gateway reconectado automáticamente');
-
     iniciarGatewayPing();
-
     await new Promise(r => setTimeout(r, 1500));
-    for (let i = 0; i < 3; i++) {
-      try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
-      await new Promise(r => setTimeout(r, 300));
-    }
-
+    for (let i = 0; i < 3; i++) { try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {} await new Promise(r => setTimeout(r, 300)); }
     agregarMensaje("✅ Gateway reconectado automáticamente", "system");
   } catch (e) {
     console.error('[DM] Error reconnecting:', e);
@@ -858,7 +1194,6 @@ async function reconectarMicrobit() {
     if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
   }
 }
-
 async function desconectarMicrobit(){
   serialAbierto=false;
   gatewayListo = false;
@@ -874,65 +1209,41 @@ async function desconectarMicrobit(){
   $("btn-microbit").disabled=false;
   $("btn-buscar-jugadores").disabled=true;
 }
-
 async function buscarJugadores() {
-  if (!serialAbierto) {
-    alert('Primero conectá el gateway micro:bit');
-    return;
-  }
+  if (!serialAbierto) { alert('Primero conectá el gateway micro:bit'); return; }
   try {
-    for (let i = 0; i < 3; i++) {
-      await enviarTrama("TX|ALL|Q|1");
-      await new Promise(r => setTimeout(r, 200));
-    }
+    for (let i = 0; i < 3; i++) { await enviarTrama("TX|ALL|Q|1"); await new Promise(r => setTimeout(r, 200)); }
     log('[DM] Buscando jugadores (TX|ALL|Q|1 x3)');
     agregarMensaje('🔍 Solicitando identificación a todos los jugadores...', 'system');
-  } catch (e) {
-    log('[DM] Error buscando jugadores: ' + e.message);
-  }
+  } catch (e) { log('[DM] Error buscando jugadores: ' + e.message); }
 }
-
 async function leerSerial(){
   const lector=microbitPort.readable.getReader();
   lectorMicrobit=lector;
-  try{
-    while(serialAbierto){
-      const {value,done}=await lector.read();
-      if(done)break;
-      for(const b of value)procesarByte(b);
-    }
-  } catch(e){ log("Serial error: "+e.message) }
+  try{ while(serialAbierto){ const {value,done}=await lector.read(); if(done)break; for(const b of value)procesarByte(b); } }
+  catch(e){ log("Serial error: "+e.message) }
   finally{ try{lector.releaseLock()}catch(_){} }
 }
-
-// ✅ NUEVO: procesa bytes hasta \n, NO bloquea el lector
 function procesarByte(b){
-  if (b === 0x0A) {  // \n
+  if (b === 0x0A) {
     if (bufSerial.length > 0) {
       let linea = "";
       try { linea = new TextDecoder().decode(new Uint8Array(bufSerial)).trim(); } catch(_) {}
       bufSerial = [];
-      if (linea) {
-        setTimeout(() => {
-          try { procesarLinea(linea); } catch(_) {}
-        }, 0);
-      }
+      if (linea) setTimeout(() => { try { procesarLinea(linea); } catch(_) {} }, 0);
     }
     return;
   }
   bufSerial.push(b);
   if (bufSerial.length > 512) bufSerial = [];
 }
-
 function procesarLinea(linea){
   console.log('[DM] procesarLinea RAW:', JSON.stringify(linea));
   log('[DM] linea: ' + linea);
-
   const p = linea.split("|");
   if(p[0]==="RX" && p.length>=3){
     const id=txt(p[1],12).toUpperCase(), cmd=txt(p[2],8).toUpperCase(), val=txt(p.slice(3).join("|"),80);
     if(!id||!cmd)return;
-
     if(id === "DADO" && cmd === "D"){
       const dadoValor = Number(val);
       if(!Number.isInteger(dadoValor) || dadoValor < 1 || dadoValor > 100) return;
@@ -943,13 +1254,10 @@ function procesarLinea(linea){
       publicarEstado("dado");
       return;
     }
-
     const esNuevo = !partida.estadoJuego.jugadores[id];
     if(esNuevo){
-      partida.estadoJuego.jugadores[id]={
-        x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:ahora(),peerId:null,
-        tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:"",arSlot:null
-      };
+      partida.estadoJuego.jugadores[id]={ x:0,y:0,mapaId:partida.estadoJuego.mapaActual,ultimaConexion:ahora(),peerId:null,
+        tipo:"jugador",personaje:null,hp:0,hpMax:0,nivel:1,ataque:0,defensa:0,accesorio:"",emoji:"",arSlot:null };
       console.log('[DM] ✅ Nuevo jugador por micro:bit:', id);
       log('[DM] Nuevo jugador: ' + id);
       agregarMensaje(`⚔️ ${id} se unió por micro:bit`, "system");
@@ -960,8 +1268,7 @@ function procesarLinea(linea){
 
     if(cmd==="CHR" && PERSONAJES[val]){
       const P=PERSONAJES[val];
-      j.personaje=val;
-      j.hpMax=P.hp; j.hp=P.hp;
+      j.personaje=val; j.hpMax=P.hp; j.hp=P.hp;
       j.nivel=1; j.ataque=P.atk; j.defensa=P.def;
       j.accesorio=P.acc; j.emoji=P.emoji;
       partida.estadoJuego.ultimoEvento=`${id} eligió ${val}.`;
@@ -1020,7 +1327,6 @@ function procesarLinea(linea){
       agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]||"?"})`, "system");
     }
     if (gatewayReadyTimeout) clearTimeout(gatewayReadyTimeout);
-    // ✅ Watchdog de 30s (antes 25s)
     gatewayReadyTimeout = setTimeout(async () => {
       if (gatewayListo && serialAbierto) {
         gatewayListo = false;
@@ -1042,9 +1348,65 @@ async function canjearTraspaso(){ const c=prompt("Código de traspaso (8 caracte
 async function recuperarHost(){ if(!codigoSala){alert("Ingresá el código de la sala primero");return} const tok = await pedirPinDocente(); if(!tok) return; try{ const r1 = await CalabozosStateBridge.solicitarRecuperacion(codigoSala, tok); if(!r1.ok) throw new Error(r1.error || "Error"); let estadoOriginal=null; try{ const sr = await CalabozosStateBridge.syncDocente(codigoSala, tok); if(sr.ok&&sr.estado) estadoOriginal=sr.estado; }catch(_){} if(!estadoOriginal){ alert("No se pudo leer un estado válido."); return; } const estadoRecuperado = normalizarEstado(estadoOriginal); const r2 = await CalabozosStateBridge.confirmarRecuperacion(codigoSala, r1.ticket, tok); if(!r2.ok) throw new Error(r2.error || "Error"); sessionTokenDocente = r2.hostToken; localStorage.setItem("calabozos.hostToken", sessionTokenDocente); localStorage.setItem("calabozos.codigoSalaDocente", codigoSala); partida.estadoJuego = estadoRecuperado; guardarPartida(); modo = "docente"; aplicarModoVisual(); if(p2pPeer){p2pPeer.desconectar();p2pPeer=null} if(pollingGAS){CalabozosStateBridge.detenerPolling();pollingGAS=false} p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, { onPeerConnected: (id,name,jid)=>{ agregarMensaje(`🔗 ${name} conectado`,"system"); enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); }, onPeerMessage: (id,msg)=>procesarMensajeP2PPeer(id,msg), onPeerDisconnected: ()=>{actualizarContadorP2P();renderizarTodo()}, onHostRevoked: ()=>{ if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); } }); p2pHost.start(); iniciarPollingDocente(codigoSala, sessionTokenDocente); $("btn-crear").hidden=true; $("btn-traspaso").style.display="inline-block"; $("btn-cerrar-sala").style.display="inline-block"; mostrarInfoSala(); publicarEstado("host-recuperado"); $("btn-recuperar-host").style.display = "none"; alert("¡Recuperaste el control!"); }catch(e){alert("Error: "+e.message)} }
 
 /* ============================================================ ARRANQUE */
-async function inicializarApp(){ detectarModo(); aplicarModoVisual(); $("cfg-ollama").value = (localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,""); CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl }); configurarAR(); renderizarTodo(); try { const w = await CalabozosStateBridge.whoami(); if (!w.accesoConfigurado) log("⚠ Servidor sin CLASS_CODE/ADMIN_PIN. Ejecutá setupAcceso()."); } catch(_) {} if (modo === "docente") { const salaGuardada = localStorage.getItem("calabozos.codigoSalaDocente"); const hostGuardado = localStorage.getItem("calabozos.hostToken"); if (salaGuardada && hostGuardado) { codigoSala = salaGuardada; sessionTokenDocente = hostGuardado; log("Detectada sala previa: " + codigoSala); try { const check = await CalabozosStateBridge.syncHost(codigoSala, sessionTokenDocente, -1, 0); if (check && check.ok) { mostrarInfoSala(); $("btn-crear").hidden = true; $("btn-traspaso").style.display = "inline-block"; $("btn-cerrar-sala").style.display = "inline-block"; if (check.estado) { partida.estadoJuego = normalizarEstado(check.estado); guardarPartida(); } p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, { onPeerConnected: (id, name, jid) => { agregarMensaje(`🔗 ${name} conectado`,"system"); enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); }, onPeerMessage: (id, msg) => procesarMensajeP2PPeer(id, msg), onPeerDisconnected: () => { actualizarContadorP2P(); renderizarTodo(); }, onHostRevoked: () => { if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); } }); p2pHost.start(); iniciarPollingDocente(codigoSala, sessionTokenDocente); publicarEstado("reconexion-docente"); agregarMensaje(`🔗 Reconectado a la sala ${codigoSala}`,"system"); } else { localStorage.removeItem("calabozos.codigoSalaDocente"); localStorage.removeItem("calabozos.hostToken"); codigoSala = ""; sessionTokenDocente = ""; resetearBotonesDocente(); } } catch (e) { log("Error al verificar sala previa: " + e.message); localStorage.removeItem("calabozos.codigoSalaDocente"); localStorage.removeItem("calabozos.hostToken"); codigoSala = ""; sessionTokenDocente = ""; resetearBotonesDocente(); } } iniciarOllama(); } else { ajustarInput(false); const sala = new URLSearchParams(location.search).get("sala"); if (sala) { $("input-sala").value = sala.toUpperCase(); unirseSalaAlumno(); } $("btn-canjear").style.display = "inline-block"; } }
+async function inicializarApp(){
+  detectarModo(); aplicarModoVisual();
+  $("cfg-ollama").value = (localStorage.getItem(CLAVE_OLLAMA)||"").replace(/^https?:\/\//,"").replace(/:11434$/,"");
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl });
+  configurarAR(); renderizarTodo();
+  try { const w = await CalabozosStateBridge.whoami(); if (!w.accesoConfigurado) log("⚠ Servidor sin CLASS_CODE/ADMIN_PIN. Ejecutá setupAcceso()."); } catch(_) {}
+  if (modo === "docente") {
+    const salaGuardada = localStorage.getItem("calabozos.codigoSalaDocente");
+    const hostGuardado = localStorage.getItem("calabozos.hostToken");
+    if (salaGuardada && hostGuardado) {
+      codigoSala = salaGuardada; sessionTokenDocente = hostGuardado;
+      log("Detectada sala previa: " + codigoSala);
+      try {
+        const check = await CalabozosStateBridge.syncHost(codigoSala, sessionTokenDocente, -1, 0);
+        if (check && check.ok) {
+          mostrarInfoSala();
+          $("btn-crear").hidden = true;
+          $("btn-traspaso").style.display = "inline-block";
+          $("btn-cerrar-sala").style.display = "inline-block";
+          if (check.estado) { partida.estadoJuego = normalizarEstado(check.estado); guardarPartida(); }
+          p2pHost = new CalabozosStateBridge.P2PHost(codigoSala, sessionTokenDocente, {
+            onPeerConnected: (id, name, jid) => { agregarMensaje(`🔗 ${name} conectado`,"system"); enviarEstadoPorP2P(id); actualizarContadorP2P(); renderizarTodo(); },
+            onPeerMessage: (id, msg) => procesarMensajeP2PPeer(id, msg),
+            onPeerDisconnected: () => { actualizarContadorP2P(); renderizarTodo(); },
+            onHostRevoked: () => { if(p2pHost){p2pHost.stop();p2pHost=null} agregarMensaje("⚠ Ya no sos host","system"); resetearBotonesDocente(); }
+          });
+          p2pHost.start(); iniciarPollingDocente(codigoSala, sessionTokenDocente);
+          publicarEstado("reconexion-docente");
+          agregarMensaje(`🔗 Reconectado a la sala ${codigoSala}`,"system");
+        } else {
+          localStorage.removeItem("calabozos.codigoSalaDocente");
+          localStorage.removeItem("calabozos.hostToken");
+          codigoSala = ""; sessionTokenDocente = ""; resetearBotonesDocente();
+        }
+      } catch (e) {
+        log("Error al verificar sala previa: " + e.message);
+        localStorage.removeItem("calabozos.codigoSalaDocente");
+        localStorage.removeItem("calabozos.hostToken");
+        codigoSala = ""; sessionTokenDocente = ""; resetearBotonesDocente();
+      }
+    }
+    iniciarOllama();
+  } else {
+    ajustarInput(false);
+    const sala = new URLSearchParams(location.search).get("sala");
+    if (sala) { $("input-sala").value = sala.toUpperCase(); unirseSalaAlumno(); }
+    $("btn-canjear").style.display = "inline-block";
+  }
+}
 
-window.addEventListener("DOMContentLoaded", () => { CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl }); configurarAR(); if (gateToken) { $("gate-overlay").style.display = "none"; inicializarApp(); } else { $("gate-input").addEventListener("keypress", e => { if(e.key==="Enter") ingresarClase(); }); setTimeout(()=>{ try{$("gate-input").focus()}catch(_){} }, 100); } });
+window.addEventListener("DOMContentLoaded", () => {
+  CalabozosStateBridge.configurar({ appsScriptUrl: CONFIG.appsScriptUrl });
+  configurarAR();
+  if (gateToken) { $("gate-overlay").style.display = "none"; inicializarApp(); }
+  else {
+    $("gate-input").addEventListener("keypress", e => { if(e.key==="Enter") ingresarClase(); });
+    setTimeout(()=>{ try{$("gate-input").focus()}catch(_){} }, 100);
+  }
+});
 
 window.addEventListener("resize",()=>{chat.scrollTop=chat.scrollHeight});
 </script>
