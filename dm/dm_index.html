@@ -778,7 +778,7 @@ async function conectarMicrobit() {
     console.log('[DM] Abriendo chooser...');
     microbitPort = await navigator.serial.requestPort();
     console.log('[DM] Puerto elegido, abriendo a 9600...');
-    await microbitPort.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
     gatewayListo = false;
     console.log('[DM] Puerto abierto');
@@ -832,7 +832,7 @@ async function reconectarMicrobit() {
     }
 
     microbitPort = ports[0];
-    await microbitPort.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
 
     $("mb-status").textContent = "Reconectado";
