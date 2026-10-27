@@ -121,7 +121,7 @@
         dialog#ar-config-modal .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
         dialog#ar-config-modal .modelos-github {
             display: flex; flex-wrap: wrap; gap: 4px;
-            max-height: 90px; overflow-y: auto;
+            max-height: 110px; overflow-y: auto;
             padding: 6px; margin-bottom: 8px;
             border: 1px dashed var(--borde); border-radius: 6px;
             background: rgba(0,0,0,.15);
@@ -129,28 +129,61 @@
         dialog#ar-config-modal .modelos-github .chip {
             padding: 3px 8px; border-radius: 4px;
             background: var(--panel2); border: 1px solid var(--borde);
-            font-size: .65rem; cursor: pointer;
+            font-size: .65rem; cursor: grab;
+            user-select: none;
         }
         dialog#ar-config-modal .modelos-github .chip:hover { background: var(--dorado); color: #1a1a2e; }
+        dialog#ar-config-modal .modelos-github .chip:active { cursor: grabbing; }
         dialog#ar-config-modal .modelos-github .placeholder { color: var(--tenue); font-size: .7rem; }
         dialog#ar-config-modal .slots-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
             gap: 6px;
-            max-height: 50vh;
+            max-height: 52vh;
             overflow-y: auto;
             padding-right: 4px;
         }
         dialog#ar-config-modal .slot-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--panel2);
+            border: 1px solid var(--borde);
+            border-radius: 6px;
+            padding: 6px;
+            font-size: .65rem;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+        }
+        dialog#ar-config-modal .slot-row.dragover {
+            border-color: var(--dorado);
+            box-shadow: 0 0 0 2px rgba(201,168,76,.4);
+            background: rgba(201,168,76,.1);
+        }
+        dialog#ar-config-modal .slot-row .row1 {
             display: grid;
             grid-template-columns: 60px 90px 1fr 1.2fr 60px;
             gap: 4px;
             align-items: center;
-            background: var(--panel2);
-            border: 1px solid var(--borde);
-            border-radius: 6px;
-            padding: 4px;
-            font-size: .65rem;
+        }
+        dialog#ar-config-modal .slot-row .row2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            align-items: center;
+        }
+        dialog#ar-config-modal .slot-row .row2 label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .6rem;
+            color: var(--tenue);
+            min-width: 0;
+        }
+        dialog#ar-config-modal .slot-row .row2 input {
+            flex: 1;
+            font-size: .6rem;
+            padding: 2px 4px;
+            min-width: 0;
         }
         dialog#ar-config-modal .slot-row .slot-name {
             color: var(--dorado); font-weight: 700; text-align: center;
@@ -159,7 +192,7 @@
         dialog#ar-config-modal .slot-row input {
             font-size: .65rem; padding: 3px 4px; width: 100%;
         }
-        dialog#ar-config-modal .slot-row .btn {
+        dialog#ar-config-modal .slot-row .row1 .btn {
             padding: 3px 4px; font-size: .6rem;
         }
         dialog#ar-config-modal .log-box {
@@ -184,6 +217,9 @@
             #barra { padding: 4px 6px; } .accion-btn { flex: 1 1 auto; }
             #a11y-panel { width: calc(100vw - 20px); right: 10px; left: 10px; }
             dialog#ar-config-modal .slots-grid { grid-template-columns: 1fr; }
+            dialog#ar-config-modal .slot-row .row1 { grid-template-columns: 50px 80px 1fr 60px; }
+            dialog#ar-config-modal .slot-row .row1 .slot-model { grid-column: 1 / -1; }
+            dialog#ar-config-modal .slot-row .row2 { grid-template-columns: 1fr; }
         }
         @media(max-width:400px) { #camara-ar { height: 26vh; min-height: 130px; } .panel { max-height: 65px; } }
         @media(orientation:landscape) and (max-height:500px) { #main { grid-template-columns: 90px 1fr 90px; grid-template-areas: "heroes cam enem"; } #camara-ar { height: auto; } #zona-narracion { flex: 0 0 18vh; } }
@@ -330,7 +366,7 @@
     <span id="ar-config-status" style="font-size:.65rem;color:var(--tenue);margin-left:auto">Listo</span>
   </div>
   <div class="modelos-github" id="ar-config-modelos">
-    <span class="placeholder">Cargá los modelos desde GitHub para asignarlos a un slot.</span>
+    <span class="placeholder">Cargá los modelos desde GitHub. Después <strong>arrastrá un chip a un slot</strong> (se aplica al soltar) o hacé <strong>click</strong> en un chip para elegir el slot.</span>
   </div>
   <div class="slots-grid" id="ar-config-slots"></div>
   <div class="log-box" id="ar-config-log"></div>
@@ -591,40 +627,87 @@ function tipoLabel(t) {
     default: return '— Vacío';
   }
 }
+
 function renderizarArConfigSlots() {
   const grid = $("ar-config-slots");
   if (!grid) return;
   grid.replaceChildren();
   const cfg = partida.estadoJuego.arConfig || {};
+
   SLOTS_AR.forEach(slot => {
     const item = cfg[slot] || {};
     const row = document.createElement("div");
     row.className = "slot-row";
     row.dataset.slot = slot;
+
+    // Escapar valores para inyectar en HTML sin romper
+    const esc = (s) => String(s || "").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     row.innerHTML = `
-      <span class="slot-name">${slot}</span>
-      <select class="slot-type">
-        <option value="none">— Vacío</option>
-        <option value="enemy">👹 Enemigo</option>
-        <option value="player">🎭 Héroe</option>
-        <option value="object">📦 Objeto</option>
-        <option value="creature">🐾 Criatura</option>
-      </select>
-      <input class="slot-label" placeholder="Nombre visible" value="${item.name || ''}">
-      <input class="slot-model" placeholder="modelos/archivo.glb" value="${item.model || ''}">
-      <button class="btn" type="button">Aplicar</button>
+      <div class="row1">
+        <span class="slot-name">${slot}</span>
+        <select class="slot-type">
+          <option value="none">— Vacío</option>
+          <option value="enemy">👹 Enemigo</option>
+          <option value="player">🎭 Héroe</option>
+          <option value="object">📦 Objeto</option>
+          <option value="creature">🐾 Criatura</option>
+        </select>
+        <input class="slot-label" placeholder="Nombre visible" value="${esc(item.name)}">
+        <input class="slot-model" placeholder="modelos/archivo.glb" value="${esc(item.model)}">
+        <button class="btn" type="button">Aplicar</button>
+      </div>
+      <div class="row2">
+        <label>Escala <input class="slot-scale" placeholder="1 1 1" value="${esc(item.scale)}"></label>
+        <label>Rotac. <input class="slot-rot" placeholder="0 0 0" value="${esc(item.rotation)}"></label>
+        <label>Posic. <input class="slot-pos" placeholder="0 0 0" value="${esc(item.position)}"></label>
+      </div>
     `;
+
     const sel = row.querySelector(".slot-type");
     sel.value = item.type || "none";
-    row.querySelector("button").addEventListener("click", () => {
-      const type = row.querySelector(".slot-type").value;
-      const name = row.querySelector(".slot-label").value.trim();
-      const model = row.querySelector(".slot-model").value.trim();
-      aplicarSlotAr(slot, type, name, model);
+
+    row.querySelector(".row1 button").addEventListener("click", () => {
+      aplicarSlotDesdeRow(slot, row);
     });
+
+    // ✅ Drag & drop: aceptar chips de modelo
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      row.classList.add("dragover");
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("dragover"));
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("dragover");
+      const ruta = e.dataTransfer.getData("text/plain");
+      const nombreArchivo = e.dataTransfer.getData("application/x-modelo-nombre") || "";
+      if (!ruta) return;
+      row.querySelector(".slot-model").value = ruta;
+      const labelInput = row.querySelector(".slot-label");
+      if (!labelInput.value && nombreArchivo) labelInput.value = nombreArchivo.replace(/\.[^.]+$/, "");
+      const typeSel = row.querySelector(".slot-type");
+      if (typeSel.value === "none") typeSel.value = "object";
+      logAr(`📥 Drop «${nombreArchivo || ruta}» en slot ${slot} — aplicando…`);
+      // Autocompletar y aplicar
+      aplicarSlotDesdeRow(slot, row);
+    });
+
     grid.appendChild(row);
   });
 }
+
+function aplicarSlotDesdeRow(slot, row) {
+  const type = row.querySelector(".slot-type").value;
+  const name = row.querySelector(".slot-label").value.trim();
+  const model = row.querySelector(".slot-model").value.trim();
+  const scale = row.querySelector(".slot-scale").value.trim();
+  const rotation = row.querySelector(".slot-rot").value.trim();
+  const position = row.querySelector(".slot-pos").value.trim();
+  aplicarSlotAr(slot, type, name, model, scale, rotation, position);
+}
+
 function detectarTipoModelo(model) {
   if (!model) return 'gltf';
   if (model.startsWith('#')) return 'gltf';
@@ -642,9 +725,13 @@ function normalizarRutaModelo(model) {
   if (/^https?:\/\//i.test(model)) return model;
   return 'modelos/' + model;
 }
-function aplicarSlotAr(slot, type, name, model) {
+
+function aplicarSlotAr(slot, type, name, model, scale, rotation, position) {
   if (!partida.estadoJuego.arConfig) partida.estadoJuego.arConfig = {};
   const cfgItem = { type: type, name: name || (type === 'none' ? 'Vacío' : 'Modelo'), model: model };
+  if (scale) cfgItem.scale = scale;
+  if (rotation) cfgItem.rotation = rotation;
+  if (position) cfgItem.position = position;
 
   if (type === 'none' || !model) {
     enviarComandoAR({ action: 'clear-model', slot: slot });
@@ -658,9 +745,9 @@ function aplicarSlotAr(slot, type, name, model) {
       modelType: modelType,
       modelUrl: modelUrl,
       modelName: name || 'Modelo',
-      scale: cfgItem.scale || undefined,
-      rotation: cfgItem.rotation || undefined,
-      position: cfgItem.position || undefined,
+      scale: scale || undefined,
+      rotation: rotation || undefined,
+      position: position || undefined,
       animated: true
     });
     enviarComandoAR({ action: 'clear-stats', slot: slot });
@@ -668,10 +755,11 @@ function aplicarSlotAr(slot, type, name, model) {
   partida.estadoJuego.arConfig[slot] = cfgItem;
   guardarPartida();
   publicarEstado("ar-config-" + slot);
-  logAr(`✅ Slot ${slot} → ${tipoLabel(type)} · ${cfgItem.name} · ${model || '—'}`);
+  logAr(`✅ Slot ${slot} → ${tipoLabel(type)} · ${cfgItem.name} · ${model || '—'}${scale ? ' · escala ' + scale : ''}${rotation ? ' · rot ' + rotation : ''}${position ? ' · pos ' + position : ''}`);
   const status = $("ar-config-status");
   if (status) status.textContent = "Guardado en slot " + slot;
 }
+
 function aplicarArConfigCompleta(mostrarLog) {
   const cfg = partida.estadoJuego.arConfig || {};
   let aplicados = 0;
@@ -696,6 +784,7 @@ function aplicarArConfigCompleta(mostrarLog) {
   });
   if (mostrarLog) logAr(`📤 Re-aplicados ${aplicados} slots al AR`);
 }
+
 async function cargarModelosDesdeGitHub() {
   const cont = $("ar-config-modelos");
   const status = $("ar-config-status");
@@ -723,7 +812,18 @@ async function cargarModelosDesdeGitHub() {
       chip.type = "button";
       chip.className = "chip";
       chip.textContent = m.nombre;
-      chip.title = m.ruta;
+      chip.title = m.ruta + " — arrastrá a un slot o hacé click";
+      chip.draggable = true;
+
+      // ✅ Drag start: guardar la ruta y el nombre del modelo
+      chip.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", m.ruta);
+        e.dataTransfer.setData("application/x-modelo-nombre", m.nombre);
+        e.dataTransfer.effectAllowed = "copy";
+        logAr(`🎯 Arrastrando «${m.nombre}» — soltalo en un slot`);
+      });
+
+      // ✅ Click: prompt para elegir slot (mantiene el comportamiento anterior)
       chip.addEventListener("click", () => {
         const slot = prompt("¿A qué slot querés asignar «" + m.nombre + "»?\n(Escribí: hiro, kanji o un número 0-11)", "");
         if (!slot) return;
@@ -738,6 +838,7 @@ async function cargarModelosDesdeGitHub() {
         if (typeSel.value === "none") typeSel.value = "object";
         logAr(`📥 Modelo «${m.nombre}» asignado al slot ${s} (apretá Aplicar)`);
       });
+
       cont.appendChild(chip);
     });
     if (status) status.textContent = modelos.length + " modelos cargados";
@@ -747,9 +848,9 @@ async function cargarModelosDesdeGitHub() {
     logAr("❌ Error GitHub: " + err.message);
   }
 }
+
 function resetearAsignacionesAR() {
   if (!confirm("¿Restablecer todas las asignaciones de marcadores a los modelos por defecto del HTML?")) return;
-  // Limpiar todos los slots en el iframe
   SLOTS_AR.forEach(slot => {
     enviarComandoAR({ action: 'clear-model', slot: slot });
     enviarComandoAR({ action: 'clear-stats', slot: slot });
@@ -757,7 +858,6 @@ function resetearAsignacionesAR() {
   partida.estadoJuego.arConfig = {};
   guardarPartida();
   renderizarArConfigSlots();
-  // Recargar el iframe para restaurar los modelos por defecto del HTML
   setTimeout(() => {
     const iframe = document.getElementById(CONFIG.arFrameId);
     if (iframe && iframe.contentWindow) {
@@ -918,7 +1018,6 @@ async function cerrarSalaDocente(){
     resetearBotonesDocente();
     agregarMensaje("🔒 Sala cerrada","system");
     log("Sala cerrada");
-    // Limpiar asignaciones AR
     partida.estadoJuego.arConfig = {};
     guardarPartida();
     SLOTS_AR.forEach(slot => {
