@@ -259,6 +259,11 @@ let modo = "docente", codigoSala = "", gateToken = localStorage.getItem(CLAVE_GA
 let bienvenidaEnviada = false;
 const jugadoresVistos = {};
 
+// ✅ CAMBIO v26: estado del gateway
+let gatewayListo = false;
+let gatewayPingInterval = null;
+let gatewayReadyTimeout = null;
+
 /* ============================================================ DEDUPLICACIÓN */
 const _recientes = [];
 function yaEstaEnChat(autor, texto) { const ahora = Date.now(); while (_recientes.length && ahora - _recientes[0].ts > 15000) _recientes.shift(); const clave = (autor || "") + "::" + (texto || ""); const existe = _recientes.some(m => m.clave === clave); if (!existe) _recientes.push({ clave, ts: ahora }); return existe; }
@@ -652,7 +657,6 @@ async function enviarTrama(linea) {
   _procesarTxQueue();
 }
 
-// ✅ FIX: conectarMicrobit() ahora sí cierra el try/catch y la función
 async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
   if (!("serial" in navigator)) {
@@ -665,6 +669,7 @@ async function conectarMicrobit() {
     console.log('[DM] Puerto elegido, abriendo a 115200...');
     await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
+    gatewayListo = false;
     console.log('[DM] Puerto abierto');
 
     $("mb-status").textContent = "Conectado";
@@ -678,20 +683,34 @@ async function conectarMicrobit() {
 
     await new Promise(r => setTimeout(r, 2000));
 
+    // ✅ CAMBIO v26: ping cada 5s hasta recibir GW|READY
+    if (gatewayPingInterval) clearInterval(gatewayPingInterval);
+    gatewayPingInterval = setInterval(async () => {
+      if (!serialAbierto) {
+        if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
+        return;
+      }
+      try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
+    }, 5000);
+
     try {
       await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
       console.log('[DM] Handshake enviado. Esperando GW|READY del gateway...');
     } catch (e) {
       console.warn('[DM] Error enviando handshake:', e);
     }
-  } catch (e) {                                    // ✅ FIX: cierra el try externo
+  } catch (e) {
     console.error('[DM] Error micro:bit:', e);
     alert("Error micro:bit: " + e.message);
   }
-}                                                  // ✅ FIX: cierra la función
+}
 
 async function desconectarMicrobit(){
   serialAbierto=false;
+  // ✅ CAMBIO v26: limpiar timers del gateway
+  gatewayListo = false;
+  if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
+  if (gatewayReadyTimeout) { clearTimeout(gatewayReadyTimeout); gatewayReadyTimeout = null; }
   try{if(lectorMicrobit)await lectorMicrobit.cancel()}catch(_){}
   try{await colaSerie}catch(_){}
   try{if(microbitPort)await microbitPort.close()}catch(_){}
@@ -724,7 +743,6 @@ async function leerSerial(){ const lector=microbitPort.readable.getReader(); lec
 function procesarByte(b){ if(b===STX){bufSerial=[];return} if(b===ETX){ if(bufSerial.length>1){ const datos=bufSerial.slice(0,-1); const chk=bufSerial[bufSerial.length-1]; if(xor(datos)===chk){ try{procesarLinea(new TextDecoder().decode(new Uint8Array(datos)))}catch(_){} } } bufSerial=[]; return; } bufSerial.push(b); if(bufSerial.length>512)bufSerial=[]; }
 function xor(arr){return arr.reduce((a,b)=>a^b,0)}
 
-// ✅ FIX: procesarLinea con AB y L DENTRO del bloque if(p[0]==="RX")
 function procesarLinea(linea){
   console.log('[DM] procesarLinea RAW:', JSON.stringify(linea));
   log('[DM] linea: ' + linea);
@@ -800,13 +818,13 @@ function procesarLinea(linea){
       publicarEstado("opcion-b");
       programarNarracionRadio(`El jugador ${id} eligió la opción B (${val}).`);
     }
-    else if(cmd==="AB"){                     // ✅ FIX: ahora SÍ está dentro del if
+    else if(cmd==="AB"){
       partida.estadoJuego.ultimoEvento=`${id} presionó A+B.`;
       publicarEstado("opcion-ab");
       agregarMensaje(`🎯 ${id} presionó A+B`, "system");
       programarNarracionRadio(`El jugador ${id} presionó A+B (ambos botones).`);
     }
-    else if(cmd==="L"){                      // ✅ FIX: ahora SÍ está dentro del if
+    else if(cmd==="L"){
       partida.estadoJuego.ultimoEvento=`${id} tocó el logo táctil.`;
       publicarEstado("logo-tactil");
       agregarMensaje(`👆 ${id} tocó el logo táctil`, "system");
@@ -814,9 +832,21 @@ function procesarLinea(linea){
     }
     renderizarTodo();
   }
+  // ✅ CAMBIO v26: GW|READY con flag + watchdog
   else if(p[0]==="GW"&&p[1]==="READY"){
-    log("Gateway listo (grupo "+p[2]+")");
-    agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
+    if (!gatewayListo) {
+      gatewayListo = true;
+      log("Gateway listo (grupo "+p[2]+")");
+      agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
+    }
+    if (gatewayReadyTimeout) clearTimeout(gatewayReadyTimeout);
+    gatewayReadyTimeout = setTimeout(() => {
+      if (gatewayListo) {
+        gatewayListo = false;
+        log("⚠ Gateway silencioso hace 20s");
+        agregarMensaje("⚠️ Gateway micro:bit no responde. Revisá el cable USB.", "system");
+      }
+    }, 20000);
   }
   else if(p[0]==="TXOK")log("Radio enviada a "+p[1]);
   else if(p[0]==="ERR")log("Error gateway: "+linea);
