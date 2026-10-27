@@ -643,25 +643,16 @@ async function conectarMicrobit() {
 
     // DAPLink resetea el micro:bit al abrir el puerto.
     // Esperamos 2s a que arranque el firmware antes de mandar handshake.
+        // DAPLink resetea el micro:bit al abrir el puerto.
     await new Promise(r => setTimeout(r, 2000));
 
-    for (let i = 0; i < 3; i++) {
-      try {
-        await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
-        await enviarTrama("TX|ALL|Q|1");
-        console.log('[DM] Handshake enviado (intento ' + (i + 1) + ')');
-      } catch (e) {
-        console.warn('[DM] Error enviando handshake:', e);
-      }
-      await new Promise(r => setTimeout(r, 800));
+    // Handshake simple: 1 WEB|HELLO. El gateway ahora responde siempre con GW|READY.
+    try {
+      await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
+      console.log('[DM] Handshake enviado. Esperando GW|READY del gateway...');
+    } catch (e) {
+      console.warn('[DM] Error enviando handshake:', e);
     }
-
-    console.log('[DM] Handshake completo. Esperando GW|READY...');
-  } catch (e) {
-    console.error('[DM] Error micro:bit:', e);
-    alert("Error micro:bit: " + e.message);
-  }
-}
 
 async function desconectarMicrobit(){
   serialAbierto=false;
@@ -796,7 +787,42 @@ function procesarLinea(linea){
   else if(p[0]==="ERR")log("Error gateway: "+linea);
 }
 
-async function enviarTrama(linea){ if(!serialAbierto||!microbitPort)return; const data=new TextEncoder().encode(linea); const trama=new Uint8Array([STX,...data,xor([...data]),ETX]); colaSerie=colaSerie.then(async()=>{ const w=microbitPort.writable.getWriter(); try{await w.write(trama)}finally{w.releaseLock()} }); return colaSerie; }
+// ✅ NUEVO: cola de comandos TX con límite (evita saturar el DAPLink)
+const _txQueue = [];
+const _txQueueMax = 8;
+let _txProcesando = false;
+
+async function _procesarTxQueue() {
+  if (_txProcesando || _txQueue.length === 0) return;
+  _txProcesando = true;
+  try {
+    while (_txQueue.length > 0) {
+      if (!serialAbierto || !microbitPort) break;
+      const trama = _txQueue.shift();
+      try {
+        const w = microbitPort.writable.getWriter();
+        try { await w.write(trama); } finally { w.releaseLock(); }
+      } catch (e) {
+        console.warn('[DM] Error escribiendo al puerto:', e);
+      }
+      await new Promise(r => setTimeout(r, 20)); // 20ms entre tramas
+    }
+  } finally {
+    _txProcesando = false;
+  }
+}
+
+async function enviarTrama(linea) {
+  if (!serialAbierto || !microbitPort) return;
+  const data = new TextEncoder().encode(linea);
+  const trama = new Uint8Array([STX, ...data, xor([...data]), ETX]);
+  if (_txQueue.length >= _txQueueMax) {
+    // Cola llena: descartar el comando más viejo
+    _txQueue.shift();
+  }
+  _txQueue.push(trama);
+  _procesarTxQueue();
+}
 function programarNarracionRadio(evento){ if(modo!=="docente"||!codigoSala)return; setTimeout(async()=>{ if(generando)return; input.value = `[Evento del juego] ${evento}. Narra lo que sucede como Dungeon Master.`; enviarMensaje(); }, 500); }
 
 /* ============================================================ TRASPASO */
