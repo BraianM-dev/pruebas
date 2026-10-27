@@ -100,6 +100,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- ✅ Barcode_0: se eliminaron el <a-plane> y <a-text> hardcodeados -->
         <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#modelo-mago-glb"
@@ -107,11 +108,10 @@
                 rotation="-90 0 0"
                 scale="0.5 0.5 0.5"
                 animation-mixer></a-entity>
-            <a-plane position="0 1.2 -0.01" rotation="-90 0 0" width="2.8" height="0.5" color="black" opacity="0.7"></a-plane>
-            <a-text value="Nombre: Mago\nNivel: 20\nVida: 350" position="0 1.3 0" rotation="-90 0 0" color="white" align="center" width="3"></a-text>
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- ✅ Barcode_1: se eliminó el <a-text> "Mago" -->
         <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity class="model-entity"
                 fbx-model="src: url(modelos/mago.fbx)"
@@ -119,7 +119,6 @@
                 rotation="-90 0 0"
                 scale="0.01 0.01 0.01"
                 animation-mixer="clip: *; loop: repeat"></a-entity>
-            <a-text value="Mago" position="0 1 0" look-at="[camera]" align="center" color="yellow" width="2"></a-text>
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
@@ -151,13 +150,13 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- ✅ Barcode_5: se eliminó el <a-text> "Ejemplo.mp4" -->
         <a-marker type="barcode" value="5" id="Barcode_5" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 2; height: 1.2"
                 material="src: #videoEjemplo"
                 position="0 0.5 0"
                 rotation="-90 0 0"></a-entity>
-            <a-text value="Ejemplo.mp4" position="0 -0.25 0.03" look-at="[camera]" align="center" color="yellow" width="2"></a-text>
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
@@ -226,7 +225,7 @@
         <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- ✅ FIX: scripts al final del body, SIN defer, en orden garantizado -->
+    <!-- ✅ Scripts al final del body, en orden garantizado -->
     <script src="js/utilidades.js"></script>
     <script src="js/eventos.js"></script>
 
@@ -271,6 +270,23 @@
         }
 
         // ==================================================
+        // ✅ NUEVO: Limpiar hijos sueltos del marker
+        // (etiquetas viejas tipo <a-text>/<a-plane>) que no sean
+        // .model-entity ni .stats-slot. Se llama antes de asignar
+        // o limpiar un modelo para no dejar restos de pruebas.
+        // ==================================================
+        function limpiarHijosSueltos(slot) {
+            if (typeof Utilidades === 'undefined') return;
+            const marker = Utilidades.markerElPorSlot(slot);
+            if (!marker) return;
+            Array.from(marker.children).forEach(function (child) {
+                if (child.classList.contains('model-entity')) return;
+                if (child.classList.contains('stats-slot')) return;
+                try { marker.removeChild(child); } catch (_) {}
+            });
+        }
+
+        // ==================================================
         // LISTENER DE COMANDOS DEL DM (padre)
         // ==================================================
         window.addEventListener('message', function (e) {
@@ -286,6 +302,8 @@
             try {
                 switch (cmd.action) {
                     case 'assign-model':
+                        // ✅ Limpiar etiquetas viejas antes de asignar el nuevo modelo
+                        limpiarHijosSueltos(cmd.slot);
                         Utilidades.asignarModelo(cmd.slot, {
                             type: cmd.modelType || 'gltf',
                             url: cmd.modelUrl,
@@ -300,10 +318,13 @@
                     case 'hide-model': Utilidades.mostrarModelo(cmd.slot, false); break;
                     case 'assign-stats': Utilidades.asignarStats(cmd.slot, cmd.stats); break;
                     case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
-                    case 'clear-model': Utilidades.limpiarModelo(cmd.slot); break;
+                    case 'clear-model':
+                        // ✅ También limpia etiquetas viejas
+                        limpiarHijosSueltos(cmd.slot);
+                        Utilidades.limpiarModelo(cmd.slot);
+                        break;
                     case 'toggle-panel': Utilidades.togglePanel(cmd.visible); break;
                     case 'stop-camera':
-                        // ✅ NUEVO: apagar cámara y ocultar la escena
                         try {
                             const video = document.getElementById('arjs-video') || document.querySelector('video');
                             if (video && video.srcObject) {
