@@ -259,7 +259,7 @@ let modo = "docente", codigoSala = "", gateToken = localStorage.getItem(CLAVE_GA
 let bienvenidaEnviada = false;
 const jugadoresVistos = {};
 
-// ✅ CAMBIO v26: estado del gateway
+// ✅ CAMBIO v27: estado del gateway
 let gatewayListo = false;
 let gatewayPingInterval = null;
 let gatewayReadyTimeout = null;
@@ -657,6 +657,7 @@ async function enviarTrama(linea) {
   _procesarTxQueue();
 }
 
+// ✅ CAMBIO v27: baudrate 9600 (DAPLink tiene 67ms de margen) + ping cada 3s
 async function conectarMicrobit() {
   console.log('[DM] conectarMicrobit() llamado');
   if (!("serial" in navigator)) {
@@ -666,8 +667,8 @@ async function conectarMicrobit() {
   try {
     console.log('[DM] Abriendo chooser...');
     microbitPort = await navigator.serial.requestPort();
-    console.log('[DM] Puerto elegido, abriendo a 115200...');
-    await microbitPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    console.log('[DM] Puerto elegido, abriendo a 9600...');
+    await microbitPort.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
     serialAbierto = true;
     gatewayListo = false;
     console.log('[DM] Puerto abierto');
@@ -683,7 +684,7 @@ async function conectarMicrobit() {
 
     await new Promise(r => setTimeout(r, 2000));
 
-    // ✅ CAMBIO v26: ping cada 5s hasta recibir GW|READY
+    // Ping cada 3s hasta recibir GW|READY
     if (gatewayPingInterval) clearInterval(gatewayPingInterval);
     gatewayPingInterval = setInterval(async () => {
       if (!serialAbierto) {
@@ -691,7 +692,7 @@ async function conectarMicrobit() {
         return;
       }
       try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
-    }, 5000);
+    }, 3000);
 
     try {
       await enviarTrama("WEB|HELLO|" + GRUPO_RADIO);
@@ -705,9 +706,59 @@ async function conectarMicrobit() {
   }
 }
 
+// ✅ CAMBIO v27: reconexión automática del gateway
+async function reconectarMicrobit() {
+  console.log('[DM] reconectarMicrobit() llamado');
+  try {
+    // Limpiar timers
+    gatewayListo = false;
+    if (gatewayReadyTimeout) { clearTimeout(gatewayReadyTimeout); gatewayReadyTimeout = null; }
+
+    // Cerrar lector y puerto
+    if (lectorMicrobit) { try { await lectorMicrobit.cancel(); } catch (_) {} }
+    try { if (microbitPort) await microbitPort.close(); } catch (_) {}
+    microbitPort = null; lectorMicrobit = null;
+    serialAbierto = false;
+
+    // Esperar 1s para que el DAPLink se resetee
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Buscar puertos ya autorizados (sin pedir permiso de nuevo)
+    const ports = await navigator.serial.getPorts();
+    if (ports.length === 0) {
+      console.warn('[DM] No hay puertos autorizados para reconectar');
+      $("mb-status").textContent = "Desconectado";
+      $("mb-status").style.color = "var(--rojo)";
+      agregarMensaje("⚠️ Gateway desconectado. Tocá 'Conectar micro:bit' para reconectar.", "system");
+      if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
+      return;
+    }
+
+    microbitPort = ports[0];
+    await microbitPort.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    serialAbierto = true;
+
+    $("mb-status").textContent = "Reconectado";
+    $("mb-status").style.color = "var(--verde)";
+
+    leerSerial();
+    log('[DM] Gateway reconectado automáticamente');
+
+    await new Promise(r => setTimeout(r, 1500));
+    try { await enviarTrama("WEB|HELLO|" + GRUPO_RADIO); } catch (_) {}
+
+    agregarMensaje("✅ Gateway reconectado automáticamente", "system");
+  } catch (e) {
+    console.error('[DM] Error reconnecting:', e);
+    $("mb-status").textContent = "Error";
+    $("mb-status").style.color = "var(--rojo)";
+    agregarMensaje("❌ No se pudo reconectar. Revisá el cable USB y tocá 'Conectar micro:bit'.", "system");
+    if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
+  }
+}
+
 async function desconectarMicrobit(){
   serialAbierto=false;
-  // ✅ CAMBIO v26: limpiar timers del gateway
   gatewayListo = false;
   if (gatewayPingInterval) { clearInterval(gatewayPingInterval); gatewayPingInterval = null; }
   if (gatewayReadyTimeout) { clearTimeout(gatewayReadyTimeout); gatewayReadyTimeout = null; }
@@ -832,7 +883,7 @@ function procesarLinea(linea){
     }
     renderizarTodo();
   }
-  // ✅ CAMBIO v26: GW|READY con flag + watchdog
+  // ✅ CAMBIO v27: watchdog 15s con reconexión automática
   else if(p[0]==="GW"&&p[1]==="READY"){
     if (!gatewayListo) {
       gatewayListo = true;
@@ -840,13 +891,14 @@ function procesarLinea(linea){
       agregarMensaje(`📡 Gateway micro:bit conectado (grupo ${p[2]})`, "system");
     }
     if (gatewayReadyTimeout) clearTimeout(gatewayReadyTimeout);
-    gatewayReadyTimeout = setTimeout(() => {
-      if (gatewayListo) {
+    gatewayReadyTimeout = setTimeout(async () => {
+      if (gatewayListo && serialAbierto) {
         gatewayListo = false;
-        log("⚠ Gateway silencioso hace 20s");
-        agregarMensaje("⚠️ Gateway micro:bit no responde. Revisá el cable USB.", "system");
+        log("⚠ Gateway silencioso hace 15s, reconectando...");
+        agregarMensaje("⚠️ Gateway no responde. Reconectando automáticamente...", "system");
+        await reconectarMicrobit();
       }
-    }, 20000);
+    }, 15000);
   }
   else if(p[0]==="TXOK")log("Radio enviada a "+p[1]);
   else if(p[0]==="ERR")log("Error gateway: "+linea);
