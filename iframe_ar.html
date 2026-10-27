@@ -302,7 +302,23 @@
                     case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
                     case 'clear-model': Utilidades.limpiarModelo(cmd.slot); break;
                     case 'toggle-panel': Utilidades.togglePanel(cmd.visible); break;
-                    default: console.warn('[AR] Comando desconocido:', cmd.action);
+                    case 'stop-camera':
+                        // ✅ NUEVO: apagar cámara y ocultar la escena
+                        try {
+                            const video = document.getElementById('arjs-video') || document.querySelector('video');
+                            if (video && video.srcObject) {
+                                video.srcObject.getTracks().forEach(function (t) { try { t.stop(); } catch (_) {} });
+                                video.srcObject = null;
+                            }
+                            const sceneEl = document.querySelector('a-scene');
+                            if (sceneEl) sceneEl.style.display = 'none';
+                            console.log('[AR] Cámara detenida por logout');
+                        } catch (err) {
+                            console.warn('[AR] stop-camera error:', err);
+                        }
+                        break;
+                    default:
+                        console.warn('[AR] Comando desconocido:', cmd.action);
                 }
             } catch (err) {
                 console.warn('[AR] Error ejecutando comando:', err);
