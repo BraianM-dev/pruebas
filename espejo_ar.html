@@ -30,27 +30,78 @@
       radial-gradient(ellipse at 50% 105%, rgba(255,100,20,.28) 0%, transparent 35%),
       radial-gradient(ellipse at center, rgba(40,20,10,.30) 0%, rgba(0,0,0,.92) 95%);
   }
+  #stage[data-fondo="cripta"] #fondoOverlay {
+    background:
+      radial-gradient(circle at 50% 92%, rgba(120,60,220,.28) 0%, transparent 42%),
+      radial-gradient(ellipse at 15% 25%, rgba(80,20,120,.22) 0%, transparent 30%),
+      radial-gradient(ellipse at center, transparent 18%, rgba(12,4,24,.94) 95%);
+  }
+  #stage[data-fondo="volcan"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at 50% 110%, rgba(255,90,20,.50) 0%, transparent 52%),
+      radial-gradient(circle at 18% 90%, rgba(255,160,40,.28) 0%, transparent 22%),
+      radial-gradient(circle at 82% 90%, rgba(255,160,40,.28) 0%, transparent 22%),
+      radial-gradient(ellipse at center, transparent 15%, rgba(20,4,0,.90) 92%);
+  }
+  #stage[data-fondo="infierno"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at 50% 105%, rgba(210,20,5,.60) 0%, transparent 58%),
+      radial-gradient(ellipse at 15% 60%, rgba(180,0,0,.30) 0%, transparent 32%),
+      radial-gradient(ellipse at 85% 60%, rgba(180,0,0,.30) 0%, transparent 32%),
+      radial-gradient(ellipse at center, transparent 10%, rgba(25,0,0,.94) 90%);
+  }
+  #stage[data-fondo="hielo"] #fondoOverlay {
+    background:
+      radial-gradient(circle at 30% 30%, rgba(180,220,255,.28) 0%, transparent 42%),
+      radial-gradient(circle at 70% 70%, rgba(150,200,255,.28) 0%, transparent 42%),
+      radial-gradient(ellipse at center, transparent 18%, rgba(5,15,30,.90) 100%);
+  }
+  #stage[data-fondo="bosque"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at 50% 105%, rgba(30,110,30,.40) 0%, transparent 52%),
+      radial-gradient(circle at 20% 20%, rgba(60,160,60,.18) 0%, transparent 28%),
+      radial-gradient(circle at 80% 30%, rgba(60,160,60,.18) 0%, transparent 28%),
+      radial-gradient(ellipse at center, transparent 20%, rgba(4,14,4,.90) 95%);
+  }
   #stage[data-fondo="magico"] #fondoOverlay {
     background:
-      radial-gradient(circle at 25% 25%, rgba(150,100,255,.28) 0%, transparent 32%),
-      radial-gradient(circle at 75% 75%, rgba(80,200,255,.28) 0%, transparent 32%),
+      radial-gradient(circle at 25% 25%, rgba(150,100,255,.30) 0%, transparent 32%),
+      radial-gradient(circle at 75% 75%, rgba(80,200,255,.30) 0%, transparent 32%),
       radial-gradient(ellipse at center, transparent 20%, rgba(10,5,30,.88) 100%);
   }
   #stage[data-fondo="niebla"] #fondoOverlay {
     background:
-      radial-gradient(ellipse at 20% 30%, rgba(200,220,240,.28) 0%, transparent 42%),
-      radial-gradient(ellipse at 80% 70%, rgba(180,200,220,.28) 0%, transparent 42%),
-      radial-gradient(ellipse at center, transparent 20%, rgba(20,25,40,.78) 100%);
+      radial-gradient(ellipse at 20% 30%, rgba(200,220,240,.30) 0%, transparent 44%),
+      radial-gradient(ellipse at 80% 70%, rgba(180,200,220,.30) 0%, transparent 44%),
+      radial-gradient(ellipse at center, transparent 20%, rgba(20,25,40,.80) 100%);
   }
-  #stage[data-fondo="vacio"] #fondoOverlay { background:#000; }
-  #stage[data-fondo="vacio"] #video { opacity:0; }
-  #stage[data-fondo="cueva"] { background: radial-gradient(ellipse at center, #4a2a20 0%, #1a0805 60%, #000 100%); }
-  #stage[data-fondo="cueva"] #video { opacity:0; }
+  #stage[data-fondo="noche"] #fondoOverlay {
+    background:
+      radial-gradient(circle at 15% 20%, #fff 0, transparent 2px),
+      radial-gradient(circle at 45% 15%, #fff 0, transparent 2px),
+      radial-gradient(circle at 75% 25%, #fff 0, transparent 2px),
+      radial-gradient(circle at 25% 65%, #fff 0, transparent 2px),
+      radial-gradient(circle at 85% 75%, #fff 0, transparent 2px),
+      radial-gradient(circle at 60% 88%, #fff 0, transparent 2px),
+      radial-gradient(circle at 10% 50%, #fff 0, transparent 2px),
+      radial-gradient(circle at 90% 45%, #fff 0, transparent 2px),
+      radial-gradient(circle at 40% 45%, #fff 0, transparent 1.5px),
+      radial-gradient(circle at 70% 55%, #fff 0, transparent 1.5px),
+      radial-gradient(ellipse at 50% 100%, rgba(30,50,110,.40) 0%, transparent 52%),
+      radial-gradient(ellipse at center, transparent 15%, rgba(0,4,18,.94) 95%);
+  }
   #stage[data-fondo="cueva"] #fondoOverlay {
     background:
       radial-gradient(ellipse at center, transparent 10%, rgba(0,0,0,.85) 92%),
-      radial-gradient(circle at 15% 15%, rgba(255,100,20,.15) 0%, transparent 18%);
+      radial-gradient(circle at 15% 15%, rgba(255,100,20,.18) 0%, transparent 18%),
+      radial-gradient(circle at 85% 20%, rgba(255,80,10,.12) 0%, transparent 15%);
   }
+  #stage[data-fondo="vacio"] #fondoOverlay { background:#000; }
+
+  #stage[data-fondo="vacio"] #video,
+  #stage[data-fondo="cueva"] #video,
+  #stage[data-fondo="noche"] #video,
+  #stage[data-fondo="hielo"] #video { opacity:0; }
 
   .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:12px;
          padding:7px 4px; font-size:12px; cursor:pointer; text-align:center; line-height:1.15;
@@ -63,10 +114,9 @@
   #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; transition: width .2s; }
   #menu.oculto { bottom:auto; width:auto; }
   #menu.oculto #menuContenido { display:none; }
-  #titulo { background:var(--fondo); border-radius:10px; padding:6px; font-size:12px; text-align:center; font-weight:600;
-            display:flex; justify-content:space-between; align-items:center; gap:4px; }
-  #btnToggleMenu { cursor:pointer; padding:0 4px; user-select:none; opacity:.8; }
-  #btnToggleMenu:hover { opacity:1; }
+  #titulo { background:var(--fondo); border-radius:10px; padding:6px 8px; font-size:12px; text-align:center; font-weight:600;
+            display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  #btnToggleMenu, #toggleControles { cursor:pointer; user-select:none; }
   #menuContenido { flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; }
   #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
   #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
@@ -81,9 +131,12 @@
 
   /* ---------- controles derecha ---------- */
   #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start;
-               max-height:calc(100% - 16px); overflow-y:auto; scrollbar-width:none; }
+               max-height:calc(100% - 16px); overflow-y:auto; scrollbar-width:none; transition: width .2s; }
   #controles::-webkit-scrollbar { display:none; }
   #controles .btn { padding:7px 2px; font-size:11px; } #controles .btn .ico { font-size:20px; }
+  #controles.oculto { width:46px; grid-template-columns:1fr; }
+  #controles.oculto .btn:not(#toggleControles) { display:none; }
+  #toggleControles { font-size:16px !important; padding:8px !important; }
   #stage[data-modo="hum"] .solo-obj { display:none; }
   #stage[data-modo="obj"] .solo-hum { display:none; }
   #stage:not([data-modo]) .solo-obj, #stage[data-modo=""] .solo-obj, #stage[data-modo=""] .solo-hum { display:none; }
@@ -97,13 +150,50 @@
             pointer-events:none; display:none; background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
   .cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
   .cursor.pinch { transform:scale(.7); border-color:var(--acento); }
+  .cursor.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 22px rgba(255,96,255,.95); }
   #cursor1 { border-color:#6cf; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(102,204,255,.9); }
+  #cursor1.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 22px rgba(255,96,255,.95); }
 
-  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.9); display:flex; flex-direction:column;
-            align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px; }
+  /* ---------- menú de fondos (popup) ---------- */
+  #menuFondos {
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%, -50%) scale(.92);
+    opacity:0; pointer-events:none;
+    transition: transform .2s ease, opacity .2s ease;
+    width:min(360px, 92vw); max-height:75vh;
+    background:rgba(15,15,25,.96);
+    border:2px solid var(--acento);
+    border-radius:16px;
+    padding:12px;
+    z-index:18;
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+    overflow-y:auto;
+    box-shadow:0 0 50px rgba(255,180,0,.35), inset 0 0 30px rgba(0,0,0,.5);
+    backdrop-filter:blur(8px);
+    scrollbar-width:thin;
+  }
+  #menuFondos.abierto { transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
+  #menuFondos::-webkit-scrollbar { width:6px; }
+  #menuFondos::-webkit-scrollbar-thumb { background:var(--acento); border-radius:3px; }
+  #menuFondos h3 { grid-column:1 / -1; margin:0 0 4px; font-size:14px; text-align:center; color:var(--acento); }
+  .fondoOpt {
+    padding:6px; border-radius:10px; cursor:pointer; user-select:none;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    font-size:10px; text-align:center; line-height:1.1;
+    border:2px solid transparent; background:rgba(255,255,255,.05);
+    transition: all .15s;
+  }
+  .fondoOpt:hover, .fondoOpt.hv0, .fondoOpt.hv1 { background:rgba(255,255,255,.22); border-color:#fff; transform:scale(1.04); }
+  .fondoOpt.activo { border-color:var(--acento); background:rgba(255,180,0,.22); }
+  .fondoOpt .swatch { width:100%; height:38px; border-radius:6px; border:1px solid rgba(255,255,255,.2); }
+  .fondoOpt .nombre { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.92); display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:12px; text-align:center; padding:20px; overflow-y:auto; }
   #inicio h1 { margin:0; font-size:26px; }
-  #inicio p { margin:0; max-width:480px; opacity:.85; line-height:1.4; font-size:14px; }
-  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px; font-weight:700; cursor:pointer; }
+  #inicio p { margin:0; max-width:520px; opacity:.88; line-height:1.45; font-size:13px; }
+  #inicio b { color:var(--acento); }
+  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px; font-weight:700; cursor:pointer; margin-top:6px; }
   #btnIniciar:disabled { opacity:.5; }
   #error { color:#ff8a8a; font-size:13px; max-width:480px; }
   #drop { position:absolute; inset:0; z-index:25; display:none; align-items:center; justify-content:center; background:rgba(255,180,0,.25);
@@ -111,6 +201,7 @@
 
   @media (max-width:700px) {
     #menu { width:118px; } #controles { width:120px; } .item { font-size:11px; min-height:40px; } #estado { max-width:34%; font-size:11px; }
+    #menuFondos { grid-template-columns:repeat(2, 1fr); }
   }
 </style>
 
@@ -150,6 +241,7 @@
     </div>
 
     <div id="controles">
+      <div id="toggleControles" class="btn ancho" data-hover data-nodwell title="Ocultar panel">▶</div>
       <div class="btn" data-hover data-repeat data-accion="mas"><span class="ico">➕</span>Más grande</div>
       <div class="btn" data-hover data-repeat data-accion="menos"><span class="ico">➖</span>Más chico</div>
       <div class="btn" data-hover data-repeat data-accion="subir"><span class="ico">⬆️</span>Subir</div>
@@ -169,6 +261,8 @@
       <div class="btn" data-hover data-accion="fullscreen"><span class="ico">⛶</span>Pantalla</div>
     </div>
 
+    <div id="menuFondos"></div>
+
     <div id="estado">Iniciando…</div>
     <div class="cursor" id="cursor0"></div>
     <div class="cursor" id="cursor1"></div>
@@ -176,11 +270,10 @@
 
     <div id="inicio">
       <h1>🪞 Espejo AR – Calabozos & Código</h1>
-      <p>Levantá una o <b>ambas manos</b>: cada una tiene su propio cursor. <b>Pellizcá</b> (índice + pulgar) para hacer clic,
-         o dejá el cursor quieto sobre un botón ~1 segundo. Para <b>deslizar la lista</b>, pellizcá sobre ella y arrastrá.</p>
-      <p>Los modelos humanos (rig Mixamo) copian tus movimientos. Los objetos se muestran en AR y los podés mover, rotar y escalar.</p>
-      <p>Probá los <b>fondos temáticos</b> de mazmorra 🏰, calabozo 🔥 o magia ✨ desde el botón "Fondo".</p>
-      <p>Alejate hasta que se vean tus hombros y cintura.</p>
+      <p>🖐️ <b>Una mano</b>: el cursor sigue tu dedo índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1s para click automático. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
+      <p>🙌 <b>Dos manos pellizcando a la vez</b> sobre un objeto: acercá/alejá para <b>escalar</b>, mové ambas juntas para <b>mover</b>, giralas entre sí para <b>rotar</b>.</p>
+      <p>🎨 Tocá <b>Fondo</b> para abrir el menú de escenarios temáticos (mazmorra, calabozo, cripta, volcán, hielo, noche...).</p>
+      <p>👀 Alejaros hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
     </div>
@@ -217,23 +310,29 @@ const $ = s => document.querySelector(s);
 const stage = $('#stage'), video = $('#video'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
 const estadoEl = $('#estado');
 const lista = $('#lista'), track = $('#track'), thumb = $('#thumb');
-const menu = $('#menu');
 const dbg = dbgCanvas.getContext('2d');
 const setEstado = t => estadoEl.textContent = t;
 
 let W = 640, H = 480, pose = null, mostrarPuntos = false;
 let handLm = [null, null];
 let rotacion = 0;
-let fondoIdx = 0;
+let fondoActual = 'camara';
 
+/* Catálogo de fondos temáticos */
 const FONDOS = [
-  { id: 'camara',   nombre: 'Cámara'   },
-  { id: 'mazmorra', nombre: 'Mazmorra' },
-  { id: 'calabozo', nombre: 'Calabozo' },
-  { id: 'magico',   nombre: 'Mágico'   },
-  { id: 'niebla',   nombre: 'Niebla'   },
-  { id: 'cueva',    nombre: 'Cueva'    },
-  { id: 'vacio',    nombre: 'Vacío'    },
+  { id: 'camara',   nombre: 'Cámara',   ico: '📷', color: 'linear-gradient(135deg, #444, #888)' },
+  { id: 'mazmorra', nombre: 'Mazmorra', ico: '🏰', color: 'linear-gradient(135deg, #3a1500, #ff8a30)' },
+  { id: 'calabozo', nombre: 'Calabozo', ico: '🔥', color: 'linear-gradient(135deg, #2a0800, #ff5000)' },
+  { id: 'cripta',   nombre: 'Cripta',   ico: '💀', color: 'linear-gradient(135deg, #1a0525, #9050e0)' },
+  { id: 'volcan',   nombre: 'Volcán',   ico: '🌋', color: 'linear-gradient(0deg, #ff5000, #400500)' },
+  { id: 'infierno', nombre: 'Infierno', ico: '😈', color: 'linear-gradient(0deg, #c01000, #200000)' },
+  { id: 'hielo',    nombre: 'Hielo',    ico: '❄️', color: 'linear-gradient(135deg, #0a1a2a, #c0e0ff)' },
+  { id: 'bosque',   nombre: 'Bosque',   ico: '🌲', color: 'linear-gradient(135deg, #051005, #50c050)' },
+  { id: 'magico',   nombre: 'Mágico',   ico: '✨', color: 'linear-gradient(135deg, #301050, #d070ff)' },
+  { id: 'niebla',   nombre: 'Niebla',   ico: '🌫️', color: 'linear-gradient(135deg, #2a3040, #c0d0e0)' },
+  { id: 'noche',    nombre: 'Noche',    ico: '🌙', color: 'linear-gradient(135deg, #000820, #5060c0)' },
+  { id: 'cueva',    nombre: 'Cueva',    ico: '🕳️', color: 'linear-gradient(135deg, #100502, #6a4a30)' },
+  { id: 'vacio',    nombre: 'Vacío',    ico: '⬛', color: 'linear-gradient(135deg, #000, #222)' },
 ];
 
 /* ---------- three.js ---------- */
@@ -272,7 +371,6 @@ function layout() {
 addEventListener('resize', layout);
 document.addEventListener('fullscreenchange', layout);
 
-/* Coordenadas: viewport ↔ stage local (con rotación) */
 function puntoAStage(clientX, clientY) {
   const cx = innerWidth / 2, cy = innerHeight / 2;
   const rx = clientX - cx, ry = clientY - cy;
@@ -388,6 +486,7 @@ let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
 const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
 const qTmp = new THREE.Quaternion();
+const qTwo = new THREE.Quaternion();
 
 const cfgPorDefecto = () => ({ q: [0,0,0,1], s: 1, dy: 0, ox: 0, oy: -0.1, mocap: true });
 const claveCfg = d => 'espejoAR.cfg.' + d.src;
@@ -449,7 +548,7 @@ async function seleccionar(d, btn) {
     if (tipo === 'hum' && cfg.mocap) volverAReposo();
     stage.dataset.modo = tipo;
     suave.init = false;
-    setEstado(tipo === 'hum' ? d.nombre + ' · copia tu cuerpo, mostrá hombros y cintura' : d.nombre + ' · objeto AR: usá Mover / Rotar / Escalar');
+    setEstado(tipo === 'hum' ? d.nombre + ' · copia tu cuerpo, mostrá hombros y cintura' : d.nombre + ' · pellizcá con 1 mano o las 2 a la vez para manipular');
   } catch (e) {
     console.error(e); setEstado('No pude cargar ' + d.nombre); def = null;
   }
@@ -462,14 +561,47 @@ async function togglearFullscreen() {
   try {
     if (!document.fullscreenElement) {
       await document.documentElement.requestFullscreen();
-      if (screen.orientation?.lock) {
-        try { await screen.orientation.lock('landscape'); } catch {}
-      }
+      if (screen.orientation?.lock) { try { await screen.orientation.lock('landscape'); } catch {} }
     } else {
       await document.exitFullscreen();
     }
     setTimeout(layout, 100);
   } catch (e) { console.warn('Fullscreen:', e); }
+}
+
+/* ---------- menú de fondos (popup) ---------- */
+function construirMenuFondos() {
+  const m = $('#menuFondos');
+  m.innerHTML = '';
+  const h = document.createElement('h3');
+  h.textContent = '🎨 Elegí un escenario';
+  m.appendChild(h);
+  for (const f of FONDOS) {
+    const opt = document.createElement('div');
+    opt.className = 'fondoOpt';
+    opt.dataset.bg = f.id;
+    opt.dataset.hover = '';
+    opt.dataset.nodwell = '';
+    opt.innerHTML = `<div class="swatch" style="background:${f.color}"></div><div class="nombre">${f.ico} ${f.nombre}</div>`;
+    opt.addEventListener('click', () => aplicarFondo(f.id));
+    if (f.id === fondoActual) opt.classList.add('activo');
+    m.appendChild(opt);
+  }
+}
+function toggleMenuFondos() {
+  const m = $('#menuFondos');
+  const abierto = !m.classList.contains('abierto');
+  m.classList.toggle('abierto', abierto);
+  document.querySelector('[data-accion="fondo"]')?.classList.toggle('activo', abierto);
+}
+function aplicarFondo(id) {
+  fondoActual = id;
+  stage.dataset.fondo = id;
+  const f = FONDOS.find(f => f.id === id);
+  if (f) $('#lblFondo').textContent = 'Fondo: ' + f.nombre;
+  document.querySelectorAll('.fondoOpt').forEach(b => b.classList.toggle('activo', b.dataset.bg === id));
+  $('#menuFondos').classList.remove('abierto');
+  document.querySelector('[data-accion="fondo"]')?.classList.remove('activo');
 }
 
 const ACCIONES = {
@@ -487,30 +619,37 @@ const ACCIONES = {
   puntos() { mostrarPuntos = !mostrarPuntos; },
   rotarPantalla() { rotacion = (rotacion + 90) % 360; layout(); },
   fullscreen() { togglearFullscreen(); },
-  fondo() {
-    fondoIdx = (fondoIdx + 1) % FONDOS.length;
-    const f = FONDOS[fondoIdx];
-    stage.dataset.fondo = f.id;
-    $('#lblFondo').textContent = 'Fondo: ' + f.nombre;
-  },
+  fondo()  { toggleMenuFondos(); },
 };
 function refrescarBotones() {
   document.querySelectorAll('#controles .btn').forEach(b => {
     const a = b.dataset.accion;
-    b.classList.toggle('activo', (a === 'mocap' && cfg?.mocap) || a === herramienta && tipo === 'obj' || (a === 'giro' && autoGiro) || (a === 'puntos' && mostrarPuntos));
+    if (!a) return;
+    b.classList.toggle('activo',
+      (a === 'mocap' && cfg?.mocap) ||
+      (a === herramienta && tipo === 'obj') ||
+      (a === 'giro' && autoGiro) ||
+      (a === 'puntos' && mostrarPuntos));
   });
 }
-document.querySelectorAll('#controles .btn').forEach(b => b.addEventListener('click', () => {
+document.querySelectorAll('#controles .btn[data-accion]').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.accion;
   if (!cfg && !['puntos','rotarPantalla','fullscreen','fondo'].includes(a)) return;
   ACCIONES[a]?.(); refrescarBotones(); guardarCfg();
 }));
 
-/* --- menú: ocultar/mostrar --- */
+/* --- ocultar/mostrar paneles laterales --- */
 $('#btnToggleMenu').addEventListener('click', (e) => {
   e.stopPropagation();
-  menu.classList.toggle('oculto');
-  $('#btnToggleMenu').textContent = menu.classList.contains('oculto') ? '▶' : '◀';
+  const m = $('#menu');
+  m.classList.toggle('oculto');
+  $('#btnToggleMenu').textContent = m.classList.contains('oculto') ? '▶' : '◀';
+});
+$('#toggleControles').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const c = $('#controles');
+  c.classList.toggle('oculto');
+  $('#toggleControles').textContent = c.classList.contains('oculto') ? '◀' : '▶';
 });
 
 $('#quitar').addEventListener('click', () => seleccionar(null));
@@ -589,7 +728,7 @@ function pUp(p) {
 }
 
 stage.addEventListener('pointerdown', e => {
-  if (e.target.closest('#menu, #controles, #inicio')) return;
+  if (e.target.closest('#menu, #controles, #inicio, #menuFondos')) return;
   try { stage.setPointerCapture(e.pointerId); } catch {}
   const pt = puntoAStage(e.clientX, e.clientY);
   pDown(ptrM, pt.x, pt.y, null, 'mouse');
@@ -604,7 +743,7 @@ stage.addEventListener('pointerup', () => { if (ptrM.fuente === 'mouse') pUp(ptr
 stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
 
 /* =====================================================================
-   5) MANOS → 2 CURSORES
+   5) MANOS → 2 CURSORES + GESTOS A DOS MANOS
    ===================================================================== */
 const curs = [
   { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false },
@@ -615,6 +754,13 @@ const hoverState = [
   { el: null, desde: 0, bloqueado: null },
   { el: null, desde: 0, bloqueado: null },
 ];
+
+const twoHand = {
+  activo: false,
+  dist0: 1, ang0: 0, mid0: { x: 0, y: 0 },
+  s0: 1, ox0: 0, oy0: 0,
+  q0: new THREE.Quaternion(),
+};
 
 let hand = null;
 
@@ -653,36 +799,101 @@ function bajoCursor(sx, sy) {
   return { el: e.closest('[data-hover]'), scroll: e.closest('[data-scroll]'), track: !!e.closest('#track') };
 }
 
-function actualizarCursor(now, i) {
+function actualizarCursorVisual(now, i) {
   const c = curs[i], el = cursorEls[i], hs = hoverState[i];
   el.style.display = c.visible ? 'block' : 'none';
   if (!c.visible) {
     hs.el?.classList.remove('hv' + i);
     hs.el = null; hs.bloqueado = null;
-  } else {
-    el.style.left = c.x + 'px';
-    el.style.top = c.y + 'px';
-    el.classList.toggle('pinch', c.pinch);
-    const target = bajoCursor(c.x, c.y).el;
-    if (target !== hs.el) {
-      hs.el?.classList.remove('hv' + i);
-      hs.el = target;
-      hs.desde = now;
-      if (target !== hs.bloqueado) hs.bloqueado = null;
-      target?.classList.add('hv' + i);
-    }
-    let p = 0;
-    if (hs.el && !c.pinch && !('nodwell' in hs.el.dataset) && hs.el !== hs.bloqueado) {
-      const repetir = 'repeat' in hs.el.dataset, limite = repetir ? 450 : DWELL_MS;
-      p = Math.min((now - hs.desde) / limite, 1);
-      if (p >= 1) { hs.el.click(); hs.desde = now; if (!repetir) hs.bloqueado = hs.el; }
-    }
-    el.style.setProperty('--p', p.toFixed(3));
+    return;
   }
+  el.style.left = c.x + 'px';
+  el.style.top = c.y + 'px';
+  el.classList.toggle('pinch', c.pinch);
+  const target = bajoCursor(c.x, c.y).el;
+  if (target !== hs.el) {
+    hs.el?.classList.remove('hv' + i);
+    hs.el = target;
+    hs.desde = now;
+    if (target !== hs.bloqueado) hs.bloqueado = null;
+    target?.classList.add('hv' + i);
+  }
+  let p = 0;
+  if (hs.el && !c.pinch && !('nodwell' in hs.el.dataset) && hs.el !== hs.bloqueado) {
+    const repetir = 'repeat' in hs.el.dataset, limite = repetir ? 450 : DWELL_MS;
+    p = Math.min((now - hs.desde) / limite, 1);
+    if (p >= 1) { hs.el.click(); hs.desde = now; if (!repetir) hs.bloqueado = hs.el; }
+  }
+  el.style.setProperty('--p', p.toFixed(3));
+}
+
+function actualizarCursor(now, i) {
+  actualizarCursorVisual(now, i);
+  const c = curs[i];
   if (c.bajada) { c.bajada = false; pDown(ptrs[i], c.x, c.y, bajoCursor(c.x, c.y), 'mano'); }
   if (ptrs[i].activo && ptrs[i].fuente === 'mano' && c.visible) pMove(ptrs[i], c.x, c.y);
   if (c.subida) { c.subida = false; if (ptrs[i].fuente === 'mano') pUp(ptrs[i]); }
   pTick(ptrs[i], now);
+}
+
+function actualizarCursores(now) {
+  const dosManosActivas = curs[0].visible && curs[1].visible && curs[0].pinch && curs[1].pinch && tipo === 'obj' && cfg;
+
+  if (dosManosActivas || twoHand.activo) {
+    if (!twoHand.activo) {
+      // activar modo dos manos
+      twoHand.activo = true;
+      // cancelar cualquier puntero individual activo
+      for (const p of ptrs) if (p.fuente === 'mano') p.activo = false;
+      curs[0].bajada = false; curs[1].bajada = false;
+      curs[0].subida = false; curs[1].subida = false;
+      // guardar estado inicial
+      twoHand.dist0 = Math.max(30, Math.hypot(curs[0].x - curs[1].x, curs[0].y - curs[1].y));
+      twoHand.ang0 = Math.atan2(curs[1].y - curs[0].y, curs[1].x - curs[0].x);
+      twoHand.mid0 = { x: (curs[0].x + curs[1].x) / 2, y: (curs[0].y + curs[1].y) / 2 };
+      twoHand.s0 = cfg.s;
+      twoHand.ox0 = cfg.ox;
+      twoHand.oy0 = cfg.oy;
+      twoHand.q0.copy(ajuste.quaternion);
+      cursorEls[0].classList.add('dos-manos');
+      cursorEls[1].classList.add('dos-manos');
+    }
+    // aplicar gesto
+    const dist = Math.max(30, Math.hypot(curs[0].x - curs[1].x, curs[0].y - curs[1].y));
+    const ang  = Math.atan2(curs[1].y - curs[0].y, curs[1].x - curs[0].x);
+    const mid  = { x: (curs[0].x + curs[1].x) / 2, y: (curs[0].y + curs[1].y) / 2 };
+    const upp  = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;
+
+    // escala: distancia entre manos
+    cfg.s = Math.min(12, Math.max(0.04, twoHand.s0 * (dist / twoHand.dist0)));
+    // mover: desplazamiento del punto medio
+    cfg.ox = twoHand.ox0 + (mid.x - twoHand.mid0.x) * upp;
+    cfg.oy = twoHand.oy0 - (mid.y - twoHand.mid0.y) * upp;
+    // rotar: cambio del ángulo entre manos (eje Z)
+    const dAng = ang - twoHand.ang0;
+    qTwo.setFromAxisAngle(EJE.z, -dAng);
+    ajuste.quaternion.copy(twoHand.q0).premultiply(qTwo);
+    cfg.q = ajuste.quaternion.toArray();
+
+    // refrescar visuales sin disparar eventos
+    for (let i = 0; i < 2; i++) actualizarCursorVisual(now, i);
+    return;
+  }
+
+  if (twoHand.activo) {
+    twoHand.activo = false;
+    guardarCfg();
+    cursorEls[0].classList.remove('dos-manos');
+    cursorEls[1].classList.remove('dos-manos');
+    // si una mano sigue pellizcando, arrancar drag individual desde su posición actual
+    const hA = curs[0].pinch, hB = curs[1].pinch;
+    if (hA && !hB) pDown(ptrs[0], curs[0].x, curs[0].y, bajoCursor(curs[0].x, curs[0].y), 'mano');
+    else if (!hA && hB) pDown(ptrs[1], curs[1].x, curs[1].y, bajoCursor(curs[1].x, curs[1].y), 'mano');
+    curs[0].bajada = false; curs[1].bajada = false;
+    curs[0].subida = false; curs[1].subida = false;
+  }
+
+  for (let i = 0; i < 2; i++) actualizarCursor(now, i);
 }
 
 /* =====================================================================
@@ -737,7 +948,7 @@ function actualizarModelo(dt) {
     anclaje.visible = false; objeto.visible = true;
     objeto.position.set(cfg.ox, cfg.oy, -DIST);
     objeto.scale.setScalar(OBJ_BASE * cfg.s);
-    if (autoGiro) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.9)); cfg.q = ajuste.quaternion.toArray(); }
+    if (autoGiro && !twoHand.activo) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.9)); cfg.q = ajuste.quaternion.toArray(); }
     mixer?.update(dt);
     return;
   }
@@ -811,13 +1022,14 @@ function bucle(now) {
     procesarMano(hand.detectForVideo(video, t));
     procesarPose(pose.detectForVideo(video, t));
   }
-  actualizarCursor(now, 0);
-  actualizarCursor(now, 1);
+  actualizarCursores(now);
   actualizarModelo(dt);
   renderer.render(scene, tipo === 'obj' ? camPersp : camOrto);
   dibujarDebug();
 }
 
+/* Inicialización */
+construirMenuFondos();
 layout();
 sincronizar();
 setInterval(() => { if (!document.hidden) sincronizar(); }, 300000);
