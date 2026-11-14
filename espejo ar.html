@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espejo AR – Ponete el modelo</title>
+<style>
+  :root { --acento:#ffb400; --fondo:rgba(15,15,25,.78); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui,sans-serif; color:#fff; }
+  #pantalla { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  #stage { position:relative; width:100%; height:100%; background:#111; overflow:hidden; }
+  #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:fill; }
+  #gl, #debug { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+  #menu { position:absolute; left:10px; top:10px; bottom:10px; width:118px; display:flex; flex-direction:column; gap:8px;
+          overflow:hidden; z-index:5; }
+  .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:14px;
+         padding:8px 4px; font-size:13px; cursor:pointer; text-align:center; line-height:1.15;
+         backdrop-filter:blur(4px); transition:transform .1s, border-color .1s, background .1s; user-select:none; }
+  .btn .ico { display:block; font-size:30px; margin-bottom:2px; }
+  .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.25); }
+  .btn.hover  { border-color:#fff; transform:scale(1.06); background:rgba(255,255,255,.22); }
+  .sep { height:1px; background:rgba(255,255,255,.2); margin:2px 6px; flex:none; }
+
+  #controles { position:absolute; right:10px; top:10px; width:118px; display:flex; flex-direction:column; gap:8px; z-index:5; }
+  #controles .btn { padding:10px 4px; font-size:22px; }
+  #controles .btn small { display:block; font-size:11px; opacity:.85; }
+
+  #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px;
+            border-radius:20px; font-size:13px; z-index:6; max-width:60%; text-align:center; pointer-events:none; }
+
+  #cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20;
+            border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9);
+            pointer-events:none; display:none; background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
+  #cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
+  #cursor.pinch { transform:scale(.7); border-color:var(--acento); }
+
+  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.88); display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px; }
+  #inicio h1 { margin:0; font-size:26px; }
+  #inicio p { margin:0; max-width:460px; opacity:.85; line-height:1.4; font-size:14px; }
+  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px;
+                font-weight:700; cursor:pointer; }
+  #btnIniciar:disabled { opacity:.5; }
+  #error { color:#ff8a8a; font-size:13px; max-width:460px; }
+
+  @media (max-width:640px) {
+    #menu, #controles { width:84px; } .btn { font-size:11px; } .btn .ico { font-size:22px; }
+  }
+</style>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="pantalla">
+  <div id="stage">
+    <video id="video" playsinline muted></video>
+    <canvas id="gl"></canvas>
+    <canvas id="debug"></canvas>
+
+    <div id="menu"></div>
+    <div id="controles">
+      <div class="btn" data-hover data-repeat data-accion="mas">➕<small>Más grande</small></div>
+      <div class="btn" data-hover data-repeat data-accion="menos">➖<small>Más chico</small></div>
+      <div class="btn" data-hover data-repeat data-accion="subir">⬆️<small>Subir</small></div>
+      <div class="btn" data-hover data-repeat data-accion="bajar">⬇️<small>Bajar</small></div>
+      <div class="btn" data-hover data-accion="girar">🔄<small>Girar 180°</small></div>
+      <div class="btn" data-hover data-accion="puntos">🦴<small>Ver puntos</small></div>
+    </div>
+
+    <div id="estado">Iniciando…</div>
+    <div id="cursor"></div>
+
+    <div id="inicio">
+      <h1>🪞 Espejo AR</h1>
+      <p>Usá la cámara para ponerte un modelo 3D. Levantá una mano: el cursor sigue tu dedo
+         <b>índice + pulgar</b>. <b>Pellizcá</b> (juntá los dos dedos) para hacer clic, o dejá el cursor quieto
+         sobre un botón ~1 segundo.</p>
+      <p>Pedile a la persona que se aleje hasta que se vean hombros y cintura.</p>
+      <button id="btnIniciar">Iniciar cámara</button>
+      <div id="error"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FilesetResolver, HandLandmarker, PoseLandmarker }
+  from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+
+/* =====================================================================
+   1) CONFIGURACIÓN — editá esta lista para agregar tus propios GLB
+   anclaje: 'cuerpo'  → el modelo se estira de la cabeza a los pies, siguiendo hombros/cintura
+            'cabeza'  → el modelo se coloca sobre la cabeza (sombreros, objetos)
+   escala : multiplicador de tamaño inicial
+   ===================================================================== */
+const MODELOS = [
+  { nombre:'Mago',      icono:'🧙', src:'modelos/mago.glb',              anclaje:'cuerpo', escala:1.0 },
+  { nombre:'Evil',      icono:'😈', src:'modelos/evil.glb',              anclaje:'cuerpo', escala:1.0 },
+  { nombre:'Esqueleto', icono:'💀', src:'modelos/esqueleto_animado.glb', anclaje:'cuerpo', escala:1.0 },
+  { nombre:'Dragón',    icono:'🐉', src:'modelos/dragon.glb',            anclaje:'cabeza', escala:2.2 },
+  { nombre:'Cofre',     icono:'📦', src:'modelos/cofre.glb',             anclaje:'cabeza', escala:1.3 },
+  { nombre:'Diamante',  icono:'💎', src:'modelos/roca_diamante.glb',     anclaje:'cabeza', escala:1.2 },
+  { nombre:'Pilar',     icono:'🏛️', src:'modelos/pilar.glb',             anclaje:'cabeza', escala:1.3 },
+];
+
+const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+
+const DWELL_MS = 1300;      // tiempo quieto sobre un botón para hacer clic
+const DWELL_REPEAT_MS = 450;// repetición en botones +/-/subir/bajar
+const PINCH_ON = 0.30, PINCH_OFF = 0.42;
+
+/* ===================================================================== */
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), video = $('#video'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
+const cursorEl = $('#cursor'), estadoEl = $('#estado'), menuEl = $('#menu');
+const dbg = dbgCanvas.getContext('2d');
+const setEstado = t => estadoEl.textContent = t;
+
+let W = 640, H = 480;
+let hand = null, pose = null;
+let mostrarPuntos = false;
+
+/* ---------- three.js ---------- */
+const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(0, W, H, 0, 1, 5000);
+camera.position.z = 2500;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.6));
+const sol = new THREE.DirectionalLight(0xffffff, 2.2); sol.position.set(200, 400, 1000); scene.add(sol);
+
+const anclaje = new THREE.Group(); anclaje.visible = false; scene.add(anclaje);
+const loader = new GLTFLoader();
+const cache = new Map();
+let mixer = null, defActual = null, modeloActual = null;
+let userScale = 1, userDy = 0, giroExtra = 0;
+const clock = new THREE.Clock();
+
+function layout() {
+  const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+  const ar = vw / vh;
+  let w = innerWidth, h = innerHeight;
+  if (w / h > ar) w = h * ar; else h = w / ar;
+  stage.style.width = w + 'px'; stage.style.height = h + 'px';
+  W = Math.round(w); H = Math.round(h);
+  renderer.setSize(W, H, false);
+  dbgCanvas.width = W; dbgCanvas.height = H;
+  camera.left = 0; camera.right = W; camera.top = H; camera.bottom = 0;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', layout);
+
+/* ---------- carga y normalización de modelos ---------- */
+async function cargarModelo(def) {
+  if (cache.has(def.src)) return cache.get(def.src);
+  const gltf = await loader.loadAsync(def.src);
+  const obj = gltf.scene;
+  obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const centro = box.getCenter(new THREE.Vector3());
+  const ref = def.anclaje === 'cuerpo' ? size.y : Math.max(size.x, size.y, size.z);
+  const holder = new THREE.Group();
+  obj.position.sub(centro);              // centrar en el origen
+  holder.add(obj);
+  holder.scale.setScalar(1 / (ref || 1)); // altura (o dimensión mayor) = 1
+  const res = { holder, clips: gltf.animations };
+  cache.set(def.src, res);
+  return res;
+}
+
+async function seleccionar(def, btn) {
+  document.querySelectorAll('#menu .btn').forEach(b => b.classList.remove('activo'));
+  if (modeloActual) { anclaje.remove(modeloActual); modeloActual = null; }
+  mixer = null; defActual = def;
+  if (!def) { anclaje.visible = false; setEstado('Sin modelo'); return; }
+  btn?.classList.add('activo');
+  setEstado('Cargando ' + def.nombre + '…');
+  try {
+    const { holder, clips } = await cargarModelo(def);
+    if (defActual !== def) return; // el usuario eligió otro mientras cargaba
+    // clonar con skeleton para poder reutilizar
+    const clon = (await import('three/addons/utils/SkeletonUtils.js')).clone(holder);
+    modeloActual = clon; anclaje.add(clon);
+    if (clips.length) { mixer = new THREE.AnimationMixer(clon); mixer.clipAction(clips[0]).play(); }
+    userScale = 1; userDy = 0; giroExtra = 0;
+    setEstado(def.nombre + (def.anclaje === 'cuerpo' ? ' · mostrá hombros y cintura' : ' · mostrá tu cara'));
+  } catch (e) {
+    console.error(e); setEstado('No pude cargar ' + def.src);
+  }
+}
+
+/* ---------- menú ---------- */
+function armarMenu() {
+  menuEl.innerHTML = '';
+  for (const def of MODELOS) {
+    const b = document.createElement('div');
+    b.className = 'btn'; b.dataset.hover = ''; 
+    b.innerHTML = `<span class="ico">${def.icono}</span>${def.nombre}`;
+    b.addEventListener('click', () => seleccionar(def, b));
+    menuEl.appendChild(b);
+  }
+  const s = document.createElement('div'); s.className = 'sep'; menuEl.appendChild(s);
+  const q = document.createElement('div');
+  q.className = 'btn'; q.dataset.hover = '';
+  q.innerHTML = '<span class="ico">❌</span>Quitar';
+  q.addEventListener('click', () => seleccionar(null));
+  menuEl.appendChild(q);
+}
+armarMenu();
+
+document.querySelectorAll('#controles .btn').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.accion;
+  if (a === 'mas') userScale *= 1.08;
+  if (a === 'menos') userScale /= 1.08;
+  if (a === 'subir') userDy -= 0.02;
+  if (a === 'bajar') userDy += 0.02;
+  if (a === 'girar') giroExtra = giroExtra ? 0 : Math.PI;
+  if (a === 'puntos') { mostrarPuntos = !mostrarPuntos; b.classList.toggle('activo', mostrarPuntos); }
+}));
+
+/* =====================================================================
+   2) MANO → CURSOR
+   ===================================================================== */
+const cur = { x: 0, y: 0, visible: false, ultimo: 0, pinch: false };
+let handLm = null;
+
+function procesarMano(res) {
+  const lm = res.landmarks?.[0];
+  handLm = lm || null;
+  if (!lm) { if (performance.now() - cur.ultimo > 300) { cur.visible = false; } return; }
+  cur.ultimo = performance.now();
+  const dx = (a, b) => Math.hypot((lm[a].x - lm[b].x) * W, (lm[a].y - lm[b].y) * H);
+  // punto medio entre pulgar (4) e índice (8): estable mientras se pellizca
+  const mx = 1 - (lm[4].x + lm[8].x) / 2, my = (lm[4].y + lm[8].y) / 2;
+  const tx = mx * W, ty = my * H;
+  if (!cur.visible) { cur.x = tx; cur.y = ty; }
+  cur.x += (tx - cur.x) * 0.45; cur.y += (ty - cur.y) * 0.45;
+  cur.visible = true;
+  const ratio = dx(4, 8) / (dx(0, 9) || 1);
+  const antes = cur.pinch;
+  if (!cur.pinch && ratio < PINCH_ON) cur.pinch = true;
+  else if (cur.pinch && ratio > PINCH_OFF) cur.pinch = false;
+  if (cur.pinch && !antes) hacerClic();
+}
+
+let hoverEl = null, hoverDesde = 0, bloqueado = null;
+
+function elementoBajoCursor() {
+  const r = stage.getBoundingClientRect();
+  const el = document.elementFromPoint(r.left + cur.x, r.top + cur.y);
+  return el?.closest?.('[data-hover]') || null;
+}
+function hacerClic() { const el = elementoBajoCursor(); if (el) { el.click(); hoverDesde = performance.now(); } }
+
+function actualizarCursor(now) {
+  cursorEl.style.display = cur.visible ? 'block' : 'none';
+  if (!cur.visible) { hoverEl?.classList.remove('hover'); hoverEl = null; bloqueado = null; return; }
+  cursorEl.style.left = cur.x + 'px'; cursorEl.style.top = cur.y + 'px';
+  cursorEl.classList.toggle('pinch', cur.pinch);
+  const el = elementoBajoCursor();
+  if (el !== hoverEl) {
+    hoverEl?.classList.remove('hover');
+    hoverEl = el; hoverDesde = now;
+    if (el !== bloqueado) bloqueado = null;
+    el?.classList.add('hover');
+  }
+  let p = 0;
+  if (hoverEl && hoverEl !== bloqueado) {
+    const repetir = 'repeat' in hoverEl.dataset;
+    const limite = repetir ? DWELL_REPEAT_MS : DWELL_MS;
+    p = Math.min((now - hoverDesde) / limite, 1);
+    if (p >= 1) {
+      hoverEl.click(); hoverDesde = now;
+      if (!repetir) bloqueado = hoverEl; // hay que salir y volver para repetir
+    }
+  }
+  cursorEl.style.setProperty('--p', p.toFixed(3));
+}
+
+/* =====================================================================
+   3) CUERPO → MODELO
+   ===================================================================== */
+const objetivo = { x: 0, y: 0, s: 100, roll: 0, yaw: 0, visto: 0 };
+const suave = { x: 0, y: 0, s: 100, roll: 0, yaw: 0, init: false };
+let poseLm = null;
+
+function procesarPose(res) {
+  const lm = res.landmarks?.[0];
+  poseLm = lm || null;
+  if (!lm || !defActual) return;
+  const px = i => ({ x: (1 - lm[i].x) * W, y: lm[i].y * H, v: lm[i].visibility ?? 1 });
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const ls = px(11), rs = px(12);
+
+  if (defActual.anclaje === 'cuerpo') {
+    if (Math.min(ls.v, rs.v) < 0.5) return;
+    const lh = px(23), rh = px(24);
+    const mid = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
+    const hipsOk = Math.min(lh.v, rh.v) > 0.5;
+    let alto;
+    if (hipsOk) {
+      const hm = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 };
+      alto = dist(mid, hm) / 0.31;          // el torso es ~31 % de la altura total
+    } else {
+      alto = dist(ls, rs) * 3.85;           // ancho de hombros ≈ 26 % de la altura
+    }
+    objetivo.s = alto;
+    objetivo.x = mid.x;
+    objetivo.y = mid.y + 0.32 * alto;       // centro del cuerpo (los hombros están al ~18 % desde arriba)
+    objetivo.roll = Math.atan2(-(ls.y - rs.y), ls.x - rs.x);
+    // giro del torso a partir de la profundidad (z) de los hombros
+    const yaw = Math.atan2(lm[12].z - lm[11].z, lm[11].x - lm[12].x);
+    objetivo.yaw = Math.max(-1.1, Math.min(1.1, yaw));
+  } else {
+    const le = px(7), re = px(8), nose = px(0);
+    if (nose.v < 0.5) return;
+    const ancho = (Math.min(le.v, re.v) > 0.3) ? dist(le, re) : dist(ls, rs) * 0.55;
+    objetivo.s = ancho * 1.4;
+    objetivo.x = nose.x;
+    objetivo.y = nose.y - ancho * 1.25;     // por encima de la cabeza
+    objetivo.roll = Math.atan2(-(le.y - re.y), le.x - re.x);
+    objetivo.yaw = 0;
+  }
+  objetivo.visto = performance.now();
+}
+
+function actualizarModelo(dt) {
+  if (!defActual || !modeloActual) { anclaje.visible = false; return; }
+  const visible = performance.now() - objetivo.visto < 600;
+  anclaje.visible = visible;
+  if (!visible) { suave.init = false; return; }
+  if (!suave.init) { Object.assign(suave, objetivo, { init: true }); }
+  const k = 1 - Math.exp(-dt * 14);
+  for (const c of ['x', 'y', 's', 'roll', 'yaw']) suave[c] += (objetivo[c] - suave[c]) * k;
+  const esc = suave.s * userScale * defActual.escala;
+  const yExtra = (defActual.anclaje === 'cuerpo' ? userDy * suave.s : userDy * suave.s);
+  anclaje.position.set(suave.x, H - (suave.y + yExtra), 0);
+  anclaje.scale.setScalar(esc);
+  anclaje.rotation.set(0, suave.yaw + giroExtra, suave.roll);
+}
+
+/* ---------- depuración visual (útil para clase) ---------- */
+const POSE_LINKS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+function dibujar(lm, links, color) {
+  if (!lm) return;
+  dbg.strokeStyle = color; dbg.fillStyle = color; dbg.lineWidth = 2;
+  for (const [a, b] of links) {
+    dbg.beginPath(); dbg.moveTo((1 - lm[a].x) * W, lm[a].y * H); dbg.lineTo((1 - lm[b].x) * W, lm[b].y * H); dbg.stroke();
+  }
+  for (const p of lm) { dbg.beginPath(); dbg.arc((1 - p.x) * W, p.y * H, 3, 0, 7); dbg.fill(); }
+}
+function dibujarDebug() {
+  dbg.clearRect(0, 0, W, H);
+  if (!mostrarPuntos) return;
+  dibujar(poseLm, POSE_LINKS, '#00e5ff');
+  dibujar(handLm, HAND_LINKS, '#ffb400');
+}
+
+/* =====================================================================
+   4) ARRANQUE
+   ===================================================================== */
+async function crearTarea(Clase, fileset, url, opciones) {
+  for (const delegate of ['GPU', 'CPU']) {
+    try {
+      return await Clase.createFromOptions(fileset, { baseOptions: { modelAssetPath: url, delegate }, runningMode: 'VIDEO', ...opciones });
+    } catch (e) { console.warn('Falló delegate', delegate, e); }
+  }
+  throw new Error('No se pudo iniciar MediaPipe');
+}
+
+async function iniciar() {
+  const btn = $('#btnIniciar'), err = $('#error');
+  btn.disabled = true; err.textContent = ''; btn.textContent = 'Cargando…';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+    layout();
+    const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
+    hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 1 });
+    pose = await crearTarea(PoseLandmarker, fileset, POSE_URL, { numPoses: 1 });
+    $('#inicio').remove();
+    setEstado('Levantá una mano y elegí un modelo');
+    requestAnimationFrame(bucle);
+  } catch (e) {
+    console.error(e);
+    err.textContent = 'Error: ' + (e.message || e) + ' — ¿diste permiso a la cámara? Hace falta HTTPS o localhost.';
+    btn.disabled = false; btn.textContent = 'Reintentar';
+  }
+}
+$('#btnIniciar').addEventListener('click', iniciar);
+
+let ultimoVT = -1;
+function bucle(now) {
+  requestAnimationFrame(bucle);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (video.readyState >= 2 && video.currentTime !== ultimoVT) {
+    ultimoVT = video.currentTime;
+    const t = performance.now();
+    procesarMano(hand.detectForVideo(video, t));
+    procesarPose(pose.detectForVideo(video, t));
+  }
+  actualizarCursor(now);
+  actualizarModelo(dt);
+  mixer?.update(dt);
+  renderer.render(scene, camera);
+  dibujarDebug();
+}
+layout();
+</script>
+</body>
+</html>
