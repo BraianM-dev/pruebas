@@ -5,30 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Espejo AR – Ponete el modelo</title>
 <style>
-  :root { --acento:#ffb400; --fondo:rgba(15,15,25,.78); }
+  :root { --acento:#ffb400; --fondo:rgba(15,15,25,.80); }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui,sans-serif; color:#fff; }
   #pantalla { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
-  #stage { position:relative; width:100%; height:100%; background:#111; overflow:hidden; }
+  #stage { position:relative; width:100%; height:100%; background:#111; overflow:hidden; touch-action:none; }
   #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:fill; }
   #gl, #debug { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 
-  #menu { position:absolute; left:10px; top:10px; bottom:10px; width:118px; display:flex; flex-direction:column; gap:8px;
-          overflow:hidden; z-index:5; }
-  .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:14px;
-         padding:8px 4px; font-size:13px; cursor:pointer; text-align:center; line-height:1.15;
+  .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:12px;
+         padding:7px 4px; font-size:12px; cursor:pointer; text-align:center; line-height:1.15;
          backdrop-filter:blur(4px); transition:transform .1s, border-color .1s, background .1s; user-select:none; }
-  .btn .ico { display:block; font-size:30px; margin-bottom:2px; }
-  .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.25); }
-  .btn.hover  { border-color:#fff; transform:scale(1.06); background:rgba(255,255,255,.22); }
-  .sep { height:1px; background:rgba(255,255,255,.2); margin:2px 6px; flex:none; }
+  .btn .ico { display:block; font-size:22px; margin-bottom:1px; }
+  .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
+  .btn.hover  { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
 
-  #controles { position:absolute; right:10px; top:10px; width:118px; display:flex; flex-direction:column; gap:8px; z-index:5; }
-  #controles .btn { padding:10px 4px; font-size:22px; }
-  #controles .btn small { display:block; font-size:11px; opacity:.85; }
+  /* ---------- lista lateral de modelos ---------- */
+  #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; }
+  #titulo { background:var(--fondo); border-radius:10px; padding:6px; font-size:12px; text-align:center; font-weight:600; }
+  #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
+  #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
+  #lista::-webkit-scrollbar { display:none; }
+  .item { display:flex; align-items:center; gap:7px; text-align:left; padding:8px 8px; min-height:46px; flex:none; font-size:12px; }
+  .item .ico { display:inline; font-size:20px; margin:0; }
+  .item span.n { overflow:hidden; text-overflow:ellipsis; word-break:break-word; }
+  #track { width:16px; background:rgba(255,255,255,.14); border-radius:8px; position:relative; flex:none; }
+  #thumb { position:absolute; left:0; right:0; background:var(--acento); border-radius:8px; min-height:34px; }
+  .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
+  .flecha { padding:4px; font-size:16px; }
+
+  /* ---------- controles derecha ---------- */
+  #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start; }
+  #controles .btn { padding:7px 2px; font-size:11px; } #controles .btn .ico { font-size:20px; }
+  #stage[data-modo="hum"] .solo-obj { display:none; }
+  #stage[data-modo="obj"] .solo-hum { display:none; }
+  #stage:not([data-modo]) .solo-obj, #stage[data-modo=""] .solo-obj, #stage[data-modo=""] .solo-hum { display:none; }
+  .ancho { grid-column:1 / -1; }
 
   #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px;
-            border-radius:20px; font-size:13px; z-index:6; max-width:60%; text-align:center; pointer-events:none; }
+            border-radius:20px; font-size:13px; z-index:6; max-width:44%; text-align:center; pointer-events:none; }
 
   #cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20;
             border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9);
@@ -36,17 +51,18 @@
   #cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
   #cursor.pinch { transform:scale(.7); border-color:var(--acento); }
 
-  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.88); display:flex; flex-direction:column;
+  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.9); display:flex; flex-direction:column;
             align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px; }
   #inicio h1 { margin:0; font-size:26px; }
-  #inicio p { margin:0; max-width:460px; opacity:.85; line-height:1.4; font-size:14px; }
-  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px;
-                font-weight:700; cursor:pointer; }
+  #inicio p { margin:0; max-width:480px; opacity:.85; line-height:1.4; font-size:14px; }
+  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px; font-weight:700; cursor:pointer; }
   #btnIniciar:disabled { opacity:.5; }
-  #error { color:#ff8a8a; font-size:13px; max-width:460px; }
+  #error { color:#ff8a8a; font-size:13px; max-width:480px; }
+  #drop { position:absolute; inset:0; z-index:25; display:none; align-items:center; justify-content:center; background:rgba(255,180,0,.25);
+          border:4px dashed var(--acento); font-size:22px; pointer-events:none; }
 
-  @media (max-width:640px) {
-    #menu, #controles { width:84px; } .btn { font-size:11px; } .btn .ico { font-size:22px; }
+  @media (max-width:700px) {
+    #menu { width:118px; } #controles { width:120px; } .item { font-size:11px; min-height:40px; } #estado { max-width:34%; font-size:11px; }
   }
 </style>
 
@@ -59,30 +75,53 @@
 </head>
 <body>
 <div id="pantalla">
-  <div id="stage">
+  <div id="stage" data-modo="">
     <video id="video" playsinline muted></video>
     <canvas id="gl"></canvas>
     <canvas id="debug"></canvas>
 
-    <div id="menu"></div>
+    <div id="menu">
+      <div id="titulo">📂 Modelos</div>
+      <div class="btn flecha" data-hover data-repeat id="arriba">▲</div>
+      <div id="listaWrap">
+        <div id="lista" data-scroll></div>
+        <div id="track" data-scroll><div id="thumb"></div></div>
+      </div>
+      <div class="btn flecha" data-hover data-repeat id="abajo">▼</div>
+      <div class="fila">
+        <label class="btn" data-hover id="lblArchivo" title="Abrir un .glb de tu equipo">📁<input id="archivo" type="file" accept=".glb,.gltf" hidden></label>
+        <div class="btn" data-hover id="refrescar" title="Sincronizar con el repositorio">🔄</div>
+        <div class="btn" data-hover id="quitar">❌</div>
+      </div>
+    </div>
+
     <div id="controles">
-      <div class="btn" data-hover data-repeat data-accion="mas">➕<small>Más grande</small></div>
-      <div class="btn" data-hover data-repeat data-accion="menos">➖<small>Más chico</small></div>
-      <div class="btn" data-hover data-repeat data-accion="subir">⬆️<small>Subir</small></div>
-      <div class="btn" data-hover data-repeat data-accion="bajar">⬇️<small>Bajar</small></div>
-      <div class="btn" data-hover data-accion="girar">🔄<small>Girar 180°</small></div>
-      <div class="btn" data-hover data-accion="puntos">🦴<small>Ver puntos</small></div>
+      <div class="btn" data-hover data-repeat data-accion="mas"><span class="ico">➕</span>Más grande</div>
+      <div class="btn" data-hover data-repeat data-accion="menos"><span class="ico">➖</span>Más chico</div>
+      <div class="btn" data-hover data-repeat data-accion="subir"><span class="ico">⬆️</span>Subir</div>
+      <div class="btn" data-hover data-repeat data-accion="bajar"><span class="ico">⬇️</span>Bajar</div>
+      <div class="btn" data-hover data-accion="rotx"><span class="ico">⤵️</span>Rotar X 90°</div>
+      <div class="btn" data-hover data-accion="roty"><span class="ico">🔄</span>Rotar Y 90°</div>
+      <div class="btn" data-hover data-accion="rotz"><span class="ico">↩️</span>Rotar Z 90°</div>
+      <div class="btn" data-hover data-accion="reset"><span class="ico">♻️</span>Reiniciar</div>
+      <div class="btn ancho solo-hum" data-hover data-accion="mocap"><span class="ico">🕺</span>Copiar mi cuerpo</div>
+      <div class="btn solo-obj" data-hover data-accion="mover"><span class="ico">✋</span>Mover</div>
+      <div class="btn solo-obj" data-hover data-accion="rotar"><span class="ico">🔄</span>Rotar</div>
+      <div class="btn solo-obj" data-hover data-accion="escalar"><span class="ico">🔍</span>Escalar</div>
+      <div class="btn solo-obj" data-hover data-accion="giro"><span class="ico">↻</span>Giro auto</div>
+      <div class="btn ancho" data-hover data-accion="puntos"><span class="ico">🦴</span>Ver puntos</div>
     </div>
 
     <div id="estado">Iniciando…</div>
     <div id="cursor"></div>
+    <div id="drop">Soltá el archivo .glb acá</div>
 
     <div id="inicio">
       <h1>🪞 Espejo AR</h1>
-      <p>Usá la cámara para ponerte un modelo 3D. Levantá una mano: el cursor sigue tu dedo
-         <b>índice + pulgar</b>. <b>Pellizcá</b> (juntá los dos dedos) para hacer clic, o dejá el cursor quieto
-         sobre un botón ~1 segundo.</p>
-      <p>Pedile a la persona que se aleje hasta que se vean hombros y cintura.</p>
+      <p>Levantá una mano: el cursor sigue tu dedo <b>índice + pulgar</b>. <b>Pellizcá</b> (juntá los dos dedos) para hacer clic,
+         o dejá el cursor quieto sobre un botón ~1 segundo. Para <b>deslizar la lista</b>, pellizcá sobre ella y arrastrá hacia arriba o abajo.</p>
+      <p>Los modelos humanos (rig Mixamo) copian tus movimientos. Los objetos se muestran en AR y los podés mover, rotar y escalar.</p>
+      <p>Alejate hasta que se vean tus hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
     </div>
@@ -92,292 +131,509 @@
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   1) CONFIGURACIÓN — editá esta lista para agregar tus propios GLB
-   anclaje: 'cuerpo'  → el modelo se estira de la cabeza a los pies, siguiendo hombros/cintura
-            'cabeza'  → el modelo se coloca sobre la cabeza (sombreros, objetos)
-   escala : multiplicador de tamaño inicial
+   1) CONFIGURACIÓN
+   La lista de modelos se sincroniza sola con la carpeta modelos/ del repositorio (ver descubrirModelos).
    ===================================================================== */
-const MODELOS = [
-  { nombre:'Mago',      icono:'🧙', src:'modelos/mago.glb',              anclaje:'cuerpo', escala:1.0 },
-  { nombre:'Evil',      icono:'😈', src:'modelos/evil.glb',              anclaje:'cuerpo', escala:1.0 },
-  { nombre:'Esqueleto', icono:'💀', src:'modelos/esqueleto_animado.glb', anclaje:'cuerpo', escala:1.0 },
-  { nombre:'Dragón',    icono:'🐉', src:'modelos/dragon.glb',            anclaje:'cabeza', escala:2.2 },
-  { nombre:'Cofre',     icono:'📦', src:'modelos/cofre.glb',             anclaje:'cabeza', escala:1.3 },
-  { nombre:'Diamante',  icono:'💎', src:'modelos/roca_diamante.glb',     anclaje:'cabeza', escala:1.2 },
-  { nombre:'Pilar',     icono:'🏛️', src:'modelos/pilar.glb',             anclaje:'cabeza', escala:1.3 },
-];
+const CARPETA = 'modelos/';
+const REPO_GITHUB = 'BraianM-dev/pruebas';   // se usa si no hay manifiesto ni listado de carpeta
+const BASE_LISTA = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb','roca_diamante.glb','pilar.glb',
+                    'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb'];
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
-const DWELL_MS = 1300;      // tiempo quieto sobre un botón para hacer clic
-const DWELL_REPEAT_MS = 450;// repetición en botones +/-/subir/bajar
+const DWELL_MS = 1300;
 const PINCH_ON = 0.30, PINCH_OFF = 0.42;
+const DIST = 3, FOV = 50, OBJ_BASE = 1.1;   // cámara en perspectiva para los objetos
 
 /* ===================================================================== */
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), video = $('#video'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
-const cursorEl = $('#cursor'), estadoEl = $('#estado'), menuEl = $('#menu');
+const cursorEl = $('#cursor'), estadoEl = $('#estado');
+const lista = $('#lista'), track = $('#track'), thumb = $('#thumb');
 const dbg = dbgCanvas.getContext('2d');
 const setEstado = t => estadoEl.textContent = t;
 
-let W = 640, H = 480;
-let hand = null, pose = null;
-let mostrarPuntos = false;
+let W = 640, H = 480, hand = null, pose = null, mostrarPuntos = false;
 
-/* ---------- three.js ---------- */
+/* ---------- three.js: dos cámaras (ortográfica para el cuerpo, perspectiva para objetos) ---------- */
 const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(0, W, H, 0, 1, 5000);
-camera.position.z = 2500;
+const camOrto = new THREE.OrthographicCamera(0, W, H, 0, 1, 5000); camOrto.position.z = 2500;
+const camPersp = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.6));
 const sol = new THREE.DirectionalLight(0xffffff, 2.2); sol.position.set(200, 400, 1000); scene.add(sol);
 
-const anclaje = new THREE.Group(); anclaje.visible = false; scene.add(anclaje);
+const anclaje = new THREE.Group(); anclaje.visible = false; anclaje.rotation.order = 'ZYX'; scene.add(anclaje); // cuerpo
+const objeto  = new THREE.Group(); objeto.visible = false;  scene.add(objeto);                                  // objeto AR
+const ajuste  = new THREE.Group();   // orientación corregida por el usuario (se cuelga de anclaje u objeto)
+
 const loader = new GLTFLoader();
-const cache = new Map();
-let mixer = null, defActual = null, modeloActual = null;
-let userScale = 1, userDy = 0, giroExtra = 0;
+const draco = new DRACOLoader(); draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
+loader.setDRACOLoader(draco); loader.setMeshoptDecoder(MeshoptDecoder);
 const clock = new THREE.Clock();
 
 function layout() {
-  const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-  const ar = vw / vh;
+  const vw = video.videoWidth || 640, vh = video.videoHeight || 480, ar = vw / vh;
   let w = innerWidth, h = innerHeight;
   if (w / h > ar) w = h * ar; else h = w / ar;
   stage.style.width = w + 'px'; stage.style.height = h + 'px';
   W = Math.round(w); H = Math.round(h);
   renderer.setSize(W, H, false);
   dbgCanvas.width = W; dbgCanvas.height = H;
-  camera.left = 0; camera.right = W; camera.top = H; camera.bottom = 0;
-  camera.updateProjectionMatrix();
+  camOrto.left = 0; camOrto.right = W; camOrto.top = H; camOrto.bottom = 0; camOrto.updateProjectionMatrix();
+  camPersp.aspect = W / H; camPersp.updateProjectionMatrix();
+  actualizarThumb();
 }
 addEventListener('resize', layout);
 
-/* ---------- carga y normalización de modelos ---------- */
-async function cargarModelo(def) {
-  if (cache.has(def.src)) return cache.get(def.src);
-  const gltf = await loader.loadAsync(def.src);
-  const obj = gltf.scene;
-  obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
-  obj.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(obj);
-  const size = box.getSize(new THREE.Vector3());
-  const centro = box.getCenter(new THREE.Vector3());
-  const ref = def.anclaje === 'cuerpo' ? size.y : Math.max(size.x, size.y, size.z);
-  const holder = new THREE.Group();
-  obj.position.sub(centro);              // centrar en el origen
-  holder.add(obj);
-  holder.scale.setScalar(1 / (ref || 1)); // altura (o dimensión mayor) = 1
-  const res = { holder, clips: gltf.animations };
-  cache.set(def.src, res);
-  return res;
-}
+/* =====================================================================
+   2) DESCUBRIR Y CARGAR MODELOS
+   ===================================================================== */
+const esModelo = n => /\.(glb|gltf)$/i.test(n);
 
-async function seleccionar(def, btn) {
-  document.querySelectorAll('#menu .btn').forEach(b => b.classList.remove('activo'));
-  if (modeloActual) { anclaje.remove(modeloActual); modeloActual = null; }
-  mixer = null; defActual = def;
-  if (!def) { anclaje.visible = false; setEstado('Sin modelo'); return; }
-  btn?.classList.add('activo');
-  setEstado('Cargando ' + def.nombre + '…');
-  try {
-    const { holder, clips } = await cargarModelo(def);
-    if (defActual !== def) return; // el usuario eligió otro mientras cargaba
-    // clonar con skeleton para poder reutilizar
-    const clon = (await import('three/addons/utils/SkeletonUtils.js')).clone(holder);
-    modeloActual = clon; anclaje.add(clon);
-    if (clips.length) { mixer = new THREE.AnimationMixer(clon); mixer.clipAction(clips[0]).play(); }
-    userScale = 1; userDy = 0; giroExtra = 0;
-    setEstado(def.nombre + (def.anclaje === 'cuerpo' ? ' · mostrá hombros y cintura' : ' · mostrá tu cara'));
-  } catch (e) {
-    console.error(e); setEstado('No pude cargar ' + def.src);
+function repoActual() {
+  if (location.hostname.endsWith('.github.io')) {
+    const usuario = location.hostname.split('.')[0], seg = location.pathname.split('/')[1] || '';
+    return `${usuario}/${seg && !seg.includes('.') ? seg : usuario + '.github.io'}`;
   }
+  return REPO_GITHUB;
 }
 
-/* ---------- menú ---------- */
-function armarMenu() {
-  menuEl.innerHTML = '';
-  for (const def of MODELOS) {
-    const b = document.createElement('div');
-    b.className = 'btn'; b.dataset.hover = ''; 
-    b.innerHTML = `<span class="ico">${def.icono}</span>${def.nombre}`;
-    b.addEventListener('click', () => seleccionar(def, b));
-    menuEl.appendChild(b);
+/* Sincroniza con el repositorio sin archivos extra:
+   1) listado de la carpeta (servidor local, p. ej. python -m http.server)
+   2) API de GitHub (siempre al día)  3) jsDelivr (si GitHub limita las consultas)  4) lista base */
+async function descubrirModelos(forzar = false) {
+  let nombres = [];
+  try {   // 1) servidor local
+    const r = await fetch(CARPETA, { cache: 'no-store' });
+    if (r.ok) {
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      nombres = [...doc.querySelectorAll('a')].map(a => decodeURIComponent((a.getAttribute('href') || '').split('?')[0])).filter(esModelo);
+    }
+  } catch {}
+  if (!nombres.length) {
+    const k = 'espejoAR.lista'; let c = null;
+    try { c = JSON.parse(localStorage.getItem(k) || 'null'); } catch {}
+    if (!forzar && c && Date.now() - c.t < 300000) nombres = c.n;
+    else {
+      const repo = repoActual(), dir = CARPETA.replace(/\/$/, '');
+      try {   // 2) API de GitHub
+        const r = await fetch(`https://api.github.com/repos/${repo}/contents/${dir}`);
+        if (r.ok) nombres = (await r.json()).filter(f => f.type === 'file').map(f => f.name);
+      } catch {}
+      if (!nombres.length) try {   // 3) jsDelivr
+        const r = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${repo}@main?structure=flat`);
+        if (r.ok) { const pre = '/' + CARPETA; nombres = (await r.json()).files.map(f => f.name).filter(n => n.startsWith(pre)).map(n => n.slice(pre.length)); }
+      } catch {}
+      nombres = nombres.filter(esModelo);
+      if (nombres.length) { try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), n: nombres })); } catch {} }
+      else if (c) nombres = c.n;            // último listado conocido
+    }
   }
-  const s = document.createElement('div'); s.className = 'sep'; menuEl.appendChild(s);
-  const q = document.createElement('div');
-  q.className = 'btn'; q.dataset.hover = '';
-  q.innerHTML = '<span class="ico">❌</span>Quitar';
-  q.addEventListener('click', () => seleccionar(null));
-  menuEl.appendChild(q);
+  if (!nombres.length) nombres = BASE_LISTA; // 4) lista base
+  return [...new Set(nombres.filter(esModelo))].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 }
-armarMenu();
 
-document.querySelectorAll('#controles .btn').forEach(b => b.addEventListener('click', () => {
-  const a = b.dataset.accion;
-  if (a === 'mas') userScale *= 1.08;
-  if (a === 'menos') userScale /= 1.08;
-  if (a === 'subir') userDy -= 0.02;
-  if (a === 'bajar') userDy += 0.02;
-  if (a === 'girar') giroExtra = giroExtra ? 0 : Math.PI;
-  if (a === 'puntos') { mostrarPuntos = !mostrarPuntos; b.classList.toggle('activo', mostrarPuntos); }
-}));
+const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],[/dragon|dragón/i,'🐉'],
+  [/cofre|chest/i,'📦'],[/diamante|gem|cristal/i,'💎'],[/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],
+  [/desierto|desert/i,'🏜️'],[/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰']];
+const iconoDe = n => (ICONOS.find(([re]) => re.test(n)) || [null,'🧊'])[1];
+const bonito = n => n.replace(/\.(glb|gltf)$/i, '').replace(/[_-]+/g, ' ');
+
+let defs = [], ultimaFirma = '', ultimaSync = 0;
+function poblarLista(nombres) {
+  const locales = defs.filter(d => d.local);
+  defs = [...locales, ...nombres.map(n => ({ nombre: bonito(n), icono: iconoDe(n), src: CARPETA + n.split('/').map(encodeURIComponent).join('/') }))];
+  lista.innerHTML = '';
+  for (const d of defs) agregarItem(d);
+  if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
+  $('#titulo').textContent = `📂 Modelos (${defs.length})`;
+  actualizarThumb();
+}
+async function sincronizar(forzar = false) {
+  const n = await descubrirModelos(forzar);
+  ultimaSync = Date.now();
+  const firma = n.join('|');
+  if (firma !== ultimaFirma || forzar) { ultimaFirma = firma; poblarLista(n); }
+  return n.length;
+}
+function agregarItem(d, alPrincipio = false) {
+  const b = document.createElement('div');
+  b.className = 'btn item'; b.dataset.hover = ''; b.dataset.nodwell = '';
+  b.innerHTML = `<span class="ico">${d.icono}</span><span class="n">${d.nombre}</span>`;
+  b.addEventListener('click', () => seleccionar(d, b));
+  d.btn = b;
+  alPrincipio ? lista.prepend(b) : lista.appendChild(b);
+}
+
+/* ----- carga con progreso y caché pequeña ----- */
+const cache = new Map();
+function cargarGLB(def) {
+  if (cache.has(def.src)) return Promise.resolve(cache.get(def.src));
+  return new Promise((ok, fallo) => loader.load(def.src, gltf => {
+    const obj = gltf.scene;
+    obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+    obj.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
+    obj.position.sub(centro);                       // centrar en el origen
+    const base = { obj, size, clips: gltf.animations };
+    cache.set(def.src, base);
+    if (cache.size > 4) cache.delete(cache.keys().next().value);
+    ok(base);
+  }, e => { if (e.total) setEstado(`Cargando ${def.nombre}… ${Math.round(e.loaded / e.total * 100)}%`); }, fallo));
+}
 
 /* =====================================================================
-   2) MANO → CURSOR
+   3) ESTADO DEL MODELO ACTUAL
    ===================================================================== */
-const cur = { x: 0, y: 0, visible: false, ultimo: 0, pinch: false };
+let def = null, tipo = null /* 'hum' | 'obj' */, cfg = null, rig = null, mixer = null, clon = null;
+let herramienta = 'mover', autoGiro = false;
+const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
+const qTmp = new THREE.Quaternion();
+
+const cfgPorDefecto = () => ({ q: [0,0,0,1], s: 1, dy: 0, ox: 0, oy: -0.1, mocap: true });
+const claveCfg = d => 'espejoAR.cfg.' + d.src;
+function cargarCfg(d) {
+  try { const c = JSON.parse(localStorage.getItem(claveCfg(d)) || 'null'); if (c) return { ...cfgPorDefecto(), ...c }; } catch {}
+  return cfgPorDefecto();
+}
+function guardarCfg() { if (!def || def.src.startsWith('blob:')) return; try { localStorage.setItem(claveCfg(def), JSON.stringify(cfg)); } catch {} }
+
+/* ----- detección del rig humanoide (nombres tipo Mixamo) ----- */
+const CADENAS = [  // [hueso, hijo, landmark desde, landmark hasta, dirección por defecto (modelo de frente, espejo)]
+  ['RightArm',    'RightForeArm', 11, 13, [-0.15,-1,0]],
+  ['RightForeArm','RightHand',    13, 15, [-0.15,-1,0]],
+  ['LeftArm',     'LeftForeArm',  12, 14, [ 0.15,-1,0]],
+  ['LeftForeArm', 'LeftHand',     14, 16, [ 0.15,-1,0]],
+  ['RightUpLeg',  'RightLeg',     23, 25, [-0.05,-1,0]],
+  ['RightLeg',    'RightFoot',    25, 27, [-0.05,-1,0]],
+  ['LeftUpLeg',   'LeftLeg',      24, 26, [ 0.05,-1,0]],
+  ['LeftLeg',     'LeftFoot',     26, 28, [ 0.05,-1,0]],
+];
+function configurarRig(raiz) {
+  const huesos = {};
+  raiz.traverse(o => { if (o.isBone) huesos[o.name.replace(/^.*mixamorig[:_]?/i, '').replace(/[^A-Za-z0-9]/g, '')] = o; });
+  const necesarios = ['Hips', ...CADENAS.flatMap(c => [c[0], c[1]])];
+  if (!necesarios.every(n => huesos[n])) return null;
+  raiz.updateMatrixWorld(true);
+  const cadenas = CADENAS.map(([a, b, la, lb, def]) => {
+    const hueso = huesos[a], q0 = hueso.quaternion.clone();
+    const d0 = huesos[b].position.clone().normalize();
+    return { hueso, la, lb, q0, a0: d0.clone().applyQuaternion(q0), defecto: new THREE.Vector3(...def).normalize() };
+  });
+  const reposo = [];
+  raiz.traverse(o => { if (o.isBone) reposo.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
+  return { cadenas, reposo };
+}
+function volverAReposo() { if (rig) for (const [b, p, q, s] of rig.reposo) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(s); } }
+
+async function seleccionar(d, btn) {
+  document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
+  ajuste.removeFromParent(); ajuste.clear();
+  clon = null; mixer = null; rig = null; tipo = null; def = d;
+  stage.dataset.modo = ''; anclaje.visible = false; objeto.visible = false;
+  if (!d) { setEstado('Sin modelo'); refrescarBotones(); return; }
+  btn?.classList.add('activo');
+  setEstado('Cargando ' + d.nombre + '…');
+  try {
+    const base = await cargarGLB(d);
+    if (def !== d) return;                                   // eligió otro mientras cargaba
+    const c = SkeletonUtils.clone(base.obj);
+    rig = configurarRig(c);
+    tipo = rig ? 'hum' : 'obj';
+    const holder = new THREE.Group();
+    holder.add(c);
+    holder.scale.setScalar(1 / ((tipo === 'hum' ? base.size.y : Math.max(base.size.x, base.size.y, base.size.z)) || 1));
+    ajuste.add(holder); clon = c;
+    (tipo === 'hum' ? anclaje : objeto).add(ajuste);
+    cfg = cargarCfg(d);
+    ajuste.quaternion.fromArray(cfg.q);
+    if (base.clips.length) { mixer = new THREE.AnimationMixer(c); mixer.clipAction(base.clips[0]).play(); }
+    if (tipo === 'hum' && cfg.mocap) volverAReposo();
+    stage.dataset.modo = tipo;
+    suave.init = false;
+    setEstado(tipo === 'hum' ? d.nombre + ' · copia tu cuerpo, mostrá hombros y cintura' : d.nombre + ' · objeto AR: usá Mover / Rotar / Escalar');
+  } catch (e) {
+    console.error(e); setEstado('No pude cargar ' + d.nombre); def = null;
+  }
+  refrescarBotones();
+}
+
+/* ----- acciones de los botones ----- */
+function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
+const ACCIONES = {
+  mas()    { cfg.s = Math.min(cfg.s * 1.08, 12); },
+  menos()  { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
+  subir()  { tipo === 'obj' ? cfg.oy += 0.06 : cfg.dy -= 0.02; },
+  bajar()  { tipo === 'obj' ? cfg.oy -= 0.06 : cfg.dy += 0.02; },
+  rotx()   { rotarMundo(EJE.x, Math.PI / 2); },
+  roty()   { rotarMundo(EJE.y, Math.PI / 2); },
+  rotz()   { rotarMundo(EJE.z, Math.PI / 2); },
+  reset()  { cfg = cfgPorDefecto(); ajuste.quaternion.identity(); if (tipo === 'hum') volverAReposo(); },
+  mocap()  { cfg.mocap = !cfg.mocap; if (cfg.mocap) volverAReposo(); },
+  mover()  { herramienta = 'mover'; }, rotar() { herramienta = 'rotar'; }, escalar() { herramienta = 'escalar'; },
+  giro()   { autoGiro = !autoGiro; },
+  puntos() { mostrarPuntos = !mostrarPuntos; },
+};
+function refrescarBotones() {
+  document.querySelectorAll('#controles .btn').forEach(b => {
+    const a = b.dataset.accion;
+    b.classList.toggle('activo', (a === 'mocap' && cfg?.mocap) || a === herramienta && tipo === 'obj' || (a === 'giro' && autoGiro) || (a === 'puntos' && mostrarPuntos));
+  });
+}
+document.querySelectorAll('#controles .btn').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.accion;
+  if (!cfg && a !== 'puntos') return;
+  ACCIONES[a]?.(); refrescarBotones(); guardarCfg();
+}));
+$('#quitar').addEventListener('click', () => seleccionar(null));
+$('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando con el repositorio…'); setEstado(`Lista actualizada: ${await sincronizar(true)} modelos`); });
+$('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
+$('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
+
+/* ----- abrir archivo local / arrastrar y soltar ----- */
+async function abrirArchivo(f) {
+  if (!f || !esModelo(f.name)) return;
+  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true };
+  defs.unshift(d); agregarItem(d, true); lista.scrollTop = 0; actualizarThumb();
+  seleccionar(d, d.btn);
+}
+$('#archivo').addEventListener('change', e => abrirArchivo(e.target.files[0]));
+addEventListener('dragover', e => { e.preventDefault(); $('#drop').style.display = 'flex'; });
+addEventListener('dragleave', e => { if (!e.relatedTarget) $('#drop').style.display = 'none'; });
+addEventListener('drop', e => { e.preventDefault(); $('#drop').style.display = 'none'; abrirArchivo(e.dataTransfer.files[0]); });
+
+/* ----- indicador del deslizador ----- */
+function actualizarThumb() {
+  const h = lista.clientHeight, sh = lista.scrollHeight;
+  if (sh <= h + 1) { thumb.style.display = 'none'; return; }
+  const th = Math.max(34, h * h / sh);
+  thumb.style.display = 'block'; thumb.style.height = th + 'px';
+  thumb.style.top = (lista.scrollTop / (sh - h)) * (h - th) + 'px';
+}
+lista.addEventListener('scroll', actualizarThumb);
+
+/* =====================================================================
+   4) ENTRADA UNIFICADA: mano (pellizco), mouse y táctil
+   ===================================================================== */
+const ptr = { activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false };
+
+function pDown(x, y, info, fuente) {
+  Object.assign(ptr, { activo: true, fuente, sx: x, sy: y, lx: x, ly: y, arrastrando: false, repetido: false, enTrack: false,
+                       el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop });
+  if (info?.scroll) { ptr.modo = 'scroll'; ptr.enTrack = !!info.track; }
+  else if (info?.el) {
+    ptr.modo = 'boton';
+    if ('repeat' in info.el.dataset) { info.el.click(); ptr.repetido = true; ptr.ultRep = performance.now() + 350; }
+  }
+}
+function pMove(x, y) {
+  if (!ptr.activo) return;
+  const dx = x - ptr.lx, dy = y - ptr.ly; ptr.lx = x; ptr.ly = y;
+  if (ptr.modo === 'scroll') {
+    const t = y - ptr.sy;
+    if (Math.abs(t) > 12) ptr.arrastrando = true;
+    if (ptr.arrastrando) {
+      if (ptr.enTrack) lista.scrollTop = ptr.scroll0 + t * (lista.scrollHeight - lista.clientHeight) / Math.max(1, track.clientHeight - thumb.offsetHeight);
+      else lista.scrollTop = ptr.scroll0 - t;
+    }
+  } else if (ptr.modo === 'escena' && tipo === 'obj' && cfg) {
+    const upp = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;   // unidades de mundo por píxel
+    if (herramienta === 'mover') { cfg.ox += dx * upp; cfg.oy -= dy * upp; }
+    else if (herramienta === 'rotar') {
+      ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dx * 0.012));
+      ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.x, dy * 0.012));
+      cfg.q = ajuste.quaternion.toArray();
+    } else cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-dy * 0.006)));
+  }
+}
+function pTick(now) {
+  if (ptr.activo && ptr.modo === 'boton' && ptr.repetido && now > ptr.ultRep) { ptr.el.click(); ptr.ultRep = now + 110; }
+}
+function pUp() {
+  if (!ptr.activo) return;
+  if (ptr.modo === 'scroll' && !ptr.arrastrando && ptr.el && !ptr.enTrack) ptr.el.click();
+  else if (ptr.modo === 'boton' && !ptr.repetido && ptr.el) ptr.el.click();
+  else if (ptr.modo === 'escena') guardarCfg();
+  ptr.activo = false;
+}
+
+// mouse / táctil sobre la escena (los paneles usan sus propios eventos nativos)
+stage.addEventListener('pointerdown', e => {
+  if (e.target.closest('#menu, #controles, #inicio')) return;
+  const r = stage.getBoundingClientRect(); stage.setPointerCapture(e.pointerId);
+  pDown(e.clientX - r.left, e.clientY - r.top, null, 'mouse');
+});
+stage.addEventListener('pointermove', e => { if (ptr.activo && ptr.fuente === 'mouse') { const r = stage.getBoundingClientRect(); pMove(e.clientX - r.left, e.clientY - r.top); } });
+stage.addEventListener('pointerup', () => { if (ptr.fuente === 'mouse') pUp(); });
+stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
+
+/* =====================================================================
+   5) MANO → CURSOR
+   ===================================================================== */
+const cur = { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false };
 let handLm = null;
 
 function procesarMano(res) {
   const lm = res.landmarks?.[0];
   handLm = lm || null;
-  if (!lm) { if (performance.now() - cur.ultimo > 300) { cur.visible = false; } return; }
+  if (!lm) {
+    if (performance.now() - cur.ultimo > 300) { cur.visible = false; if (cur.pinch) { cur.pinch = false; cur.subida = true; } }
+    return;
+  }
   cur.ultimo = performance.now();
-  const dx = (a, b) => Math.hypot((lm[a].x - lm[b].x) * W, (lm[a].y - lm[b].y) * H);
-  // punto medio entre pulgar (4) e índice (8): estable mientras se pellizca
-  const mx = 1 - (lm[4].x + lm[8].x) / 2, my = (lm[4].y + lm[8].y) / 2;
-  const tx = mx * W, ty = my * H;
+  const d = (a, b) => Math.hypot((lm[a].x - lm[b].x) * W, (lm[a].y - lm[b].y) * H);
+  const tx = (1 - (lm[4].x + lm[8].x) / 2) * W, ty = (lm[4].y + lm[8].y) / 2 * H;   // punto medio pulgar–índice (espejado)
   if (!cur.visible) { cur.x = tx; cur.y = ty; }
   cur.x += (tx - cur.x) * 0.45; cur.y += (ty - cur.y) * 0.45;
   cur.visible = true;
-  const ratio = dx(4, 8) / (dx(0, 9) || 1);
-  const antes = cur.pinch;
-  if (!cur.pinch && ratio < PINCH_ON) cur.pinch = true;
-  else if (cur.pinch && ratio > PINCH_OFF) cur.pinch = false;
-  if (cur.pinch && !antes) hacerClic();
+  const ratio = d(4, 8) / (d(0, 9) || 1);
+  if (!cur.pinch && ratio < PINCH_ON) { cur.pinch = true; cur.bajada = true; }
+  else if (cur.pinch && ratio > PINCH_OFF) { cur.pinch = false; cur.subida = true; }
+}
+
+function bajoCursor() {
+  const r = stage.getBoundingClientRect();
+  const e = document.elementFromPoint(r.left + cur.x, r.top + cur.y);
+  if (!e) return {};
+  return { el: e.closest('[data-hover]'), scroll: e.closest('[data-scroll]'), track: !!e.closest('#track') };
 }
 
 let hoverEl = null, hoverDesde = 0, bloqueado = null;
-
-function elementoBajoCursor() {
-  const r = stage.getBoundingClientRect();
-  const el = document.elementFromPoint(r.left + cur.x, r.top + cur.y);
-  return el?.closest?.('[data-hover]') || null;
-}
-function hacerClic() { const el = elementoBajoCursor(); if (el) { el.click(); hoverDesde = performance.now(); } }
-
 function actualizarCursor(now) {
   cursorEl.style.display = cur.visible ? 'block' : 'none';
-  if (!cur.visible) { hoverEl?.classList.remove('hover'); hoverEl = null; bloqueado = null; return; }
-  cursorEl.style.left = cur.x + 'px'; cursorEl.style.top = cur.y + 'px';
-  cursorEl.classList.toggle('pinch', cur.pinch);
-  const el = elementoBajoCursor();
-  if (el !== hoverEl) {
-    hoverEl?.classList.remove('hover');
-    hoverEl = el; hoverDesde = now;
-    if (el !== bloqueado) bloqueado = null;
-    el?.classList.add('hover');
-  }
-  let p = 0;
-  if (hoverEl && hoverEl !== bloqueado) {
-    const repetir = 'repeat' in hoverEl.dataset;
-    const limite = repetir ? DWELL_REPEAT_MS : DWELL_MS;
-    p = Math.min((now - hoverDesde) / limite, 1);
-    if (p >= 1) {
-      hoverEl.click(); hoverDesde = now;
-      if (!repetir) bloqueado = hoverEl; // hay que salir y volver para repetir
+  if (!cur.visible) { hoverEl?.classList.remove('hover'); hoverEl = null; bloqueado = null; }
+  else {
+    cursorEl.style.left = cur.x + 'px'; cursorEl.style.top = cur.y + 'px';
+    cursorEl.classList.toggle('pinch', cur.pinch);
+    const el = bajoCursor().el;
+    if (el !== hoverEl) {
+      hoverEl?.classList.remove('hover'); hoverEl = el; hoverDesde = now;
+      if (el !== bloqueado) bloqueado = null;
+      el?.classList.add('hover');
     }
+    let p = 0;
+    if (hoverEl && !cur.pinch && !('nodwell' in hoverEl.dataset) && hoverEl !== bloqueado) {
+      const repetir = 'repeat' in hoverEl.dataset, limite = repetir ? 450 : DWELL_MS;
+      p = Math.min((now - hoverDesde) / limite, 1);
+      if (p >= 1) { hoverEl.click(); hoverDesde = now; if (!repetir) bloqueado = hoverEl; }
+    }
+    cursorEl.style.setProperty('--p', p.toFixed(3));
   }
-  cursorEl.style.setProperty('--p', p.toFixed(3));
+  // pellizco → equivale a presionar / arrastrar / soltar
+  if (cur.bajada) { cur.bajada = false; pDown(cur.x, cur.y, bajoCursor(), 'mano'); }
+  if (ptr.activo && ptr.fuente === 'mano' && cur.visible) pMove(cur.x, cur.y);
+  if (cur.subida) { cur.subida = false; if (ptr.fuente === 'mano') pUp(); }
+  pTick(now);
 }
 
 /* =====================================================================
-   3) CUERPO → MODELO
+   6) CUERPO → MODELO
    ===================================================================== */
 const objetivo = { x: 0, y: 0, s: 100, roll: 0, yaw: 0, visto: 0 };
 const suave = { x: 0, y: 0, s: 100, roll: 0, yaw: 0, init: false };
-let poseLm = null;
+let poseLm = null, poseWorld = null;
 
 function procesarPose(res) {
-  const lm = res.landmarks?.[0];
-  poseLm = lm || null;
-  if (!lm || !defActual) return;
+  poseLm = res.landmarks?.[0] || null; poseWorld = res.worldLandmarks?.[0] || null;
+  const lm = poseLm;
+  if (!lm || tipo !== 'hum') return;
+  // coordenadas de pantalla (la imagen se muestra espejada): la izquierda de la persona queda a la izquierda de la pantalla
   const px = i => ({ x: (1 - lm[i].x) * W, y: lm[i].y * H, v: lm[i].visibility ?? 1 });
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const ls = px(11), rs = px(12);
-
-  if (defActual.anclaje === 'cuerpo') {
-    if (Math.min(ls.v, rs.v) < 0.5) return;
-    const lh = px(23), rh = px(24);
-    const mid = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
-    const hipsOk = Math.min(lh.v, rh.v) > 0.5;
-    let alto;
-    if (hipsOk) {
-      const hm = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 };
-      alto = dist(mid, hm) / 0.31;          // el torso es ~31 % de la altura total
-    } else {
-      alto = dist(ls, rs) * 3.85;           // ancho de hombros ≈ 26 % de la altura
-    }
-    objetivo.s = alto;
-    objetivo.x = mid.x;
-    objetivo.y = mid.y + 0.32 * alto;       // centro del cuerpo (los hombros están al ~18 % desde arriba)
-    objetivo.roll = Math.atan2(-(ls.y - rs.y), ls.x - rs.x);
-    // giro del torso a partir de la profundidad (z) de los hombros
-    const yaw = Math.atan2(lm[12].z - lm[11].z, lm[11].x - lm[12].x);
-    objetivo.yaw = Math.max(-1.1, Math.min(1.1, yaw));
-  } else {
-    const le = px(7), re = px(8), nose = px(0);
-    if (nose.v < 0.5) return;
-    const ancho = (Math.min(le.v, re.v) > 0.3) ? dist(le, re) : dist(ls, rs) * 0.55;
-    objetivo.s = ancho * 1.4;
-    objetivo.x = nose.x;
-    objetivo.y = nose.y - ancho * 1.25;     // por encima de la cabeza
-    objetivo.roll = Math.atan2(-(le.y - re.y), le.x - re.x);
-    objetivo.yaw = 0;
-  }
+  if (Math.min(ls.v, rs.v) < 0.5) return;
+  const lh = px(23), rh = px(24);
+  const mid = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
+  const caderas = Math.min(lh.v, rh.v) > 0.5;
+  const alto = caderas ? dist(mid, { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 }) / 0.31   // torso ≈ 31 % de la altura
+                       : dist(ls, rs) * 3.85;                                                  // hombros ≈ 26 %
+  objetivo.s = alto;
+  objetivo.x = mid.x;
+  objetivo.y = mid.y + 0.32 * alto;        // centro del cuerpo (hombros al ~18 % desde arriba)
+  // inclinación de los hombros: ls queda a la izquierda de la pantalla, rs a la derecha → ángulo 0 con hombros nivelados
+  objetivo.roll = Math.atan2(ls.y - rs.y, rs.x - ls.x);
+  // giro del torso por la profundidad (z) de los hombros
+  objetivo.yaw = Math.max(-1.1, Math.min(1.1, Math.atan2(lm[12].z - lm[11].z, lm[11].x - lm[12].x)));
   objetivo.visto = performance.now();
 }
 
+const _qP = new THREE.Quaternion(), _qO = new THREE.Quaternion(), _t = new THREE.Vector3(), _d = new THREE.Vector3();
+function aplicarMocap(dt) {
+  const k = 1 - Math.exp(-dt * 18);
+  anclaje.updateMatrixWorld(true);
+  for (const c of rig.cadenas) {
+    const a = poseLm?.[c.la], b = poseLm?.[c.lb];
+    if (poseWorld && a && b && (a.visibility ?? 1) > 0.5 && (b.visibility ?? 1) > 0.5) {
+      const A = poseWorld[c.la], B = poseWorld[c.lb];
+      // MediaPipe (x der., y abajo, z lejos) → escena en espejo (x der., y arriba, z hacia la cámara)
+      _d.set(-(B.x - A.x), -(B.y - A.y), -(B.z - A.z)).normalize();
+    } else _d.copy(c.defecto);
+    c.hueso.parent.getWorldQuaternion(_qP);
+    _t.copy(_d).applyQuaternion(_qP.invert());                       // dirección deseada en el espacio del padre
+    _qO.setFromUnitVectors(c.a0, _t).multiply(c.q0);                 // giro mínimo desde la pose de reposo
+    c.hueso.quaternion.slerp(_qO, k);
+    c.hueso.updateMatrixWorld(true);                                 // los hijos ven el cambio
+  }
+}
+
 function actualizarModelo(dt) {
-  if (!defActual || !modeloActual) { anclaje.visible = false; return; }
+  if (!def || !clon || !cfg) { anclaje.visible = false; objeto.visible = false; return; }
+  if (tipo === 'obj') {
+    anclaje.visible = false; objeto.visible = true;
+    objeto.position.set(cfg.ox, cfg.oy, -DIST);
+    objeto.scale.setScalar(OBJ_BASE * cfg.s);
+    if (autoGiro) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.9)); cfg.q = ajuste.quaternion.toArray(); }
+    mixer?.update(dt);
+    return;
+  }
+  objeto.visible = false;
   const visible = performance.now() - objetivo.visto < 600;
   anclaje.visible = visible;
   if (!visible) { suave.init = false; return; }
-  if (!suave.init) { Object.assign(suave, objetivo, { init: true }); }
+  if (!suave.init) Object.assign(suave, objetivo, { init: true });
   const k = 1 - Math.exp(-dt * 14);
   for (const c of ['x', 'y', 's', 'roll', 'yaw']) suave[c] += (objetivo[c] - suave[c]) * k;
-  const esc = suave.s * userScale * defActual.escala;
-  const yExtra = (defActual.anclaje === 'cuerpo' ? userDy * suave.s : userDy * suave.s);
-  anclaje.position.set(suave.x, H - (suave.y + yExtra), 0);
-  anclaje.scale.setScalar(esc);
-  anclaje.rotation.set(0, suave.yaw + giroExtra, suave.roll);
+  anclaje.position.set(suave.x, H - (suave.y + cfg.dy * suave.s), 0);
+  anclaje.scale.setScalar(suave.s * cfg.s);
+  anclaje.rotation.set(0, suave.yaw, suave.roll);
+  if (cfg.mocap) aplicarMocap(dt); else mixer?.update(dt);
 }
 
-/* ---------- depuración visual (útil para clase) ---------- */
+/* ---------- puntos de depuración (útil para explicar el tracking) ---------- */
 const POSE_LINKS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function dibujar(lm, links, color) {
   if (!lm) return;
   dbg.strokeStyle = color; dbg.fillStyle = color; dbg.lineWidth = 2;
-  for (const [a, b] of links) {
-    dbg.beginPath(); dbg.moveTo((1 - lm[a].x) * W, lm[a].y * H); dbg.lineTo((1 - lm[b].x) * W, lm[b].y * H); dbg.stroke();
-  }
+  for (const [a, b] of links) { dbg.beginPath(); dbg.moveTo((1 - lm[a].x) * W, lm[a].y * H); dbg.lineTo((1 - lm[b].x) * W, lm[b].y * H); dbg.stroke(); }
   for (const p of lm) { dbg.beginPath(); dbg.arc((1 - p.x) * W, p.y * H, 3, 0, 7); dbg.fill(); }
 }
 function dibujarDebug() {
   dbg.clearRect(0, 0, W, H);
   if (!mostrarPuntos) return;
-  dibujar(poseLm, POSE_LINKS, '#00e5ff');
-  dibujar(handLm, HAND_LINKS, '#ffb400');
+  dibujar(poseLm, POSE_LINKS, '#00e5ff'); dibujar(handLm, HAND_LINKS, '#ffb400');
 }
 
 /* =====================================================================
-   4) ARRANQUE
+   7) ARRANQUE
    ===================================================================== */
 async function crearTarea(Clase, fileset, url, opciones) {
   for (const delegate of ['GPU', 'CPU']) {
-    try {
-      return await Clase.createFromOptions(fileset, { baseOptions: { modelAssetPath: url, delegate }, runningMode: 'VIDEO', ...opciones });
-    } catch (e) { console.warn('Falló delegate', delegate, e); }
+    try { return await Clase.createFromOptions(fileset, { baseOptions: { modelAssetPath: url, delegate }, runningMode: 'VIDEO', ...opciones }); }
+    catch (e) { console.warn('Falló delegate', delegate, e); }
   }
   throw new Error('No se pudo iniciar MediaPipe');
 }
@@ -386,16 +642,13 @@ async function iniciar() {
   const btn = $('#btnIniciar'), err = $('#error');
   btn.disabled = true; err.textContent = ''; btn.textContent = 'Cargando…';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    video.srcObject = stream;
-    await video.play();
-    layout();
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream; await video.play(); layout();
     const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
     hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 1 });
     pose = await crearTarea(PoseLandmarker, fileset, POSE_URL, { numPoses: 1 });
     $('#inicio').remove();
-    setEstado('Levantá una mano y elegí un modelo');
+    setEstado('Levantá una mano y elegí un modelo de la lista');
     requestAnimationFrame(bucle);
   } catch (e) {
     console.error(e);
@@ -417,11 +670,14 @@ function bucle(now) {
   }
   actualizarCursor(now);
   actualizarModelo(dt);
-  mixer?.update(dt);
-  renderer.render(scene, camera);
+  renderer.render(scene, tipo === 'obj' ? camPersp : camOrto);
   dibujarDebug();
 }
+
 layout();
+sincronizar();
+setInterval(() => { if (!document.hidden) sincronizar(); }, 300000);                       // cada 5 min
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - ultimaSync > 300000) sincronizar(); });
 </script>
 </body>
 </html>
