@@ -2,27 +2,72 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Espejo AR – Ponete el modelo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>Espejo AR – Calabozos y Código</title>
 <style>
   :root { --acento:#ffb400; --fondo:rgba(15,15,25,.80); }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui,sans-serif; color:#fff; }
   #pantalla { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
-  #stage { position:relative; width:100%; height:100%; background:#111; overflow:hidden; touch-action:none; }
-  #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:fill; }
+  #stage { position:relative; width:100%; height:100%; background:#111; overflow:hidden; touch-action:none; transition: transform .25s ease; }
+  #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:fill; z-index:0; transition: opacity .4s ease; }
   #gl, #debug { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  #gl { z-index:2; }
+  #debug { z-index:3; }
+  #fondoOverlay { position:absolute; inset:0; z-index:1; pointer-events:none; transition: background .4s ease; }
+
+  /* ---------- fondos temáticos ---------- */
+  #stage[data-fondo="mazmorra"] #fondoOverlay {
+    background:
+      radial-gradient(circle at 10% 88%, rgba(255,130,30,.30) 0%, transparent 22%),
+      radial-gradient(circle at 90% 88%, rgba(255,130,30,.30) 0%, transparent 22%),
+      radial-gradient(circle at 10% 12%, rgba(255,60,20,.12) 0%, transparent 18%),
+      radial-gradient(ellipse at center, transparent 15%, rgba(15,8,5,.88) 92%);
+  }
+  #stage[data-fondo="calabozo"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at 50% 105%, rgba(255,100,20,.28) 0%, transparent 35%),
+      radial-gradient(ellipse at center, rgba(40,20,10,.30) 0%, rgba(0,0,0,.92) 95%);
+  }
+  #stage[data-fondo="magico"] #fondoOverlay {
+    background:
+      radial-gradient(circle at 25% 25%, rgba(150,100,255,.28) 0%, transparent 32%),
+      radial-gradient(circle at 75% 75%, rgba(80,200,255,.28) 0%, transparent 32%),
+      radial-gradient(ellipse at center, transparent 20%, rgba(10,5,30,.88) 100%);
+  }
+  #stage[data-fondo="niebla"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(200,220,240,.28) 0%, transparent 42%),
+      radial-gradient(ellipse at 80% 70%, rgba(180,200,220,.28) 0%, transparent 42%),
+      radial-gradient(ellipse at center, transparent 20%, rgba(20,25,40,.78) 100%);
+  }
+  #stage[data-fondo="vacio"] #fondoOverlay { background:#000; }
+  #stage[data-fondo="vacio"] #video { opacity:0; }
+  #stage[data-fondo="cueva"] { background: radial-gradient(ellipse at center, #4a2a20 0%, #1a0805 60%, #000 100%); }
+  #stage[data-fondo="cueva"] #video { opacity:0; }
+  #stage[data-fondo="cueva"] #fondoOverlay {
+    background:
+      radial-gradient(ellipse at center, transparent 10%, rgba(0,0,0,.85) 92%),
+      radial-gradient(circle at 15% 15%, rgba(255,100,20,.15) 0%, transparent 18%);
+  }
 
   .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:12px;
          padding:7px 4px; font-size:12px; cursor:pointer; text-align:center; line-height:1.15;
          backdrop-filter:blur(4px); transition:transform .1s, border-color .1s, background .1s; user-select:none; }
   .btn .ico { display:block; font-size:22px; margin-bottom:1px; }
   .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
-  .btn.hover  { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
+  .btn.hv0, .btn.hv1 { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
 
   /* ---------- lista lateral de modelos ---------- */
-  #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; }
-  #titulo { background:var(--fondo); border-radius:10px; padding:6px; font-size:12px; text-align:center; font-weight:600; }
+  #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; transition: width .2s; }
+  #menu.oculto { bottom:auto; width:auto; }
+  #menu.oculto #menuContenido { display:none; }
+  #titulo { background:var(--fondo); border-radius:10px; padding:6px; font-size:12px; text-align:center; font-weight:600;
+            display:flex; justify-content:space-between; align-items:center; gap:4px; }
+  #btnToggleMenu { cursor:pointer; padding:0 4px; user-select:none; opacity:.8; }
+  #btnToggleMenu:hover { opacity:1; }
+  #menuContenido { flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; }
   #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
   #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
   #lista::-webkit-scrollbar { display:none; }
@@ -35,7 +80,9 @@
   .flecha { padding:4px; font-size:16px; }
 
   /* ---------- controles derecha ---------- */
-  #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start; }
+  #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start;
+               max-height:calc(100% - 16px); overflow-y:auto; scrollbar-width:none; }
+  #controles::-webkit-scrollbar { display:none; }
   #controles .btn { padding:7px 2px; font-size:11px; } #controles .btn .ico { font-size:20px; }
   #stage[data-modo="hum"] .solo-obj { display:none; }
   #stage[data-modo="obj"] .solo-hum { display:none; }
@@ -45,11 +92,12 @@
   #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px;
             border-radius:20px; font-size:13px; z-index:6; max-width:44%; text-align:center; pointer-events:none; }
 
-  #cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20;
+  .cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20;
             border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9);
             pointer-events:none; display:none; background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
-  #cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
-  #cursor.pinch { transform:scale(.7); border-color:var(--acento); }
+  .cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
+  .cursor.pinch { transform:scale(.7); border-color:var(--acento); }
+  #cursor1 { border-color:#6cf; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(102,204,255,.9); }
 
   #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.9); display:flex; flex-direction:column;
             align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px; }
@@ -75,23 +123,29 @@
 </head>
 <body>
 <div id="pantalla">
-  <div id="stage" data-modo="">
+  <div id="stage" data-modo="" data-fondo="camara">
     <video id="video" playsinline muted></video>
+    <div id="fondoOverlay"></div>
     <canvas id="gl"></canvas>
     <canvas id="debug"></canvas>
 
     <div id="menu">
-      <div id="titulo">📂 Modelos</div>
-      <div class="btn flecha" data-hover data-repeat id="arriba">▲</div>
-      <div id="listaWrap">
-        <div id="lista" data-scroll></div>
-        <div id="track" data-scroll><div id="thumb"></div></div>
+      <div id="titulo">
+        <span>📂 Modelos</span>
+        <span id="btnToggleMenu" data-hover data-nodwell title="Ocultar menú">◀</span>
       </div>
-      <div class="btn flecha" data-hover data-repeat id="abajo">▼</div>
-      <div class="fila">
-        <label class="btn" data-hover id="lblArchivo" title="Abrir un .glb de tu equipo">📁<input id="archivo" type="file" accept=".glb,.gltf" hidden></label>
-        <div class="btn" data-hover id="refrescar" title="Sincronizar con el repositorio">🔄</div>
-        <div class="btn" data-hover id="quitar">❌</div>
+      <div id="menuContenido">
+        <div class="btn flecha" data-hover data-repeat id="arriba">▲</div>
+        <div id="listaWrap">
+          <div id="lista" data-scroll></div>
+          <div id="track" data-scroll><div id="thumb"></div></div>
+        </div>
+        <div class="btn flecha" data-hover data-repeat id="abajo">▼</div>
+        <div class="fila">
+          <label class="btn" data-hover id="lblArchivo" title="Abrir un .glb de tu equipo">📁<input id="archivo" type="file" accept=".glb,.gltf" hidden></label>
+          <div class="btn" data-hover id="refrescar" title="Sincronizar con el repositorio">🔄</div>
+          <div class="btn" data-hover id="quitar">❌</div>
+        </div>
       </div>
     </div>
 
@@ -110,17 +164,22 @@
       <div class="btn solo-obj" data-hover data-accion="escalar"><span class="ico">🔍</span>Escalar</div>
       <div class="btn solo-obj" data-hover data-accion="giro"><span class="ico">↻</span>Giro auto</div>
       <div class="btn ancho" data-hover data-accion="puntos"><span class="ico">🦴</span>Ver puntos</div>
+      <div class="btn ancho" data-hover data-accion="fondo"><span class="ico">🎨</span><span id="lblFondo">Fondo: Cámara</span></div>
+      <div class="btn" data-hover data-accion="rotarPantalla"><span class="ico">🔃</span>Rotar</div>
+      <div class="btn" data-hover data-accion="fullscreen"><span class="ico">⛶</span>Pantalla</div>
     </div>
 
     <div id="estado">Iniciando…</div>
-    <div id="cursor"></div>
+    <div class="cursor" id="cursor0"></div>
+    <div class="cursor" id="cursor1"></div>
     <div id="drop">Soltá el archivo .glb acá</div>
 
     <div id="inicio">
-      <h1>🪞 Espejo AR</h1>
-      <p>Levantá una mano: el cursor sigue tu dedo <b>índice + pulgar</b>. <b>Pellizcá</b> (juntá los dos dedos) para hacer clic,
-         o dejá el cursor quieto sobre un botón ~1 segundo. Para <b>deslizar la lista</b>, pellizcá sobre ella y arrastrá hacia arriba o abajo.</p>
+      <h1>🪞 Espejo AR – Calabozos & Código</h1>
+      <p>Levantá una o <b>ambas manos</b>: cada una tiene su propio cursor. <b>Pellizcá</b> (índice + pulgar) para hacer clic,
+         o dejá el cursor quieto sobre un botón ~1 segundo. Para <b>deslizar la lista</b>, pellizcá sobre ella y arrastrá.</p>
       <p>Los modelos humanos (rig Mixamo) copian tus movimientos. Los objetos se muestran en AR y los podés mover, rotar y escalar.</p>
+      <p>Probá los <b>fondos temáticos</b> de mazmorra 🏰, calabozo 🔥 o magia ✨ desde el botón "Fondo".</p>
       <p>Alejate hasta que se vean tus hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -139,10 +198,9 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
 
 /* =====================================================================
    1) CONFIGURACIÓN
-   La lista de modelos se sincroniza sola con la carpeta modelos/ del repositorio (ver descubrirModelos).
    ===================================================================== */
 const CARPETA = 'modelos/';
-const REPO_GITHUB = 'BraianM-dev/pruebas';   // se usa si no hay manifiesto ni listado de carpeta
+const REPO_GITHUB = 'BraianM-dev/pruebas';
 const BASE_LISTA = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb','roca_diamante.glb','pilar.glb',
                     'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb'];
 
@@ -152,19 +210,33 @@ const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarke
 
 const DWELL_MS = 1300;
 const PINCH_ON = 0.30, PINCH_OFF = 0.42;
-const DIST = 3, FOV = 50, OBJ_BASE = 1.1;   // cámara en perspectiva para los objetos
+const DIST = 3, FOV = 50, OBJ_BASE = 1.1;
 
 /* ===================================================================== */
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), video = $('#video'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
-const cursorEl = $('#cursor'), estadoEl = $('#estado');
+const estadoEl = $('#estado');
 const lista = $('#lista'), track = $('#track'), thumb = $('#thumb');
+const menu = $('#menu');
 const dbg = dbgCanvas.getContext('2d');
 const setEstado = t => estadoEl.textContent = t;
 
-let W = 640, H = 480, hand = null, pose = null, mostrarPuntos = false;
+let W = 640, H = 480, pose = null, mostrarPuntos = false;
+let handLm = [null, null];
+let rotacion = 0;
+let fondoIdx = 0;
 
-/* ---------- three.js: dos cámaras (ortográfica para el cuerpo, perspectiva para objetos) ---------- */
+const FONDOS = [
+  { id: 'camara',   nombre: 'Cámara'   },
+  { id: 'mazmorra', nombre: 'Mazmorra' },
+  { id: 'calabozo', nombre: 'Calabozo' },
+  { id: 'magico',   nombre: 'Mágico'   },
+  { id: 'niebla',   nombre: 'Niebla'   },
+  { id: 'cueva',    nombre: 'Cueva'    },
+  { id: 'vacio',    nombre: 'Vacío'    },
+];
+
+/* ---------- three.js ---------- */
 const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -174,9 +246,9 @@ const camPersp = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.6));
 const sol = new THREE.DirectionalLight(0xffffff, 2.2); sol.position.set(200, 400, 1000); scene.add(sol);
 
-const anclaje = new THREE.Group(); anclaje.visible = false; anclaje.rotation.order = 'ZYX'; scene.add(anclaje); // cuerpo
-const objeto  = new THREE.Group(); objeto.visible = false;  scene.add(objeto);                                  // objeto AR
-const ajuste  = new THREE.Group();   // orientación corregida por el usuario (se cuelga de anclaje u objeto)
+const anclaje = new THREE.Group(); anclaje.visible = false; anclaje.rotation.order = 'ZYX'; scene.add(anclaje);
+const objeto  = new THREE.Group(); objeto.visible = false;  scene.add(objeto);
+const ajuste  = new THREE.Group();
 
 const loader = new GLTFLoader();
 const draco = new DRACOLoader(); draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
@@ -187,7 +259,9 @@ function layout() {
   const vw = video.videoWidth || 640, vh = video.videoHeight || 480, ar = vw / vh;
   let w = innerWidth, h = innerHeight;
   if (w / h > ar) w = h * ar; else h = w / ar;
-  stage.style.width = w + 'px'; stage.style.height = h + 'px';
+  stage.style.width = w + 'px';
+  stage.style.height = h + 'px';
+  stage.style.transform = rotacion ? `rotate(${rotacion}deg)` : '';
   W = Math.round(w); H = Math.round(h);
   renderer.setSize(W, H, false);
   dbgCanvas.width = W; dbgCanvas.height = H;
@@ -196,9 +270,25 @@ function layout() {
   actualizarThumb();
 }
 addEventListener('resize', layout);
+document.addEventListener('fullscreenchange', layout);
+
+/* Coordenadas: viewport ↔ stage local (con rotación) */
+function puntoAStage(clientX, clientY) {
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const rx = clientX - cx, ry = clientY - cy;
+  const rad = rotacion * Math.PI / 180;
+  const c = Math.cos(rad), s = Math.sin(rad);
+  return { x: rx * c + ry * s + W / 2, y: -rx * s + ry * c + H / 2 };
+}
+function stageAViewport(sx, sy) {
+  const lx = sx - W / 2, ly = sy - H / 2;
+  const rad = rotacion * Math.PI / 180;
+  const c = Math.cos(rad), s = Math.sin(rad);
+  return { x: lx * c - ly * s + innerWidth / 2, y: lx * s + ly * c + innerHeight / 2 };
+}
 
 /* =====================================================================
-   2) DESCUBRIR Y CARGAR MODELOS
+   2) MODELOS
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf)$/i.test(n);
 
@@ -210,12 +300,9 @@ function repoActual() {
   return REPO_GITHUB;
 }
 
-/* Sincroniza con el repositorio sin archivos extra:
-   1) listado de la carpeta (servidor local, p. ej. python -m http.server)
-   2) API de GitHub (siempre al día)  3) jsDelivr (si GitHub limita las consultas)  4) lista base */
 async function descubrirModelos(forzar = false) {
   let nombres = [];
-  try {   // 1) servidor local
+  try {
     const r = await fetch(CARPETA, { cache: 'no-store' });
     if (r.ok) {
       const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
@@ -228,20 +315,20 @@ async function descubrirModelos(forzar = false) {
     if (!forzar && c && Date.now() - c.t < 300000) nombres = c.n;
     else {
       const repo = repoActual(), dir = CARPETA.replace(/\/$/, '');
-      try {   // 2) API de GitHub
+      try {
         const r = await fetch(`https://api.github.com/repos/${repo}/contents/${dir}`);
         if (r.ok) nombres = (await r.json()).filter(f => f.type === 'file').map(f => f.name);
       } catch {}
-      if (!nombres.length) try {   // 3) jsDelivr
+      if (!nombres.length) try {
         const r = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${repo}@main?structure=flat`);
         if (r.ok) { const pre = '/' + CARPETA; nombres = (await r.json()).files.map(f => f.name).filter(n => n.startsWith(pre)).map(n => n.slice(pre.length)); }
       } catch {}
       nombres = nombres.filter(esModelo);
       if (nombres.length) { try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), n: nombres })); } catch {} }
-      else if (c) nombres = c.n;            // último listado conocido
+      else if (c) nombres = c.n;
     }
   }
-  if (!nombres.length) nombres = BASE_LISTA; // 4) lista base
+  if (!nombres.length) nombres = BASE_LISTA;
   return [...new Set(nombres.filter(esModelo))].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 }
 
@@ -258,7 +345,7 @@ function poblarLista(nombres) {
   lista.innerHTML = '';
   for (const d of defs) agregarItem(d);
   if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
-  $('#titulo').textContent = `📂 Modelos (${defs.length})`;
+  $('#titulo').firstElementChild.textContent = `📂 Modelos (${defs.length})`;
   actualizarThumb();
 }
 async function sincronizar(forzar = false) {
@@ -277,7 +364,6 @@ function agregarItem(d, alPrincipio = false) {
   alPrincipio ? lista.prepend(b) : lista.appendChild(b);
 }
 
-/* ----- carga con progreso y caché pequeña ----- */
 const cache = new Map();
 function cargarGLB(def) {
   if (cache.has(def.src)) return Promise.resolve(cache.get(def.src));
@@ -287,7 +373,7 @@ function cargarGLB(def) {
     obj.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(obj);
     const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
-    obj.position.sub(centro);                       // centrar en el origen
+    obj.position.sub(centro);
     const base = { obj, size, clips: gltf.animations };
     cache.set(def.src, base);
     if (cache.size > 4) cache.delete(cache.keys().next().value);
@@ -296,9 +382,9 @@ function cargarGLB(def) {
 }
 
 /* =====================================================================
-   3) ESTADO DEL MODELO ACTUAL
+   3) ESTADO DEL MODELO
    ===================================================================== */
-let def = null, tipo = null /* 'hum' | 'obj' */, cfg = null, rig = null, mixer = null, clon = null;
+let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
 const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
 const qTmp = new THREE.Quaternion();
@@ -311,8 +397,7 @@ function cargarCfg(d) {
 }
 function guardarCfg() { if (!def || def.src.startsWith('blob:')) return; try { localStorage.setItem(claveCfg(def), JSON.stringify(cfg)); } catch {} }
 
-/* ----- detección del rig humanoide (nombres tipo Mixamo) ----- */
-const CADENAS = [  // [hueso, hijo, landmark desde, landmark hasta, dirección por defecto (modelo de frente, espejo)]
+const CADENAS = [
   ['RightArm',    'RightForeArm', 11, 13, [-0.15,-1,0]],
   ['RightForeArm','RightHand',    13, 15, [-0.15,-1,0]],
   ['LeftArm',     'LeftForeArm',  12, 14, [ 0.15,-1,0]],
@@ -349,7 +434,7 @@ async function seleccionar(d, btn) {
   setEstado('Cargando ' + d.nombre + '…');
   try {
     const base = await cargarGLB(d);
-    if (def !== d) return;                                   // eligió otro mientras cargaba
+    if (def !== d) return;
     const c = SkeletonUtils.clone(base.obj);
     rig = configurarRig(c);
     tipo = rig ? 'hum' : 'obj';
@@ -371,8 +456,22 @@ async function seleccionar(d, btn) {
   refrescarBotones();
 }
 
-/* ----- acciones de los botones ----- */
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
+
+async function togglearFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+      if (screen.orientation?.lock) {
+        try { await screen.orientation.lock('landscape'); } catch {}
+      }
+    } else {
+      await document.exitFullscreen();
+    }
+    setTimeout(layout, 100);
+  } catch (e) { console.warn('Fullscreen:', e); }
+}
+
 const ACCIONES = {
   mas()    { cfg.s = Math.min(cfg.s * 1.08, 12); },
   menos()  { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
@@ -386,6 +485,14 @@ const ACCIONES = {
   mover()  { herramienta = 'mover'; }, rotar() { herramienta = 'rotar'; }, escalar() { herramienta = 'escalar'; },
   giro()   { autoGiro = !autoGiro; },
   puntos() { mostrarPuntos = !mostrarPuntos; },
+  rotarPantalla() { rotacion = (rotacion + 90) % 360; layout(); },
+  fullscreen() { togglearFullscreen(); },
+  fondo() {
+    fondoIdx = (fondoIdx + 1) % FONDOS.length;
+    const f = FONDOS[fondoIdx];
+    stage.dataset.fondo = f.id;
+    $('#lblFondo').textContent = 'Fondo: ' + f.nombre;
+  },
 };
 function refrescarBotones() {
   document.querySelectorAll('#controles .btn').forEach(b => {
@@ -395,15 +502,22 @@ function refrescarBotones() {
 }
 document.querySelectorAll('#controles .btn').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.accion;
-  if (!cfg && a !== 'puntos') return;
+  if (!cfg && !['puntos','rotarPantalla','fullscreen','fondo'].includes(a)) return;
   ACCIONES[a]?.(); refrescarBotones(); guardarCfg();
 }));
+
+/* --- menú: ocultar/mostrar --- */
+$('#btnToggleMenu').addEventListener('click', (e) => {
+  e.stopPropagation();
+  menu.classList.toggle('oculto');
+  $('#btnToggleMenu').textContent = menu.classList.contains('oculto') ? '▶' : '◀';
+});
+
 $('#quitar').addEventListener('click', () => seleccionar(null));
 $('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando con el repositorio…'); setEstado(`Lista actualizada: ${await sincronizar(true)} modelos`); });
 $('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
 $('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
 
-/* ----- abrir archivo local / arrastrar y soltar ----- */
 async function abrirArchivo(f) {
   if (!f || !esModelo(f.name)) return;
   const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true };
@@ -415,7 +529,6 @@ addEventListener('dragover', e => { e.preventDefault(); $('#drop').style.display
 addEventListener('dragleave', e => { if (!e.relatedTarget) $('#drop').style.display = 'none'; });
 addEventListener('drop', e => { e.preventDefault(); $('#drop').style.display = 'none'; abrirArchivo(e.dataTransfer.files[0]); });
 
-/* ----- indicador del deslizador ----- */
 function actualizarThumb() {
   const h = lista.clientHeight, sh = lista.scrollHeight;
   if (sh <= h + 1) { thumb.style.display = 'none'; return; }
@@ -426,31 +539,36 @@ function actualizarThumb() {
 lista.addEventListener('scroll', actualizarThumb);
 
 /* =====================================================================
-   4) ENTRADA UNIFICADA: mano (pellizco), mouse y táctil
+   4) ENTRADA UNIFICADA (2 manos + mouse)
    ===================================================================== */
-const ptr = { activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false };
+function crearPuntero() {
+  return { activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0,
+           arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false };
+}
+const ptrM = crearPuntero();
+const ptrs = [crearPuntero(), crearPuntero()];
 
-function pDown(x, y, info, fuente) {
-  Object.assign(ptr, { activo: true, fuente, sx: x, sy: y, lx: x, ly: y, arrastrando: false, repetido: false, enTrack: false,
-                       el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop });
-  if (info?.scroll) { ptr.modo = 'scroll'; ptr.enTrack = !!info.track; }
+function pDown(p, x, y, info, fuente) {
+  Object.assign(p, { activo: true, fuente, sx: x, sy: y, lx: x, ly: y, arrastrando: false, repetido: false,
+                     enTrack: false, el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop });
+  if (info?.scroll) { p.modo = 'scroll'; p.enTrack = !!info.track; }
   else if (info?.el) {
-    ptr.modo = 'boton';
-    if ('repeat' in info.el.dataset) { info.el.click(); ptr.repetido = true; ptr.ultRep = performance.now() + 350; }
+    p.modo = 'boton';
+    if ('repeat' in info.el.dataset) { info.el.click(); p.repetido = true; p.ultRep = performance.now() + 350; }
   }
 }
-function pMove(x, y) {
-  if (!ptr.activo) return;
-  const dx = x - ptr.lx, dy = y - ptr.ly; ptr.lx = x; ptr.ly = y;
-  if (ptr.modo === 'scroll') {
-    const t = y - ptr.sy;
-    if (Math.abs(t) > 12) ptr.arrastrando = true;
-    if (ptr.arrastrando) {
-      if (ptr.enTrack) lista.scrollTop = ptr.scroll0 + t * (lista.scrollHeight - lista.clientHeight) / Math.max(1, track.clientHeight - thumb.offsetHeight);
-      else lista.scrollTop = ptr.scroll0 - t;
+function pMove(p, x, y) {
+  if (!p.activo) return;
+  const dx = x - p.lx, dy = y - p.ly; p.lx = x; p.ly = y;
+  if (p.modo === 'scroll') {
+    const t = y - p.sy;
+    if (Math.abs(t) > 12) p.arrastrando = true;
+    if (p.arrastrando) {
+      if (p.enTrack) lista.scrollTop = p.scroll0 + t * (lista.scrollHeight - lista.clientHeight) / Math.max(1, track.clientHeight - thumb.offsetHeight);
+      else lista.scrollTop = p.scroll0 - t;
     }
-  } else if (ptr.modo === 'escena' && tipo === 'obj' && cfg) {
-    const upp = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;   // unidades de mundo por píxel
+  } else if (p.modo === 'escena' && tipo === 'obj' && cfg) {
+    const upp = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;
     if (herramienta === 'mover') { cfg.ox += dx * upp; cfg.oy -= dy * upp; }
     else if (herramienta === 'rotar') {
       ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dx * 0.012));
@@ -459,84 +577,112 @@ function pMove(x, y) {
     } else cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-dy * 0.006)));
   }
 }
-function pTick(now) {
-  if (ptr.activo && ptr.modo === 'boton' && ptr.repetido && now > ptr.ultRep) { ptr.el.click(); ptr.ultRep = now + 110; }
+function pTick(p, now) {
+  if (p.activo && p.modo === 'boton' && p.repetido && now > p.ultRep) { p.el.click(); p.ultRep = now + 110; }
 }
-function pUp() {
-  if (!ptr.activo) return;
-  if (ptr.modo === 'scroll' && !ptr.arrastrando && ptr.el && !ptr.enTrack) ptr.el.click();
-  else if (ptr.modo === 'boton' && !ptr.repetido && ptr.el) ptr.el.click();
-  else if (ptr.modo === 'escena') guardarCfg();
-  ptr.activo = false;
+function pUp(p) {
+  if (!p.activo) return;
+  if (p.modo === 'scroll' && !p.arrastrando && p.el && !p.enTrack) p.el.click();
+  else if (p.modo === 'boton' && !p.repetido && p.el) p.el.click();
+  else if (p.modo === 'escena') guardarCfg();
+  p.activo = false;
 }
 
-// mouse / táctil sobre la escena (los paneles usan sus propios eventos nativos)
 stage.addEventListener('pointerdown', e => {
   if (e.target.closest('#menu, #controles, #inicio')) return;
-  const r = stage.getBoundingClientRect(); stage.setPointerCapture(e.pointerId);
-  pDown(e.clientX - r.left, e.clientY - r.top, null, 'mouse');
+  try { stage.setPointerCapture(e.pointerId); } catch {}
+  const pt = puntoAStage(e.clientX, e.clientY);
+  pDown(ptrM, pt.x, pt.y, null, 'mouse');
 });
-stage.addEventListener('pointermove', e => { if (ptr.activo && ptr.fuente === 'mouse') { const r = stage.getBoundingClientRect(); pMove(e.clientX - r.left, e.clientY - r.top); } });
-stage.addEventListener('pointerup', () => { if (ptr.fuente === 'mouse') pUp(); });
+stage.addEventListener('pointermove', e => {
+  if (ptrM.activo && ptrM.fuente === 'mouse') {
+    const pt = puntoAStage(e.clientX, e.clientY);
+    pMove(ptrM, pt.x, pt.y);
+  }
+});
+stage.addEventListener('pointerup', () => { if (ptrM.fuente === 'mouse') pUp(ptrM); });
 stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
 
 /* =====================================================================
-   5) MANO → CURSOR
+   5) MANOS → 2 CURSORES
    ===================================================================== */
-const cur = { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false };
-let handLm = null;
+const curs = [
+  { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false },
+  { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false },
+];
+const cursorEls = [$('#cursor0'), $('#cursor1')];
+const hoverState = [
+  { el: null, desde: 0, bloqueado: null },
+  { el: null, desde: 0, bloqueado: null },
+];
+
+let hand = null;
 
 function procesarMano(res) {
-  const lm = res.landmarks?.[0];
-  handLm = lm || null;
-  if (!lm) {
-    if (performance.now() - cur.ultimo > 300) { cur.visible = false; if (cur.pinch) { cur.pinch = false; cur.subida = true; } }
-    return;
-  }
-  cur.ultimo = performance.now();
-  const d = (a, b) => Math.hypot((lm[a].x - lm[b].x) * W, (lm[a].y - lm[b].y) * H);
-  const tx = (1 - (lm[4].x + lm[8].x) / 2) * W, ty = (lm[4].y + lm[8].y) / 2 * H;   // punto medio pulgar–índice (espejado)
-  if (!cur.visible) { cur.x = tx; cur.y = ty; }
-  cur.x += (tx - cur.x) * 0.45; cur.y += (ty - cur.y) * 0.45;
-  cur.visible = true;
-  const ratio = d(4, 8) / (d(0, 9) || 1);
-  if (!cur.pinch && ratio < PINCH_ON) { cur.pinch = true; cur.bajada = true; }
-  else if (cur.pinch && ratio > PINCH_OFF) { cur.pinch = false; cur.subida = true; }
+  const lms = res.landmarks || [];
+  handLm[0] = lms[0] || null;
+  handLm[1] = lms[1] || null;
+  for (let i = 0; i < 2; i++) procesarUnaMano(lms[i], curs[i]);
 }
 
-function bajoCursor() {
-  const r = stage.getBoundingClientRect();
-  const e = document.elementFromPoint(r.left + cur.x, r.top + cur.y);
+function procesarUnaMano(lm, c) {
+  if (!lm) {
+    if (performance.now() - c.ultimo > 300) {
+      c.visible = false;
+      if (c.pinch) { c.pinch = false; c.subida = true; }
+    }
+    return;
+  }
+  c.ultimo = performance.now();
+  const d = (a, b) => Math.hypot((lm[a].x - lm[b].x) * W, (lm[a].y - lm[b].y) * H);
+  const tx = (1 - (lm[4].x + lm[8].x) / 2) * W;
+  const ty = (lm[4].y + lm[8].y) / 2 * H;
+  if (!c.visible) { c.x = tx; c.y = ty; }
+  c.x += (tx - c.x) * 0.45;
+  c.y += (ty - c.y) * 0.45;
+  c.visible = true;
+  const ratio = d(4, 8) / (d(0, 9) || 1);
+  if (!c.pinch && ratio < PINCH_ON) { c.pinch = true; c.bajada = true; }
+  else if (c.pinch && ratio > PINCH_OFF) { c.pinch = false; c.subida = true; }
+}
+
+function bajoCursor(sx, sy) {
+  const v = stageAViewport(sx, sy);
+  const e = document.elementFromPoint(v.x, v.y);
   if (!e) return {};
   return { el: e.closest('[data-hover]'), scroll: e.closest('[data-scroll]'), track: !!e.closest('#track') };
 }
 
-let hoverEl = null, hoverDesde = 0, bloqueado = null;
-function actualizarCursor(now) {
-  cursorEl.style.display = cur.visible ? 'block' : 'none';
-  if (!cur.visible) { hoverEl?.classList.remove('hover'); hoverEl = null; bloqueado = null; }
-  else {
-    cursorEl.style.left = cur.x + 'px'; cursorEl.style.top = cur.y + 'px';
-    cursorEl.classList.toggle('pinch', cur.pinch);
-    const el = bajoCursor().el;
-    if (el !== hoverEl) {
-      hoverEl?.classList.remove('hover'); hoverEl = el; hoverDesde = now;
-      if (el !== bloqueado) bloqueado = null;
-      el?.classList.add('hover');
+function actualizarCursor(now, i) {
+  const c = curs[i], el = cursorEls[i], hs = hoverState[i];
+  el.style.display = c.visible ? 'block' : 'none';
+  if (!c.visible) {
+    hs.el?.classList.remove('hv' + i);
+    hs.el = null; hs.bloqueado = null;
+  } else {
+    el.style.left = c.x + 'px';
+    el.style.top = c.y + 'px';
+    el.classList.toggle('pinch', c.pinch);
+    const target = bajoCursor(c.x, c.y).el;
+    if (target !== hs.el) {
+      hs.el?.classList.remove('hv' + i);
+      hs.el = target;
+      hs.desde = now;
+      if (target !== hs.bloqueado) hs.bloqueado = null;
+      target?.classList.add('hv' + i);
     }
     let p = 0;
-    if (hoverEl && !cur.pinch && !('nodwell' in hoverEl.dataset) && hoverEl !== bloqueado) {
-      const repetir = 'repeat' in hoverEl.dataset, limite = repetir ? 450 : DWELL_MS;
-      p = Math.min((now - hoverDesde) / limite, 1);
-      if (p >= 1) { hoverEl.click(); hoverDesde = now; if (!repetir) bloqueado = hoverEl; }
+    if (hs.el && !c.pinch && !('nodwell' in hs.el.dataset) && hs.el !== hs.bloqueado) {
+      const repetir = 'repeat' in hs.el.dataset, limite = repetir ? 450 : DWELL_MS;
+      p = Math.min((now - hs.desde) / limite, 1);
+      if (p >= 1) { hs.el.click(); hs.desde = now; if (!repetir) hs.bloqueado = hs.el; }
     }
-    cursorEl.style.setProperty('--p', p.toFixed(3));
+    el.style.setProperty('--p', p.toFixed(3));
   }
-  // pellizco → equivale a presionar / arrastrar / soltar
-  if (cur.bajada) { cur.bajada = false; pDown(cur.x, cur.y, bajoCursor(), 'mano'); }
-  if (ptr.activo && ptr.fuente === 'mano' && cur.visible) pMove(cur.x, cur.y);
-  if (cur.subida) { cur.subida = false; if (ptr.fuente === 'mano') pUp(); }
-  pTick(now);
+  if (c.bajada) { c.bajada = false; pDown(ptrs[i], c.x, c.y, bajoCursor(c.x, c.y), 'mano'); }
+  if (ptrs[i].activo && ptrs[i].fuente === 'mano' && c.visible) pMove(ptrs[i], c.x, c.y);
+  if (c.subida) { c.subida = false; if (ptrs[i].fuente === 'mano') pUp(ptrs[i]); }
+  pTick(ptrs[i], now);
 }
 
 /* =====================================================================
@@ -550,7 +696,6 @@ function procesarPose(res) {
   poseLm = res.landmarks?.[0] || null; poseWorld = res.worldLandmarks?.[0] || null;
   const lm = poseLm;
   if (!lm || tipo !== 'hum') return;
-  // coordenadas de pantalla (la imagen se muestra espejada): la izquierda de la persona queda a la izquierda de la pantalla
   const px = i => ({ x: (1 - lm[i].x) * W, y: lm[i].y * H, v: lm[i].visibility ?? 1 });
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const ls = px(11), rs = px(12);
@@ -558,14 +703,12 @@ function procesarPose(res) {
   const lh = px(23), rh = px(24);
   const mid = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
   const caderas = Math.min(lh.v, rh.v) > 0.5;
-  const alto = caderas ? dist(mid, { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 }) / 0.31   // torso ≈ 31 % de la altura
-                       : dist(ls, rs) * 3.85;                                                  // hombros ≈ 26 %
+  const alto = caderas ? dist(mid, { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 }) / 0.31
+                       : dist(ls, rs) * 3.85;
   objetivo.s = alto;
   objetivo.x = mid.x;
-  objetivo.y = mid.y + 0.32 * alto;        // centro del cuerpo (hombros al ~18 % desde arriba)
-  // inclinación de los hombros: ls queda a la izquierda de la pantalla, rs a la derecha → ángulo 0 con hombros nivelados
+  objetivo.y = mid.y + 0.32 * alto;
   objetivo.roll = Math.atan2(ls.y - rs.y, rs.x - ls.x);
-  // giro del torso por la profundidad (z) de los hombros
   objetivo.yaw = Math.max(-1.1, Math.min(1.1, Math.atan2(lm[12].z - lm[11].z, lm[11].x - lm[12].x)));
   objetivo.visto = performance.now();
 }
@@ -578,14 +721,13 @@ function aplicarMocap(dt) {
     const a = poseLm?.[c.la], b = poseLm?.[c.lb];
     if (poseWorld && a && b && (a.visibility ?? 1) > 0.5 && (b.visibility ?? 1) > 0.5) {
       const A = poseWorld[c.la], B = poseWorld[c.lb];
-      // MediaPipe (x der., y abajo, z lejos) → escena en espejo (x der., y arriba, z hacia la cámara)
       _d.set(-(B.x - A.x), -(B.y - A.y), -(B.z - A.z)).normalize();
     } else _d.copy(c.defecto);
     c.hueso.parent.getWorldQuaternion(_qP);
-    _t.copy(_d).applyQuaternion(_qP.invert());                       // dirección deseada en el espacio del padre
-    _qO.setFromUnitVectors(c.a0, _t).multiply(c.q0);                 // giro mínimo desde la pose de reposo
+    _t.copy(_d).applyQuaternion(_qP.invert());
+    _qO.setFromUnitVectors(c.a0, _t).multiply(c.q0);
     c.hueso.quaternion.slerp(_qO, k);
-    c.hueso.updateMatrixWorld(true);                                 // los hijos ven el cambio
+    c.hueso.updateMatrixWorld(true);
   }
 }
 
@@ -612,7 +754,7 @@ function actualizarModelo(dt) {
   if (cfg.mocap) aplicarMocap(dt); else mixer?.update(dt);
 }
 
-/* ---------- puntos de depuración (útil para explicar el tracking) ---------- */
+/* ---------- puntos de depuración ---------- */
 const POSE_LINKS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function dibujar(lm, links, color) {
@@ -624,7 +766,8 @@ function dibujar(lm, links, color) {
 function dibujarDebug() {
   dbg.clearRect(0, 0, W, H);
   if (!mostrarPuntos) return;
-  dibujar(poseLm, POSE_LINKS, '#00e5ff'); dibujar(handLm, HAND_LINKS, '#ffb400');
+  dibujar(poseLm, POSE_LINKS, '#00e5ff');
+  for (const hl of handLm) dibujar(hl, HAND_LINKS, '#ffb400');
 }
 
 /* =====================================================================
@@ -645,10 +788,10 @@ async function iniciar() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     video.srcObject = stream; await video.play(); layout();
     const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
-    hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 1 });
+    hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 2 });
     pose = await crearTarea(PoseLandmarker, fileset, POSE_URL, { numPoses: 1 });
     $('#inicio').remove();
-    setEstado('Levantá una mano y elegí un modelo de la lista');
+    setEstado('Levantá una o dos manos y elegí un modelo');
     requestAnimationFrame(bucle);
   } catch (e) {
     console.error(e);
@@ -668,7 +811,8 @@ function bucle(now) {
     procesarMano(hand.detectForVideo(video, t));
     procesarPose(pose.detectForVideo(video, t));
   }
-  actualizarCursor(now);
+  actualizarCursor(now, 0);
+  actualizarCursor(now, 1);
   actualizarModelo(dt);
   renderer.render(scene, tipo === 'obj' ? camPersp : camOrto);
   dibujarDebug();
@@ -676,7 +820,7 @@ function bucle(now) {
 
 layout();
 sincronizar();
-setInterval(() => { if (!document.hidden) sincronizar(); }, 300000);                       // cada 5 min
+setInterval(() => { if (!document.hidden) sincronizar(); }, 300000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - ultimaSync > 300000) sincronizar(); });
 </script>
 </body>
