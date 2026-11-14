@@ -85,8 +85,6 @@
       radial-gradient(circle at 60% 88%, #fff 0, transparent 2px),
       radial-gradient(circle at 10% 50%, #fff 0, transparent 2px),
       radial-gradient(circle at 90% 45%, #fff 0, transparent 2px),
-      radial-gradient(circle at 40% 45%, #fff 0, transparent 1.5px),
-      radial-gradient(circle at 70% 55%, #fff 0, transparent 1.5px),
       radial-gradient(ellipse at 50% 100%, rgba(30,50,110,.40) 0%, transparent 52%),
       radial-gradient(ellipse at center, transparent 15%, rgba(0,4,18,.94) 95%);
   }
@@ -110,13 +108,12 @@
   .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
   .btn.hv0, .btn.hv1 { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
 
-  /* ---------- lista lateral de modelos ---------- */
   #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; transition: width .2s; }
   #menu.oculto { bottom:auto; width:auto; }
   #menu.oculto #menuContenido { display:none; }
   #titulo { background:var(--fondo); border-radius:10px; padding:6px 8px; font-size:12px; text-align:center; font-weight:600;
             display:flex; justify-content:space-between; align-items:center; gap:6px; }
-  #btnToggleMenu, #toggleControles { cursor:pointer; user-select:none; }
+  #btnToggleMenu { cursor:pointer; user-select:none; }
   #menuContenido { flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; }
   #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
   #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
@@ -129,7 +126,6 @@
   .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
   .flecha { padding:4px; font-size:16px; }
 
-  /* ---------- controles derecha ---------- */
   #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start;
                max-height:calc(100% - 16px); overflow-y:auto; scrollbar-width:none; transition: width .2s; }
   #controles::-webkit-scrollbar { display:none; }
@@ -147,14 +143,14 @@
 
   .cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20;
             border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9);
-            pointer-events:none; display:none; background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
+            pointer-events:none; display:none; background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0);
+            transition: box-shadow .2s, border-color .2s; }
   .cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
   .cursor.pinch { transform:scale(.7); border-color:var(--acento); }
-  .cursor.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 22px rgba(255,96,255,.95); }
+  .cursor.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.6), 0 0 24px rgba(255,96,255,1); }
   #cursor1 { border-color:#6cf; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(102,204,255,.9); }
-  #cursor1.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 22px rgba(255,96,255,.95); }
+  #cursor1.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.6), 0 0 24px rgba(255,96,255,1); }
 
-  /* ---------- menú de fondos (popup) ---------- */
   #menuFondos {
     position:absolute; top:50%; left:50%;
     transform:translate(-50%, -50%) scale(.92);
@@ -271,8 +267,8 @@
     <div id="inicio">
       <h1>🪞 Espejo AR – Calabozos & Código</h1>
       <p>🖐️ <b>Una mano</b>: el cursor sigue tu dedo índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1s para click automático. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
-      <p>🙌 <b>Dos manos pellizcando a la vez</b> sobre un objeto: acercá/alejá para <b>escalar</b>, mové ambas juntas para <b>mover</b>, giralas entre sí para <b>rotar</b>.</p>
-      <p>🎨 Tocá <b>Fondo</b> para abrir el menú de escenarios temáticos (mazmorra, calabozo, cripta, volcán, hielo, noche...).</p>
+      <p>🙌 <b>Dos manos</b>: pellizcá con las dos manos <b>sobre el objeto</b> (no sobre botones) y esperá un instante. Los cursores se ponen <b>fucsia</b> → acercá/alejá para <b>escalar</b> y mové ambas juntas para <b>desplazar</b>. Para rotar usá una sola mano (herramienta Rotar) o los botones.</p>
+      <p>🎨 Tocá <b>Fondo</b> para abrir el menú de escenarios temáticos.</p>
       <p>👀 Alejaros hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -318,7 +314,6 @@ let handLm = [null, null];
 let rotacion = 0;
 let fondoActual = 'camara';
 
-/* Catálogo de fondos temáticos */
 const FONDOS = [
   { id: 'camara',   nombre: 'Cámara',   ico: '📷', color: 'linear-gradient(135deg, #444, #888)' },
   { id: 'mazmorra', nombre: 'Mazmorra', ico: '🏰', color: 'linear-gradient(135deg, #3a1500, #ff8a30)' },
@@ -486,7 +481,6 @@ let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
 const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
 const qTmp = new THREE.Quaternion();
-const qTwo = new THREE.Quaternion();
 
 const cfgPorDefecto = () => ({ q: [0,0,0,1], s: 1, dy: 0, ox: 0, oy: -0.1, mocap: true });
 const claveCfg = d => 'espejoAR.cfg.' + d.src;
@@ -528,6 +522,7 @@ async function seleccionar(d, btn) {
   ajuste.removeFromParent(); ajuste.clear();
   clon = null; mixer = null; rig = null; tipo = null; def = d;
   stage.dataset.modo = ''; anclaje.visible = false; objeto.visible = false;
+  twoHand.activo = false;
   if (!d) { setEstado('Sin modelo'); refrescarBotones(); return; }
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
@@ -548,7 +543,9 @@ async function seleccionar(d, btn) {
     if (tipo === 'hum' && cfg.mocap) volverAReposo();
     stage.dataset.modo = tipo;
     suave.init = false;
-    setEstado(tipo === 'hum' ? d.nombre + ' · copia tu cuerpo, mostrá hombros y cintura' : d.nombre + ' · pellizcá con 1 mano o las 2 a la vez para manipular');
+    setEstado(tipo === 'hum'
+      ? d.nombre + ' · copia tu cuerpo, mostrá hombros y cintura'
+      : d.nombre + ' · pellizcá con 1 o 2 manos sobre el objeto para manipular');
   } catch (e) {
     console.error(e); setEstado('No pude cargar ' + d.nombre); def = null;
   }
@@ -569,7 +566,7 @@ async function togglearFullscreen() {
   } catch (e) { console.warn('Fullscreen:', e); }
 }
 
-/* ---------- menú de fondos (popup) ---------- */
+/* ---------- menú de fondos ---------- */
 function construirMenuFondos() {
   const m = $('#menuFondos');
   m.innerHTML = '';
@@ -638,7 +635,6 @@ document.querySelectorAll('#controles .btn[data-accion]').forEach(b => b.addEven
   ACCIONES[a]?.(); refrescarBotones(); guardarCfg();
 }));
 
-/* --- ocultar/mostrar paneles laterales --- */
 $('#btnToggleMenu').addEventListener('click', (e) => {
   e.stopPropagation();
   const m = $('#menu');
@@ -743,7 +739,7 @@ stage.addEventListener('pointerup', () => { if (ptrM.fuente === 'mouse') pUp(ptr
 stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
 
 /* =====================================================================
-   5) MANOS → 2 CURSORES + GESTOS A DOS MANOS
+   5) MANOS → 2 CURSORES + GESTOS A DOS MANOS (ROBUSTO)
    ===================================================================== */
 const curs = [
   { x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false },
@@ -755,20 +751,41 @@ const hoverState = [
   { el: null, desde: 0, bloqueado: null },
 ];
 
+/* Estado del gesto a dos manos. Solo escala + move (sin rotación, era lo que se descontrolaba).
+   Usamos deltas frame-a-frame con suavizado exponencial y deadzones, así no se dispara. */
 const twoHand = {
   activo: false,
-  dist0: 1, ang0: 0, mid0: { x: 0, y: 0 },
-  s0: 1, ox0: 0, oy0: 0,
-  q0: new THREE.Quaternion(),
+  smDist: 0, smMidX: 0, smMidY: 0,   // suavizados
+  lastDist: 0, lastMidX: 0, lastMidY: 0,
+  cooldownHasta: 0,
 };
 
 let hand = null;
 
-function procesarMano(res) {
+/* Asignación de manos por handedness (más estable que por posición).
+   Si MediaPipe no reporta handedness, caemos a "orden de detección" como antes. */
+function asignarManos(res) {
   const lms = res.landmarks || [];
-  handLm[0] = lms[0] || null;
-  handLm[1] = lms[1] || null;
-  for (let i = 0; i < 2; i++) procesarUnaMano(lms[i], curs[i]);
+  const handed = res.handednesses || [];
+  if (lms.length === 0) return { a: null, b: null };
+  if (lms.length === 1) return { a: lms[0], b: null };
+
+  let iL = -1, iR = -1;
+  for (let i = 0; i < lms.length && i < 2; i++) {
+    const label = handed[i]?.[0]?.categoryName || '';
+    if (label === 'Left' && iL < 0) iL = i;
+    else if (label === 'Right' && iR < 0) iR = i;
+  }
+  if (iL >= 0 && iR >= 0) return { a: lms[iL], b: lms[iR] };
+  // fallback: orden de detección
+  return { a: lms[0], b: lms[1] || null };
+}
+
+function procesarMano(res) {
+  const { a, b } = asignarManos(res);
+  handLm[0] = a; handLm[1] = b;
+  procesarUnaMano(a, curs[0]);
+  procesarUnaMano(b, curs[1]);
 }
 
 function procesarUnaMano(lm, c) {
@@ -799,7 +816,14 @@ function bajoCursor(sx, sy) {
   return { el: e.closest('[data-hover]'), scroll: e.closest('[data-scroll]'), track: !!e.closest('#track') };
 }
 
-function actualizarCursorVisual(now, i) {
+/* Indica si un punto está "sobre la escena libre" (no encima de ningún panel/botón/lista) */
+function enEscenaLibre(x, y) {
+  const info = bajoCursor(x, y);
+  return !info.el && !info.scroll;
+}
+
+/* Actualiza el cursor: posición + estado de pinch + (opcionalmente) hover/dwell */
+function actualizarCursorVisual(now, i, soloPosicion = false) {
   const c = curs[i], el = cursorEls[i], hs = hoverState[i];
   el.style.display = c.visible ? 'block' : 'none';
   if (!c.visible) {
@@ -810,6 +834,14 @@ function actualizarCursorVisual(now, i) {
   el.style.left = c.x + 'px';
   el.style.top = c.y + 'px';
   el.classList.toggle('pinch', c.pinch);
+
+  if (soloPosicion) {
+    hs.el?.classList.remove('hv' + i);
+    hs.el = null;
+    el.style.setProperty('--p', '0');
+    return;
+  }
+
   const target = bajoCursor(c.x, c.y).el;
   if (target !== hs.el) {
     hs.el?.classList.remove('hv' + i);
@@ -827,6 +859,7 @@ function actualizarCursorVisual(now, i) {
   el.style.setProperty('--p', p.toFixed(3));
 }
 
+/* Procesa eventos de un puntero individual (pDown/pMove/pUp) */
 function actualizarCursor(now, i) {
   actualizarCursorVisual(now, i);
   const c = curs[i];
@@ -837,60 +870,90 @@ function actualizarCursor(now, i) {
 }
 
 function actualizarCursores(now) {
-  const dosManosActivas = curs[0].visible && curs[1].visible && curs[0].pinch && curs[1].pinch && tipo === 'obj' && cfg;
+  const P = curs[0], Q = curs[1];
 
-  if (dosManosActivas || twoHand.activo) {
+  // Condición para entrar / mantenerse en modo dos manos:
+  // ambas manos visibles, ambas pellizcando, y ambas sobre zona libre de escena (no sobre UI).
+  const ambasOk = P.visible && Q.visible && P.pinch && Q.pinch
+    && tipo === 'obj' && cfg
+    && enEscenaLibre(P.x, P.y) && enEscenaLibre(Q.x, Q.y)
+    && now > twoHand.cooldownHasta;
+
+  if (ambasOk) {
     if (!twoHand.activo) {
-      // activar modo dos manos
+      /* ENTRAR al modo dos manos */
       twoHand.activo = true;
-      // cancelar cualquier puntero individual activo
+
+      // Cancelar punteros individuales activos para que no arrastren el objeto
       for (const p of ptrs) if (p.fuente === 'mano') p.activo = false;
-      curs[0].bajada = false; curs[1].bajada = false;
-      curs[0].subida = false; curs[1].subida = false;
-      // guardar estado inicial
-      twoHand.dist0 = Math.max(30, Math.hypot(curs[0].x - curs[1].x, curs[0].y - curs[1].y));
-      twoHand.ang0 = Math.atan2(curs[1].y - curs[0].y, curs[1].x - curs[0].x);
-      twoHand.mid0 = { x: (curs[0].x + curs[1].x) / 2, y: (curs[0].y + curs[1].y) / 2 };
-      twoHand.s0 = cfg.s;
-      twoHand.ox0 = cfg.ox;
-      twoHand.oy0 = cfg.oy;
-      twoHand.q0.copy(ajuste.quaternion);
+      P.bajada = false; Q.bajada = false;
+      P.subida = false; Q.subida = false;
+
+      // Inicializar suavizado y baseline (snapshot del estado actual)
+      const rawDist = Math.hypot(P.x - Q.x, P.y - Q.y);
+      const rawMidX = (P.x + Q.x) / 2;
+      const rawMidY = (P.y + Q.y) / 2;
+      twoHand.smDist  = twoHand.lastDist  = rawDist;
+      twoHand.smMidX  = twoHand.lastMidX  = rawMidX;
+      twoHand.smMidY  = twoHand.lastMidY  = rawMidY;
+
       cursorEls[0].classList.add('dos-manos');
       cursorEls[1].classList.add('dos-manos');
+      for (let i = 0; i < 2; i++) actualizarCursorVisual(now, i, true);
+      return;
     }
-    // aplicar gesto
-    const dist = Math.max(30, Math.hypot(curs[0].x - curs[1].x, curs[0].y - curs[1].y));
-    const ang  = Math.atan2(curs[1].y - curs[0].y, curs[1].x - curs[0].x);
-    const mid  = { x: (curs[0].x + curs[1].x) / 2, y: (curs[0].y + curs[1].y) / 2 };
-    const upp  = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;
 
-    // escala: distancia entre manos
-    cfg.s = Math.min(12, Math.max(0.04, twoHand.s0 * (dist / twoHand.dist0)));
-    // mover: desplazamiento del punto medio
-    cfg.ox = twoHand.ox0 + (mid.x - twoHand.mid0.x) * upp;
-    cfg.oy = twoHand.oy0 - (mid.y - twoHand.mid0.y) * upp;
-    // rotar: cambio del ángulo entre manos (eje Z)
-    const dAng = ang - twoHand.ang0;
-    qTwo.setFromAxisAngle(EJE.z, -dAng);
-    ajuste.quaternion.copy(twoHand.q0).premultiply(qTwo);
-    cfg.q = ajuste.quaternion.toArray();
+    /* Mantener gesto con deltas relativos + suavizado + deadzones */
+    const rawDist = Math.hypot(P.x - Q.x, P.y - Q.y);
+    const rawMidX = (P.x + Q.x) / 2;
+    const rawMidY = (P.y + Q.y) / 2;
 
-    // refrescar visuales sin disparar eventos
-    for (let i = 0; i < 2; i++) actualizarCursorVisual(now, i);
+    const sm = 0.22;
+    twoHand.smDist += (rawDist - twoHand.smDist) * sm;
+    twoHand.smMidX += (rawMidX - twoHand.smMidX) * sm;
+    twoHand.smMidY += (rawMidY - twoHand.smMidY) * sm;
+
+    // Escalar: solo si el baseline no es minúsculo (evita sensibilidad extrema con manos juntas)
+    if (twoHand.lastDist > 55) {
+      let sDelta = twoHand.smDist / twoHand.lastDist;
+      sDelta = Math.max(0.92, Math.min(1.08, sDelta));   // máximo 8% por frame
+      if (Math.abs(sDelta - 1) > 0.0025) {               // deadzone
+        cfg.s = Math.min(12, Math.max(0.04, cfg.s * sDelta));
+      }
+    }
+
+    // Mover: delta del punto medio, con deadzone
+    const upp = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / H;
+    const dx = twoHand.smMidX - twoHand.lastMidX;
+    const dy = twoHand.smMidY - twoHand.lastMidY;
+    if (Math.hypot(dx, dy) > 0.6) {
+      cfg.ox += dx * upp;
+      cfg.oy -= dy * upp;
+    }
+
+    twoHand.lastDist = twoHand.smDist;
+    twoHand.lastMidX = twoHand.smMidX;
+    twoHand.lastMidY = twoHand.smMidY;
+
+    for (let i = 0; i < 2; i++) actualizarCursorVisual(now, i, true);
     return;
   }
 
+  /* SALIR del modo dos manos (si ya no se cumple la condición) */
   if (twoHand.activo) {
     twoHand.activo = false;
-    guardarCfg();
+    twoHand.cooldownHasta = now + 300;
     cursorEls[0].classList.remove('dos-manos');
     cursorEls[1].classList.remove('dos-manos');
-    // si una mano sigue pellizcando, arrancar drag individual desde su posición actual
-    const hA = curs[0].pinch, hB = curs[1].pinch;
-    if (hA && !hB) pDown(ptrs[0], curs[0].x, curs[0].y, bajoCursor(curs[0].x, curs[0].y), 'mano');
-    else if (!hA && hB) pDown(ptrs[1], curs[1].x, curs[1].y, bajoCursor(curs[1].x, curs[1].y), 'mano');
-    curs[0].bajada = false; curs[1].bajada = false;
-    curs[0].subida = false; curs[1].subida = false;
+    guardarCfg();
+    P.bajada = false; Q.bajada = false;
+    P.subida = false; Q.subida = false;
+
+    // Si una sola mano sigue pellizcando sobre la escena, retomamos como drag individual
+    const pOK = P.visible && P.pinch && enEscenaLibre(P.x, P.y);
+    const qOK = Q.visible && Q.pinch && enEscenaLibre(Q.x, Q.y);
+    if (pOK && !qOK) pDown(ptrs[0], P.x, P.y, { el: null, scroll: null, track: false }, 'mano');
+    else if (qOK && !pOK) pDown(ptrs[1], Q.x, Q.y, { el: null, scroll: null, track: false }, 'mano');
   }
 
   for (let i = 0; i < 2; i++) actualizarCursor(now, i);
@@ -965,7 +1028,7 @@ function actualizarModelo(dt) {
   if (cfg.mocap) aplicarMocap(dt); else mixer?.update(dt);
 }
 
-/* ---------- puntos de depuración ---------- */
+/* ---------- puntos de depuración + indicador del gesto dos-manos ---------- */
 const POSE_LINKS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function dibujar(lm, links, color) {
@@ -976,6 +1039,24 @@ function dibujar(lm, links, color) {
 }
 function dibujarDebug() {
   dbg.clearRect(0, 0, W, H);
+
+  // Línea guía entre manos cuando el gesto dos-manos está activo
+  if (twoHand.activo) {
+    dbg.strokeStyle = 'rgba(255,96,255,.65)';
+    dbg.lineWidth = 3;
+    dbg.setLineDash([8, 6]);
+    dbg.beginPath();
+    dbg.moveTo(curs[0].x, curs[0].y);
+    dbg.lineTo(curs[1].x, curs[1].y);
+    dbg.stroke();
+    dbg.setLineDash([]);
+    const mx = (curs[0].x + curs[1].x) / 2, my = (curs[0].y + curs[1].y) / 2;
+    dbg.fillStyle = 'rgba(255,96,255,.85)';
+    dbg.beginPath(); dbg.arc(mx, my, 7, 0, 7); dbg.fill();
+    dbg.fillStyle = '#fff';
+    dbg.beginPath(); dbg.arc(mx, my, 3, 0, 7); dbg.fill();
+  }
+
   if (!mostrarPuntos) return;
   dibujar(poseLm, POSE_LINKS, '#00e5ff');
   for (const hl of handLm) dibujar(hl, HAND_LINKS, '#ffb400');
@@ -1002,7 +1083,7 @@ async function iniciar() {
     hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 2 });
     pose = await crearTarea(PoseLandmarker, fileset, POSE_URL, { numPoses: 1 });
     $('#inicio').remove();
-    setEstado('Levantá una o dos manos y elegí un modelo');
+    setEstado('Levantá una mano y elegí un modelo');
     requestAnimationFrame(bucle);
   } catch (e) {
     console.error(e);
@@ -1028,7 +1109,6 @@ function bucle(now) {
   dibujarDebug();
 }
 
-/* Inicialización */
 construirMenuFondos();
 layout();
 sincronizar();
