@@ -23,7 +23,6 @@
   .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
   .btn.hv0, .btn.hv1 { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
 
-  /* ---------- lista lateral ---------- */
   #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; transition:width .2s; }
   #menu.oculto { bottom:auto; width:auto; }
   #menu.oculto #menuContenido { display:none; }
@@ -41,7 +40,6 @@
   .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
   .flecha { padding:4px; font-size:16px; }
 
-  /* ---------- ajustes derecha ---------- */
   #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start;
                max-height:calc(100% - 90px); overflow-y:auto; scrollbar-width:none; }
   #controles::-webkit-scrollbar { display:none; }
@@ -52,7 +50,6 @@
   #stage[data-modo="hum"] .solo-obj, #stage[data-modo="obj"] .solo-hum, #stage[data-modo=""] .solo-obj, #stage[data-modo=""] .solo-hum { display:none; }
   .ancho { grid-column:1 / -1; }
 
-  /* ---------- barra inferior ---------- */
   #barra { position:absolute; left:50%; bottom:calc(10px + var(--seg-b)); transform:translateX(-50%); display:flex; gap:6px; z-index:8; max-width:96%; flex-wrap:nowrap; }
   #barra .btn { width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none; border-radius:14px; }
   #barra .btn small { display:none; }
@@ -63,7 +60,6 @@
   #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px; border-radius:20px; font-size:13px;
             z-index:6; max-width:44%; text-align:center; pointer-events:none; transition:opacity .6s; }
 
-  /* ---------- cursores ---------- */
   .cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20; border:3px solid #fff;
             box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9); pointer-events:none; display:none;
             background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
@@ -72,7 +68,6 @@
   #cursor1 { border-color:#6cf; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(102,204,255,.9); }
   .cursor.dos-manos, #cursor1.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.6), 0 0 24px rgba(255,96,255,1); }
 
-  /* ---------- menú de fondos ---------- */
   #menuFondos { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none; transition:transform .2s, opacity .2s;
                 width:min(560px, 94%); max-height:82%; background:rgba(15,15,25,.97); border:2px solid var(--acento); border-radius:16px; padding:12px; z-index:18;
                 display:grid; grid-template-columns:repeat(3,1fr); gap:8px; overflow-y:auto; scrollbar-width:thin; box-shadow:0 0 50px rgba(255,180,0,.35); }
@@ -88,7 +83,6 @@
   .fondoOpt .nombre { font-weight:600; }
   #menuFondos .btn.togg { grid-column:1 / -1; padding:9px; font-size:13px; }
 
-  /* ---------- inicio ---------- */
   #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.93); display:flex; flex-direction:column; align-items:center; justify-content:center;
             gap:11px; text-align:center; padding:20px; overflow-y:auto; }
   #inicio h1 { margin:0; font-size:24px; }
@@ -129,7 +123,7 @@
         <div id="listaWrap"><div id="lista" data-scroll></div><div id="track" data-scroll><div id="thumb"></div></div></div>
         <div class="btn flecha" data-hover data-repeat id="abajo">▼</div>
         <div class="fila">
-          <label class="btn" data-hover id="lblArchivo" title="Abrir un .glb de tu equipo">📁<input id="archivo" type="file" accept=".glb,.gltf" hidden></label>
+          <label class="btn" data-hover id="lblArchivo" title="Abrir un .glb / .gltf / .fbx de tu equipo">📁<input id="archivo" type="file" accept=".glb,.gltf,.fbx" hidden></label>
           <div class="btn" data-hover id="refrescar" title="Sincronizar con el repositorio">🔄</div>
           <div class="btn" data-hover id="quitar" title="Quitar modelo">❌</div>
         </div>
@@ -170,7 +164,7 @@
     <div id="estado">Iniciando…</div>
     <div class="cursor" id="cursor0"></div>
     <div class="cursor" id="cursor1"></div>
-    <div id="drop">Soltá el archivo .glb acá</div>
+    <div id="drop">Soltá el archivo .glb / .fbx acá</div>
     <div id="flash"></div>
 
     <div id="inicio">
@@ -178,7 +172,7 @@
       <p>🖐️ <b>Una mano</b>: el cursor sigue tu índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1 s. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
       <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar). ⛶ pantalla completa · 🔃 girar vista · 🧭 orientación · 👁 ocultar menús · 📸 foto.</p>
-      <p>🧍 <b>Cualquier .glb de la carpeta sirve</b>: si tiene esqueleto humanoide (Mixamo, Unreal, Rigify, VRM…) se ajusta solo a tu torso y copia tus movimientos; si no, aparece como objeto. El botón 🧍 <i>Modo</i> permite forzar «sobre mi cuerpo» u «objeto».</p>
+      <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide (Mixamo, Unreal, Rigify, VRM…) se ajusta solo a tu torso y copia tus movimientos; si no, aparece como objeto. El botón 🧍 <i>Modo</i> permite forzar «sobre mi cuerpo» u «objeto».</p>
       <p>👀 Alejate hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -193,12 +187,12 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
    MOTOR DE FONDOS DE MAZMORRA — todo procedural (canvas 2D), sin imágenes externas.
-   Cada escenario: est() dibuja la capa estática una vez; din() anima luces, runas, lava…
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
@@ -206,7 +200,6 @@ function mulberry(a) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/* ---------- utilidades de dibujo ---------- */
 function ladrillos(c, x, y, w, h, bw, bh, hsl, r) {
   c.fillStyle = '#050506'; c.fillRect(x, y, w, h);
   c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
@@ -320,8 +313,6 @@ function estante(c, x, y, w, h, r) {
   }
   c.strokeStyle = '#3a2414'; c.lineWidth = 6; c.strokeRect(x, y, w, h);
 }
-
-/* ---------- animados ---------- */
 function llama(c, x, y, s, t, seed, col) {
   const f = .82 + .18 * Math.sin(t * 9 + seed * 7) * Math.sin(t * 3.1 + seed) + .06 * Math.sin(t * 27 + seed);
   c.save(); c.globalCompositeOperation = 'lighter';
@@ -338,7 +329,6 @@ function llama(c, x, y, s, t, seed, col) {
   c.quadraticCurveTo(x + w2, y - h2 * .5, x + w2, y); c.closePath(); c.fill();
 }
 
-/* ======================= ESCENARIOS ======================= */
 function escenaCristales(hA, hB, fondo, tono) {
   return {
     luz: { c: tono, h: .9, s: 1.5 },
@@ -576,12 +566,7 @@ const ESCENAS = {
 
   vacio: { luz: { c: 0xffffff, h: 1.6, s: 2.2 }, est(c, W, H, r, S) { c.fillStyle = '#000'; c.fillRect(0, 0, W, H); S.vig = 0; } },
 };
-const NOMBRES_ESCENAS = {
-  calabozo: 'Calabozo', pasillo: 'Pasillo de antorchas', biblioteca: 'Biblioteca arcana', cripta: 'Cripta', cristales: 'Cueva de cristales',
-  hielo: 'Cueva helada', volcan: 'Foso de lava', codigo: 'Código (runas)', castillo: 'Castillo nocturno', vacio: 'Vacío',
-};
 
-/* ---------- motor: capa estática + capa dinámica ---------- */
 function crearMotorFondos(mk) {
   const M = { id: null, W: 0, H: 0, est: null, S: {}, esc: null, parts: [], nieb: [], sprite: null, rnd: mulberry(99), acum: 0, flicker: 1 };
   M.fijar = (id, W, H) => {
@@ -632,14 +617,14 @@ function crearMotorFondos(mk) {
   return M;
 }
 
-
 /* =====================================================================
    1) CONFIGURACIÓN
    ===================================================================== */
 const CARPETA = 'modelos/';
 const REPO_GITHUB = 'BraianM-dev/pruebas';
 const BASE_LISTA = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb','roca_diamante.glb','pilar.glb',
-                    'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb'];
+                    'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb',
+                    'personaje.fbx','animacion.fbx'];
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -660,13 +645,11 @@ const FONDOS = [
   { id: 'vacio',      nombre: 'Vacío negro',          ico: '⬛' },
 ];
 
-/* ---------- preferencias (se recuerdan entre sesiones) ---------- */
 const PREF_KEY = 'espejoAR.prefs';
 const prefs = Object.assign({ lista: true, ajustes: innerWidth > 700, fondo: 'camara', vista: 'llenar', persona: false },
   (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; } })());
 const guardarPrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {} };
 
-/* ---------- DOM ---------- */
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), video = $('#video'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
 const fondoCv = $('#fondo'), personaCv = $('#persona'), estadoEl = $('#estado');
@@ -686,7 +669,6 @@ const handLm = [null, null];
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const motor = crearMotorFondos(mkCanvas);
 
-/* ---------- three.js ---------- */
 const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -705,13 +687,13 @@ const anclaje = new THREE.Group(); anclaje.visible = false; anclaje.rotation.ord
 const objeto = new THREE.Group(); objeto.visible = false; scene.add(objeto);
 const ajuste = new THREE.Group();
 const loader = new GLTFLoader();
+const fbxLoader = new FBXLoader();
 const draco = new DRACOLoader(); draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
 loader.setDRACOLoader(draco); loader.setMeshoptDecoder(MeshoptDecoder);
 const ktx2 = new KTX2Loader().setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/basis/').detectSupport(renderer);
 loader.setKTX2Loader(ktx2);
 const clock = new THREE.Clock();
 
-/* ---------- layout: llenar / ajustar, rotación y mapeo cámara → pantalla ---------- */
 function layout() {
   const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
   const girado = rotacion % 180 !== 0;
@@ -737,7 +719,6 @@ document.addEventListener('fullscreenchange', () => { layoutDeb(); refrescarBarr
 document.addEventListener('webkitfullscreenchange', () => { layoutDeb(); refrescarBarra(); });
 video.addEventListener('resize', layoutDeb);
 
-/* coordenadas normalizadas de la cámara → píxeles del stage (imagen espejada) */
 const sx = xn => (1 - xn) * mapa.vw * mapa.s - mapa.ox;
 const sy = yn => yn * mapa.vh * mapa.s - mapa.oy;
 
@@ -751,9 +732,9 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS: descubrimiento automático + carga
+   2) MODELOS: descubrimiento automático + carga (GLB / GLTF / FBX)
    ===================================================================== */
-const esModelo = n => /\.(glb|gltf)$/i.test(n);
+const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 function repoActual() {
   if (location.hostname.endsWith('.github.io')) {
     const usuario = location.hostname.split('.')[0], seg = location.pathname.split('/')[1] || '';
@@ -791,9 +772,9 @@ async function descubrirModelos(forzar = false) {
 }
 const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],[/dragon|dragón/i,'🐉'],[/cofre|chest/i,'📦'],
   [/diamante|gem|cristal/i,'💎'],[/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],[/desierto|desert/i,'🏜️'],
-  [/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰']];
+  [/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰'],[/\.fbx$/i,'📦']];
 const iconoDe = n => (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
-const bonito = n => n.replace(/\.(glb|gltf)$/i, '').replace(/[_-]+/g, ' ');
+const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
 
 let defs = [], ultimaFirma = '', ultimaSync = 0;
 function poblarLista(nombres) {
@@ -839,6 +820,43 @@ function cargarGLB(d) {
   }, e => { if (e.total) setEstado(`Cargando ${d.nombre}… ${Math.round(e.loaded / e.total * 100)}%`); }, fallo));
 }
 
+/* ---------- FBX ----------
+   FBXLoader aplica un factor de 0.01 (cm→m) a la mayoría de FBX de Mixamo.
+   Si tras cargar el modelo queda absurdamente chico o grande, lo reescalamos
+   a un tamaño típico de personaje. Así funcionan tanto FBX en cm (Mixamo)
+   como FBX en metros (Blender, Maya, Unreal) sin tocar nada más. */
+function cargarFBX(d) {
+  if (cache.has(d.src)) return Promise.resolve(cache.get(d.src));
+  return new Promise((ok, fallo) => fbxLoader.load(d.src, fbx => {
+    const obj = fbx;
+    const sobran = [];
+    obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
+    sobran.forEach(o => o.removeFromParent());
+    obj.updateMatrixWorld(true);
+    obj.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
+
+    // Compensar unidades: si el modelo mide <0.1 o >20 unidades, normalizar a ~2 (≈2m)
+    const box0 = new THREE.Box3().setFromObject(obj);
+    const size0 = box0.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size0.x, size0.y, size0.z);
+    if (maxDim > 0 && (maxDim < 0.1 || maxDim > 20)) {
+      const k = 2 / maxDim;
+      obj.scale.multiplyScalar(k);
+      obj.updateMatrixWorld(true);
+      obj.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
+    }
+
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
+    obj.position.sub(centro);
+
+    const base = { obj, size, clips: fbx.animations || [] };
+    cache.set(d.src, base);
+    if (cache.size > 4) cache.delete(cache.keys().next().value);
+    ok(base);
+  }, e => { if (e.total) setEstado(`Cargando ${d.nombre}… ${Math.round(e.loaded / e.total * 100)}%`); }, fallo));
+}
+
 /* =====================================================================
    3) ESTADO DEL MODELO + RIG HUMANOIDE
    ===================================================================== */
@@ -851,12 +869,6 @@ const claveCfg = d => 'espejoAR.cfg2.' + d.src;
 function cargarCfg(d) { try { const c = JSON.parse(localStorage.getItem(claveCfg(d)) || 'null'); if (c) return { ...cfgPorDefecto(), ...c }; } catch {} return cfgPorDefecto(); }
 function guardarCfg() { if (!def || def.src.startsWith('blob:')) return; try { localStorage.setItem(claveCfg(def), JSON.stringify(cfg)); } catch {} }
 
-/* =====================================================================
-   RIG HUMANOIDE GENÉRICO
-   Reconoce esqueletos con nomenclatura Mixamo, Unreal, Rigify (DEF-), VRM, Bip001, etc.,
-   corrige solo la orientación del modelo (eje arriba / izquierda / frente) y calcula
-   medidas del torso para ajustarlo al cuerpo real, sin depender de la caja envolvente.
-   ===================================================================== */
 const ROLES = {
   hips: /^(hips|pelvis|hip)$/, arm: /^(arm|upperarm|uparm)$/, forearm: /^(forearm|lowerarm|lowarm)$/, hand: /^(hand|wrist)$/,
   upleg: /^(upleg|thigh|upperleg|uleg)$/, leg: /^(leg|calf|shin|lowerleg|lowleg)$/, foot: /^(foot|ankle)$/,
@@ -872,27 +884,22 @@ function rolDe(nombre) {
   for (const [rol, re] of Object.entries(ROLES)) if (re.test(t)) return { rol, lado };
   return {};
 }
-
-/* [hueso, hijo, lado del personaje, landmark desde, landmark hasta, dirección por defecto]
-   El personaje es un espejo: lo que hace tu lado izquierdo lo hace su lado derecho. */
 const CAD = [
   ['arm', 'forearm', 'R', 11, 13, [-0.15, -1, 0]], ['forearm', 'hand', 'R', 13, 15, [-0.15, -1, 0]],
   ['arm', 'forearm', 'L', 12, 14, [0.15, -1, 0]],  ['forearm', 'hand', 'L', 14, 16, [0.15, -1, 0]],
   ['upleg', 'leg', 'R', 23, 25, [-0.05, -1, 0]],   ['leg', 'foot', 'R', 25, 27, [-0.05, -1, 0]],
   ['upleg', 'leg', 'L', 24, 26, [0.05, -1, 0]],    ['leg', 'foot', 'L', 26, 28, [0.05, -1, 0]],
 ];
-
 const R24 = (() => {
   const out = [];
   for (const p of [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]])
     for (const sg of [[1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1], [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1]]) {
       const m = new THREE.Matrix4().identity(), e = m.elements; e.fill(0); e[15] = 1;
-      for (let i = 0; i < 3; i++) e[p[i] * 4 + i] = sg[i];                       // fila i, columna p[i]
+      for (let i = 0; i < 3; i++) e[p[i] * 4 + i] = sg[i];
       if (m.determinant() > 0) out.push(m);
     }
   return out;
 })();
-
 function configurarRig(raiz) {
   raiz.updateMatrixWorld(true);
   const Hs = {};
@@ -912,23 +919,20 @@ function configurarRig(raiz) {
   izq.addScaledVector(arriba, -izq.dot(arriba));
   if (izq.lengthSq() < 1e-14) return null;
   izq.normalize();
-  const frente = new THREE.Vector3().crossVectors(izq, arriba);             // izquierda × arriba = frente
-  // Se corrige SOLO a la orientación de ejes más cercana (múltiplos de 90°): arregla modelos Z-up, de espaldas o acostados
-  // sin "enderezar" poses de reposo con inclinación propia (p. ej. un mago encorvado).
+  const frente = new THREE.Vector3().crossVectors(izq, arriba);
   const M = new THREE.Matrix4().makeBasis(izq, arriba, frente).transpose(), me = M.elements;
   let mejor = null, mejorPuntaje = -Infinity;
   for (const R of R24) { let p = 0; for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) p += R.elements[c * 4 + r] * me[c * 4 + r]; if (p > mejorPuntaje) { mejorPuntaje = p; mejor = R; } }
   const qCorr = new THREE.Quaternion().setFromRotationMatrix(mejor);
-  const pc = v => v ? v.clone().applyQuaternion(qCorr) : null;               // posición en el marco corregido
+  const pc = v => v ? v.clone().applyQuaternion(qCorr) : null;
 
   const midC = pc(mid), hipMidC = pc(hipMid);
-  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);                      // distancia en el plano de la pantalla
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const torso = hipMidC ? d2(midC, hipMidC) : null;
   const anchoHombros = d2(pc(shL), pc(shR));
   const bajos = ['footL', 'footR', 'toeL', 'toeR'].map(k => pc(P(k))).filter(Boolean);
   const piesY = bajos.length ? Math.min(...bajos.map(v => v.y)) : null;
   const alto = piesY != null ? (midC.y - piesY) / 0.82 : (torso ? torso * 3.2 : anchoHombros * 3.85);
-
   const qp = new THREE.Quaternion();
   const cadenas = [];
   for (const [a, b, lado, la, lb, dd] of CAD) {
@@ -944,7 +948,6 @@ function configurarRig(raiz) {
   raiz.traverse(o => { if (o.isBone) reposo.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
   return { cadenas, reposo, qCorr, pivot: midC.clone().negate(), torso, anchoHombros, alto, hPies: piesY != null ? midC.y - piesY : 0.82 * alto, rigido: false };
 }
-/* para modelos sin esqueleto humanoide reconocible: se ancla por caja envolvente (hombros al 18 % desde arriba) */
 function rigRigido(size) {
   const h = size.y || 1;
   return { cadenas: [], reposo: [], qCorr: new THREE.Quaternion(), pivot: new THREE.Vector3(0, -0.32 * h, 0), torso: h * 0.31, anchoHombros: h * 0.26, alto: h, hPies: 0.82 * h, rigido: true };
@@ -956,6 +959,17 @@ function limpiarModelo() {
   clon = null; mixer = null; rig = null; tipo = null;
   stage.dataset.modo = ''; anclaje.visible = false; objeto.visible = false;
 }
+
+/* =====================================================================
+   SINCRONIZACIÓN DE SEGMENTACIÓN
+   No-op por defecto: si en el futuro agregás lógica de segmentación de
+   persona (MediaPipe ImageSegmenter o similar), va acá. Se define para
+   evitar ReferenceError (era la causa de la pantalla negra).
+   ===================================================================== */
+function sincronizarSeg() {
+  // (no-op)
+}
+
 async function seleccionar(d, btn) {
   document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
   limpiarModelo(); def = d; cfg = null; twoHand.activo = false;
@@ -963,17 +977,15 @@ async function seleccionar(d, btn) {
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
   try {
-    const base = await cargarGLB(d);
+    const esFBX = /\.fbx$/i.test(d.src) || /\.fbx$/i.test(d.nombre + '');
+    const base = esFBX ? await cargarFBX(d) : await cargarGLB(d);
     if (def !== d) return;
     cfg = cargarCfg(d);
     construir(d, base);
   } catch (e) { console.error(e); setEstado('No pude cargar ' + d.nombre); def = null; }
   refrescarBotones(); sincronizarSeg();
 }
-/* Monta el modelo según su tipo:
-   · personaje: esqueleto humanoide reconocido → se corrige la orientación, se ancla por hombros/torso y copia tus movimientos
-   · sobre mi cuerpo: sin esqueleto reconocible → se ancla por caja envolvente (sin copiar movimientos)
-   · objeto: se muestra en realidad aumentada y se puede mover, rotar y escalar */
+
 function construir(d, base) {
   limpiarModelo();
   const c = SkeletonUtils.clone(base.obj), modo = cfg.modo || 'auto';
@@ -1000,7 +1012,7 @@ function construir(d, base) {
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
 
 /* =====================================================================
-   4) INTERFAZ: paneles, pantalla completa, orientación, fondos, foto
+   4) INTERFAZ
    ===================================================================== */
 const ACCIONES = {
   mas() { cfg.s = Math.min(cfg.s * 1.08, 12); }, menos() { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
@@ -1063,7 +1075,6 @@ function refrescarBarra() {
   set('pantalla', enPantallaCompleta()); set('ui', stage.classList.contains('sin-ui'));
 }
 
-/* ---------- menú de fondos (con miniaturas reales de cada escenario) ---------- */
 let miniaturasListas = false;
 function construirMenuFondos() {
   const m = $('#menuFondos'); m.innerHTML = '';
@@ -1116,7 +1127,6 @@ function aplicarFondo(id, cerrar = true) {
   setEstado('Fondo: ' + FONDOS.find(f => f.id === id).nombre);
 }
 
-/* ---------- foto ---------- */
 let capturar = false;
 function tomarFoto() {
   const cv = mkCanvas(W, H), c = cv.getContext('2d');
@@ -1133,7 +1143,6 @@ function tomarFoto() {
   setEstado('📸 Foto guardada');
 }
 
-/* ---------- barra inferior y teclado ---------- */
 const BARRA = {
   lista: toggleLista, ajustes: toggleAjustes, fondo: () => toggleMenuFondos(), foto: () => { capturar = true; },
   pantalla: togglearFullscreen, girar: () => { rotacion = (rotacion + 90) % 360; layout(); }, orient: ciclarOrientacion, ui: toggleUI,
@@ -1215,14 +1224,13 @@ stage.addEventListener('pointerup', () => { if (ptrM.fuente === 'mouse') pUp(ptr
 stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
 
 /* =====================================================================
-   6) MANOS → 2 CURSORES (seguimiento por continuidad) + GESTO A DOS MANOS
+   6) MANOS → 2 CURSORES
    ===================================================================== */
 const curs = [0, 1].map(() => ({ x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false }));
 const cursorEls = [$('#cursor0'), $('#cursor1')];
 const hoverState = [{ el: null, desde: 0, bloqueado: null }, { el: null, desde: 0, bloqueado: null }];
 const twoHand = { activo: false, smDist: 0, smMidX: 0, smMidY: 0, lastDist: 0, lastMidX: 0, lastMidY: 0, cooldownHasta: 0 };
 
-/* Cada mano detectada se asigna al cursor más cercano a su posición anterior: la identidad no se cruza entre cuadros. */
 function procesarMano(res) {
   const dets = (res.landmarks || []).slice(0, 2).map(lm => ({ lm, x: sx((lm[4].x + lm[8].x) / 2), y: sy((lm[4].y + lm[8].y) / 2) }));
   const asign = [null, null], slotsUsados = new Set(), detsUsadas = new Set(), cand = [];
@@ -1310,194 +1318,208 @@ function actualizarCursores(now) {
     P.bajada = Q.bajada = P.subida = Q.subida = false;
     const pOK = P.visible && P.pinch && enEscenaLibre(P.x, P.y), qOK = Q.visible && Q.pinch && enEscenaLibre(Q.x, Q.y);
     if (pOK && !qOK) pDown(ptrs[0], P.x, P.y, { el: null, scroll: null, track: false }, 'mano');
-    else if (qOK && !pOK) pDown(ptrs[1], Q.x, Q.y, { el: null, scroll: null, track: false }, 'mano');
+    else if (!pOK && qOK) pDown(ptrs[1], Q.x, Q.y, { el: null, scroll: null, track: false }, 'mano');
   }
-  for (let i = 0; i < 2; i++) actualizarCursor(now, i);
+  actualizarCursor(now, 0);
+  actualizarCursor(now, 1);
 }
 
 /* =====================================================================
-   7) CUERPO → PERSONAJE (captura de movimiento) + RECORTE DE PERSONA
+   7) POSE → RIG (mocap de cuerpo completo)
    ===================================================================== */
-const objetivo = { x: 0, y: 0, k: 1, roll: 0, yaw: 0, visto: 0 };
-const suave = { x: 0, y: 0, k: 1, roll: 0, yaw: 0, init: false };
-let poseLm = null, poseWorld = null;
+const poseState = { midX: 0, midY: 0, torso: 0, hasData: false };
+const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+const _qDelta = new THREE.Quaternion(), _qParent = new THREE.Quaternion(), _qParentInv = new THREE.Quaternion();
 
-function procesarPose(res) {
-  poseLm = res.landmarks?.[0] || null; poseWorld = res.worldLandmarks?.[0] || null;
-  if (segActivo) { try { componerPersona(res); } catch (e) { console.warn('recorte', e); } }
-  res.segmentationMasks?.forEach(m => { try { m.close?.(); } catch {} });
-  const lm = poseLm;
-  if (!lm || tipo !== 'hum' || !rig) return;
-  const px = i => ({ x: sx(lm[i].x), y: sy(lm[i].y), v: lm[i].visibility ?? 1 });
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const ls = px(11), rs = px(12);
-  if (Math.min(ls.v, rs.v) < 0.5) return;
-  const lh = px(23), rh = px(24), mid = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
-  const caderas = Math.min(lh.v, rh.v) > 0.5;
-  const yaw = Math.max(-1.1, Math.min(1.1, Math.atan2(lm[12].z - lm[11].z, lm[11].x - lm[12].x)));
-  const anchoPx = dist(ls, rs) / Math.max(0.55, Math.cos(yaw));            // hombros, compensando el giro del torso
-  const torsoPx = caderas ? dist(mid, { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 }) : 0;
-  const kAlto = (caderas ? torsoPx / 0.31 : anchoPx * 3.85) / rig.alto;      // misma estatura que tu cuerpo
-  const kLocal = caderas && rig.torso ? torsoPx / rig.torso : anchoPx / rig.anchoHombros;   // mismo torso / hombros
-  objetivo.k = Math.sqrt(kAlto * kLocal);                                   // compromiso: los hombros calzan y la estatura no se dispara
-  objetivo.x = mid.x; objetivo.y = mid.y;                                   // el personaje se ancla por los hombros
-  objetivo.roll = Math.atan2(ls.y - rs.y, rs.x - ls.x); objetivo.yaw = yaw;
-  objetivo.visto = performance.now();
-}
-const _qP = new THREE.Quaternion(), _qO = new THREE.Quaternion(), _t = new THREE.Vector3(), _d = new THREE.Vector3();
-function aplicarMocap(dt) {
-  const k = 1 - Math.exp(-dt * 18);
+function aplicarPose(landmarks) {
+  if (!landmarks) return;
+  const p11 = landmarks[11], p12 = landmarks[12], p23 = landmarks[23], p24 = landmarks[24];
+  if (p11 && p12) {
+    poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
+    poseState.midY = H - (sy(p11.y) + sy(p12.y)) * 0.5;
+  }
+  if (p11 && p12 && p23 && p24) {
+    const hx = (sx(p23.x) + sx(p24.x)) * 0.5, hy = H - (sy(p23.y) + sy(p24.y)) * 0.5;
+    poseState.torso = Math.hypot(poseState.midX - hx, poseState.midY - hy);
+  }
+  poseState.hasData = true;
+
+  if (!rig || rig.rigido || !cfg?.mocap || tipo !== 'hum') return;
+
+  for (const [b, p, q, s] of rig.reposo) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(s); }
   anclaje.updateMatrixWorld(true);
-  for (const c of rig.cadenas) {
-    const a = poseLm?.[c.la], b = poseLm?.[c.lb];
-    if (poseWorld && a && b && (a.visibility ?? 1) > 0.5 && (b.visibility ?? 1) > 0.5) {
-      const A = poseWorld[c.la], B = poseWorld[c.lb];
-      _d.set(-(B.x - A.x), -(B.y - A.y), -(B.z - A.z)).normalize();
-    } else _d.copy(c.defecto);
-    c.hueso.parent.getWorldQuaternion(_qP);
-    _t.copy(_d).applyQuaternion(_qP.invert());
-    _qO.setFromUnitVectors(c.a0, _t).multiply(c.q0);
-    c.hueso.quaternion.slerp(_qO, k);
-    c.hueso.updateMatrixWorld(true);
+
+  for (const ch of rig.cadenas) {
+    const { hueso, hijo, la, lb } = ch;
+    const lmA = landmarks[la], lmB = landmarks[lb];
+    if (!lmA || !lmB) continue;
+
+    const ax = sx(lmA.x), ay = H - sy(lmA.y);
+    const bx = sx(lmB.x), by = H - sy(lmB.y);
+    _v1.set(bx - ax, by - ay, 0);
+    if (_v1.lengthSq() < 1e-8) continue;
+    _v1.normalize();
+
+    hueso.getWorldPosition(_v2);
+    hijo.getWorldPosition(_v3);
+    _v3.sub(_v2);
+    if (_v3.lengthSq() < 1e-10) continue;
+    _v3.normalize();
+
+    _qDelta.setFromUnitVectors(_v3, _v1);
+    hueso.parent.getWorldQuaternion(_qParent);
+    _qParentInv.copy(_qParent).invert();
+    hueso.quaternion.premultiply(_qParentInv).premultiply(_qDelta).premultiply(_qParent);
+    hueso.updateWorldMatrix(true, true);
   }
-}
-function actualizarModelo(dt) {
-  if (!def || !clon || !cfg) { anclaje.visible = false; objeto.visible = false; return; }
-  if (tipo === 'obj') {
-    anclaje.visible = false; objeto.visible = true;
-    objeto.position.set(cfg.ox, cfg.oy, -DIST); objeto.scale.setScalar(OBJ_BASE * cfg.s);
-    if (autoGiro && !twoHand.activo) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.9)); cfg.q = ajuste.quaternion.toArray(); }
-    mixer?.update(dt); return;
-  }
-  objeto.visible = false;
-  const visible = performance.now() - objetivo.visto < 600;
-  anclaje.visible = visible;
-  if (!visible) { suave.init = false; return; }
-  if (!suave.init) Object.assign(suave, objetivo, { init: true });
-  const k = 1 - Math.exp(-dt * 14);
-  for (const c of ['x', 'y', 'k', 'roll', 'yaw']) suave[c] += (objetivo[c] - suave[c]) * k;
-  anclaje.position.set(suave.x, H - (suave.y + cfg.dy * suave.k * rig.alto), 0);
-  anclaje.scale.setScalar(suave.k * cfg.s);
-  anclaje.rotation.set(0, suave.yaw, suave.roll);
-  if (cfg.mocap && !rig.rigido) aplicarMocap(dt); else mixer?.update(dt);
 }
 
-/* ---------- recorte de la persona sobre el fondo virtual (segmentación de MediaPipe) ---------- */
-const pc = mkCanvas(2, 2), pcx = pc.getContext('2d', { willReadFrequently: true });
-let segActivo = false;
-const necesitaSeg = () => fondoActual !== 'camara' && (tipo !== 'hum' || prefs.persona);
-function sincronizarSeg() {
-  const n = necesitaSeg();
-  if (n === segActivo || !pose) return;
-  try { pose.setOptions({ outputSegmentationMasks: n }); segActivo = n; if (!n) pctx.clearRect(0, 0, W, H); }
-  catch (e) { console.warn('segmentación no disponible', e); prefs.persona = false; setEstado('Este equipo no soporta el recorte de persona'); }
-}
-function componerPersona(res) {
-  const m = res.segmentationMasks?.[0]; if (!m) return;
-  const mw = m.width, mh = m.height; let dat, u8 = false;
-  try { dat = m.getAsFloat32Array(); } catch { dat = m.getAsUint8Array(); u8 = true; }
-  const tw = Math.min(480, mw), th = Math.max(2, Math.round(tw * mh / mw));
-  if (pc.width !== tw || pc.height !== th) { pc.width = tw; pc.height = th; }
-  pcx.save(); pcx.scale(-1, 1); pcx.drawImage(video, -tw, 0, tw, th); pcx.restore();   // espejado, igual que el video en pantalla
-  const img = pcx.getImageData(0, 0, tw, th), d = img.data;
-  for (let y = 0; y < th; y++) {
-    const fila = Math.floor(y * mh / th) * mw;
-    for (let x = 0; x < tw; x++) {
-      let v = dat[fila + Math.floor((tw - 1 - x) * mw / tw)]; if (u8) v /= 255;
-      const a = Math.max(0, Math.min(1, (v - 0.35) / 0.3));
-      d[(y * tw + x) * 4 + 3] = a * a * (3 - 2 * a) * 255;
-    }
+const suave = { init: false, x: 0, y: 0, s: 1 };
+function aplicarTransformacionesAnclaje(dt) {
+  if (tipo !== 'hum' || !cfg) return;
+  if (poseState.hasData) {
+    const s = rig ? (poseState.torso > 10 ? poseState.torso / Math.max(rig.torso, 0.01) : null) : null;
+    const targetX = poseState.midX;
+    const targetY = poseState.midY + (cfg.dy || 0) * H;
+    const targetS = s ?? (Math.min(W, H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
+    if (!suave.init) { suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.init = true; }
+    else { const k = Math.min(1, dt * 10); suave.x += (targetX - suave.x) * k; suave.y += (targetY - suave.y) * k; suave.s += (targetS - suave.s) * k; }
+  } else if (!suave.init) {
+    suave.x = W / 2; suave.y = H * 0.55; suave.s = (Math.min(W, H) * 0.28) / Math.max(rig?.torso || 0.3, 0.01); suave.init = true;
   }
-  pcx.putImageData(img, 0, 0);
-  pctx.clearRect(0, 0, W, H);
-  pctx.drawImage(pc, -mapa.ox, -mapa.oy, mapa.vw * mapa.s, mapa.vh * mapa.s);
+  anclaje.position.set(suave.x, suave.y, 0);
+  anclaje.scale.setScalar(cfg.s * suave.s);
+  anclaje.visible = true;
 }
-
-/* ---------- depuración visual + guía del gesto a dos manos ---------- */
-const POSE_LINKS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
-const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-function dibujar(lm, links, color) {
-  if (!lm) return;
-  dbg.strokeStyle = color; dbg.fillStyle = color; dbg.lineWidth = 2;
-  for (const [a, b] of links) { dbg.beginPath(); dbg.moveTo(sx(lm[a].x), sy(lm[a].y)); dbg.lineTo(sx(lm[b].x), sy(lm[b].y)); dbg.stroke(); }
-  for (const p of lm) { dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 3, 0, 7); dbg.fill(); }
+function aplicarTransformacionesObjeto(dt) {
+  if (tipo !== 'obj' || !cfg) return;
+  const h = OBJ_BASE * Math.min(W, H) * 0.15;
+  objeto.position.set(W / 2 + cfg.ox * H, H / 2 + cfg.oy * H, 0);
+  objeto.scale.setScalar(cfg.s * h);
+  objeto.visible = true;
 }
-function dibujarDebug() {
-  dbg.clearRect(0, 0, W, H);
-  if (twoHand.activo) {
-    dbg.strokeStyle = 'rgba(255,96,255,.65)'; dbg.lineWidth = 3; dbg.setLineDash([8, 6]);
-    dbg.beginPath(); dbg.moveTo(curs[0].x, curs[0].y); dbg.lineTo(curs[1].x, curs[1].y); dbg.stroke(); dbg.setLineDash([]);
-    const mx = (curs[0].x + curs[1].x) / 2, my = (curs[0].y + curs[1].y) / 2;
-    dbg.fillStyle = 'rgba(255,96,255,.85)'; dbg.beginPath(); dbg.arc(mx, my, 7, 0, 7); dbg.fill();
-    dbg.fillStyle = '#fff'; dbg.beginPath(); dbg.arc(mx, my, 3, 0, 7); dbg.fill();
-  }
-  if (!mostrarPuntos) return;
-  dibujar(poseLm, POSE_LINKS, '#00e5ff'); for (const hl of handLm) dibujar(hl, HAND_LINKS, '#ffb400');
+function hPiesObj() {
+  const h = OBJ_BASE * Math.min(W, H) * 0.15;
+  return h * 0.45 * (cfg?.s || 1);
 }
 
 /* =====================================================================
-   8) ARRANQUE Y BUCLE
+   8) BUCLE PRINCIPAL
    ===================================================================== */
-async function crearTarea(Clase, fileset, url, opciones) {
-  for (const delegate of ['GPU', 'CPU']) {
-    try { return await Clase.createFromOptions(fileset, { baseOptions: { modelAssetPath: url, delegate }, runningMode: 'VIDEO', ...opciones }); }
-    catch (e) { console.warn('Falló delegate', delegate, e); }
+let ultimoFrame = performance.now(), ultimoPose = 0, ultimoHand = 0, iniciado = false;
+const sombra = { x: 0, y: 0, rx: 0 };
+
+function loop() {
+  requestAnimationFrame(loop);
+  const ahora = performance.now();
+  const t = ahora / 1000;
+  const dt = Math.min((ahora - ultimoFrame) / 1000, 0.1);
+  ultimoFrame = ahora;
+
+  if (video.readyState >= 2 && hand && ahora - ultimoHand > 33) {
+    try { procesarMano(hand.detectForVideo(video, ahora)); } catch (e) {}
+    ultimoHand = ahora;
   }
-  throw new Error('No se pudo iniciar MediaPipe');
+  if (video.readyState >= 2 && pose && ahora - ultimoPose > 50) {
+    try {
+      const r = pose.detectForVideo(video, ahora);
+      if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0]);
+    } catch (e) {}
+    ultimoPose = ahora;
+  }
+
+  actualizarCursores(ahora);
+
+  if (mixer) mixer.update(dt);
+  if (autoGiro && tipo === 'obj' && cfg) {
+    ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.5));
+    cfg.q = ajuste.quaternion.toArray();
+  }
+  if (def && cfg) {
+    if (tipo === 'hum') { aplicarTransformacionesAnclaje(dt); objeto.visible = false; }
+    else { aplicarTransformacionesObjeto(dt); anclaje.visible = false; }
+  }
+
+  if (fondoActual !== 'camara') {
+    if (tipo === 'hum' && anclaje.visible && rig) {
+      sombra.x = suave.x;
+      sombra.y = suave.y - (rig.hPies || 0.8) * suave.s * cfg.s * 0.55;
+      sombra.rx = Math.max(rig.anchoHombros * suave.s * cfg.s * 1.4, 40);
+      motor.dibujar(fctx, t, dt, sombra);
+    } else if (tipo === 'obj' && objeto.visible) {
+      sombra.x = objeto.position.x; sombra.y = objeto.position.y - hPiesObj(); sombra.rx = Math.min(W, H) * 0.08 * cfg.s;
+      motor.dibujar(fctx, t, dt, sombra);
+    } else {
+      motor.dibujar(fctx, t, dt, null);
+    }
+  } else {
+    fctx.clearRect(0, 0, W, H);
+  }
+
+  if (mostrarPuntos) {
+    dbg.clearRect(0, 0, W, H);
+    dbg.fillStyle = '#00ff88';
+    for (const lm of handLm) if (lm) for (const p of lm) { dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 3, 0, TAU); dbg.fill(); }
+  } else if (dbgCanvas._lastHad) {
+    dbg.clearRect(0, 0, W, H);
+  }
+  dbgCanvas._lastHad = mostrarPuntos;
+
+  if (capturar) { capturar = false; tomarFoto(); }
+
+  renderer.render(scene, camOrto);
 }
+
+/* =====================================================================
+   9) INICIALIZACIÓN (MediaPipe + cámara)
+   ===================================================================== */
 async function iniciar() {
-  const btn = $('#btnIniciar'), err = $('#error');
-  btn.disabled = true; err.textContent = ''; btn.textContent = 'Cargando…';
+  if (iniciado) return;
+  iniciado = true;
+  const btn = $('#btnIniciar'); btn.disabled = true; $('#error').textContent = '';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    video.srcObject = stream; await video.play(); layout();
-    const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
-    hand = await crearTarea(HandLandmarker, fileset, HAND_URL, { numHands: 2 });
-    pose = await crearTarea(PoseLandmarker, fileset, POSE_URL, { numPoses: 1, outputSegmentationMasks: false });
-    try { await navigator.wakeLock?.request('screen'); } catch {}
-    $('#inicio').remove(); sincronizarSeg();
-    setEstado('Levantá una mano y elegí un modelo o un fondo 🎨');
-    requestAnimationFrame(bucle);
+    setEstado('Pidiendo cámara…');
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
+    });
+    video.srcObject = stream;
+    await video.play();
+    await new Promise(r => { if (video.videoWidth) r(); else video.onloadedmetadata = r; });
+
+    setEstado('Cargando modelos de IA…');
+    const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+    hand = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: HAND_URL, delegate: 'GPU' },
+      numHands: 2, runningMode: 'VIDEO',
+    });
+    pose = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: POSE_URL, delegate: 'GPU' },
+      numPoses: 1, runningMode: 'VIDEO',
+    });
+
+    setEstado('Listo ✓');
+    $('#inicio').style.display = 'none';
+    layout();
+    await sincronizar();
+    loop();
   } catch (e) {
     console.error(e);
-    err.textContent = 'Error: ' + (e.message || e) + ' — ¿diste permiso a la cámara? Hace falta HTTPS o localhost.';
-    btn.disabled = false; btn.textContent = 'Reintentar';
+    $('#error').textContent = 'Error: ' + (e?.message || e);
+    btn.disabled = false; iniciado = false;
   }
 }
 $('#btnIniciar').addEventListener('click', iniciar);
 
-let ultimoVT = -1;
-function bucle(now) {
-  requestAnimationFrame(bucle);
-  const dt = Math.min(clock.getDelta(), 0.1), t = now / 1000;
-  if (video.readyState >= 2 && video.currentTime !== ultimoVT) {
-    ultimoVT = video.currentTime;
-    const ts = performance.now();
-    procesarMano(hand.detectForVideo(video, ts));
-    if (tipo === 'hum' || segActivo || mostrarPuntos) procesarPose(pose.detectForVideo(video, ts));
-    else { poseLm = null; poseWorld = null; }
-  }
-  actualizarCursores(now);
-  actualizarModelo(dt);
-  if (fondoActual !== 'camara') {
-    let sombra = null;
-    if (tipo === 'hum' && anclaje.visible && cfg && rig) { const k = suave.k * cfg.s; sombra = { x: suave.x, y: suave.y + cfg.dy * suave.k * rig.alto + rig.hPies * k, rx: 0.22 * rig.alto * k }; }
-    motor.dibujar(fctx, t, dt, sombra);
-    hemi.intensity = luzBase.h * motor.flicker; sol.intensity = luzBase.s * motor.flicker;
-  } else { hemi.intensity = luzBase.h; sol.intensity = luzBase.s; }
-  renderer.render(scene, tipo === 'obj' ? camPersp : camOrto);
-  if (capturar) { capturar = false; tomarFoto(); }
-  dibujarDebug();
-}
+/* =====================================================================
+   ARRANQUE (con try/catch defensivo para no dejar la pantalla en negro)
+   ===================================================================== */
+try { aplicarPaneles(); } catch (e) { console.error('aplicarPaneles:', e); }
+try { construirMenuFondos(); } catch (e) { console.error('construirMenuFondos:', e); }
+try { aplicarFondo(prefs.fondo || 'camara', false); } catch (e) { console.error('aplicarFondo:', e); }
+try { layout(); } catch (e) { console.error('layout:', e); }
+try { refrescarBotones(); } catch (e) { console.error('refrescarBotones:', e); }
 
-/* ---------- inicio ---------- */
-construirMenuFondos();
-aplicarPaneles();
-aplicarFondo(prefs.fondo in ESCENAS || prefs.fondo === 'camara' ? prefs.fondo : 'camara', false);
-layout();
-sincronizar();
-setInterval(() => { if (!document.hidden) sincronizar(); }, 300000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - ultimaSync > 300000) sincronizar(); });
+console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Hacé clic en "Iniciar cámara".', 'color:#ffb400;font-weight:bold');
 </script>
 </body>
 </html>
