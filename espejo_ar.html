@@ -192,7 +192,7 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   MOTOR DE FONDOS DE MAZMORRA — todo procedural (canvas 2D)
+   MOTOR DE FONDOS
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
@@ -614,6 +614,7 @@ function crearMotorFondos(mk) {
    ===================================================================== */
 const CARPETA = 'modelos/';
 const REPO_GITHUB = 'BraianM-dev/pruebas';
+const RAMA = 'main';
 const BASE_LISTA = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb','roca_diamante.glb','pilar.glb',
                     'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb',
                     'personaje.fbx','animacion.fbx'];
@@ -724,13 +725,47 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS (GLB / GLTF / FBX)
+   2) MODELOS — Descarga robusta con fallback LFS
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 
-/** Devuelve la URL real del archivo en GitHub resolviendo Git LFS.
- *  media.githubusercontent.com sirve el binario real, no el puntero. */
-const urlModelo = nombre => `https://media.githubusercontent.com/media/${REPO_GITHUB}/main/modelos/${encodeURIComponent(nombre)}`;
+/** Construye lista de URLs alternativas (por si una falla) */
+function urlsModelo(nombre) {
+  const enc = encodeURIComponent(nombre);
+  return [
+    `https://cdn.jsdelivr.net/gh/${REPO_GITHUB}@${RAMA}/modelos/${enc}`,
+    `https://media.githubusercontent.com/media/${REPO_GITHUB}/${RAMA}/modelos/${enc}`,
+    `https://raw.githubusercontent.com/${REPO_GITHUB}/${RAMA}/modelos/${enc}`,
+  ];
+}
+
+/** Descarga el binario probando todas las URLs hasta que una devuelva bytes válidos.
+ *  Filtra punteros LFS (texto) y HTML de error. */
+async function descargarModelo(nombre) {
+  const urls = urlsModelo(nombre);
+  let ultimoError = null;
+  for (const url of urls) {
+    try {
+      console.log('🌐 Probando:', url);
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status} en ${url}`); continue; }
+      const buf = await resp.arrayBuffer();
+      if (buf.byteLength < 256) {
+        const txt = new TextDecoder().decode(new Uint8Array(buf));
+        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error(`Puntero LFS en ${url}`); continue; }
+      }
+      const first = new Uint8Array(buf.slice(0, 64));
+      const txt = new TextDecoder().decode(first);
+      if (txt.startsWith('<!DOCTYPE') || txt.startsWith('<html') || txt.startsWith('<?xml')) {
+        // GLTF puede ser XML-legible (JSON), pero solo si empieza con '{'. HTML = error.
+        if (txt.startsWith('<')) { ultimoError = new Error(`Respuesta HTML en ${url}`); continue; }
+      }
+      console.log(`✅ Binario descargado: ${buf.byteLength} bytes desde ${url}`);
+      return buf;
+    } catch (e) { ultimoError = e; console.warn('⚠️', url, e.message); }
+  }
+  throw ultimoError || new Error('No se pudo descargar el modelo');
+}
 
 function repoActual() {
   if (location.hostname.endsWith('.github.io')) {
@@ -778,7 +813,7 @@ const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
 let defs = [], ultimaFirma = '', ultimaSync = 0;
 function poblarLista(nombres) {
   const locales = defs.filter(d => d.local);
-  defs = [...locales, ...nombres.map(n => ({ nombre: bonito(n), icono: iconoDe(n), src: urlModelo(n) }))];
+  defs = [...locales, ...nombres.map(n => ({ nombre: bonito(n), icono: iconoDe(n), archivo: n, src: urlsModelo(n)[0] }))];
   lista.innerHTML = '';
   for (const d of defs) agregarItem(d);
   if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
@@ -801,61 +836,101 @@ function agregarItem(d, alPrincipio = false) {
   alPrincipio ? lista.prepend(b) : lista.appendChild(b);
 }
 const cache = new Map();
-function cargarGLB(d) {
-  if (cache.has(d.src)) return Promise.resolve(cache.get(d.src));
-  console.log('🔽 Cargando GLB:', d.src);
-  return new Promise((ok, fallo) => loader.load(d.src, gltf => {
-    const obj = gltf.scene, sobran = [];
-    obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
-    sobran.forEach(o => o.removeFromParent());
-    obj.updateMatrixWorld(true);
-    obj.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
-    const box = new THREE.Box3().setFromObject(obj);
-    const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
-    obj.position.sub(centro);
-    const base = { obj, size, clips: gltf.animations };
-    cache.set(d.src, base);
-    if (cache.size > 4) cache.delete(cache.keys().next().value);
-    ok(base);
-  }, e => { if (e.total) setEstado(`Cargando ${d.nombre}… ${Math.round(e.loaded / e.total * 100)}%`); }, err => {
-    console.error('❌ Error GLB:', d.src, err);
-    fallo(err);
-  }));
+
+/** Carga mediante descarga + parse (funciona con LFS y sin LFS) */
+async function cargarConParse(d, loader, esFBX) {
+  if (cache.has(d.src)) return cache.get(d.src);
+  if (!d.archivo) throw new Error('Modelo sin nombre de archivo'); // locales con blob URL
+  console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
+  setEstado(`Descargando ${d.nombre}…`);
+  const buf = await descargarModelo(d.archivo);
+  setEstado(`Procesando ${d.nombre}…`);
+  return await new Promise((ok, fallo) => {
+    const onLoad = obj => {
+      try {
+        const root = esFBX ? obj : obj.scene;
+        const sobran = [];
+        root.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
+        sobran.forEach(o => o.removeFromParent());
+        root.updateMatrixWorld(true);
+        root.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
+
+        // Compensar unidades si es FBX y el tamaño es absurdo
+        if (esFBX) {
+          const b0 = new THREE.Box3().setFromObject(root);
+          const s0 = b0.getSize(new THREE.Vector3());
+          const maxDim = Math.max(s0.x, s0.y, s0.z);
+          if (maxDim > 0 && (maxDim < 0.1 || maxDim > 20)) {
+            const k = 2 / maxDim;
+            root.scale.multiplyScalar(k);
+            root.updateMatrixWorld(true);
+            root.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
+          }
+        }
+
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        const centro = box.getCenter(new THREE.Vector3());
+        root.position.sub(centro);
+
+        const base = { obj: root, size, clips: (esFBX ? obj.animations : obj.animations) || [] };
+        cache.set(d.src, base);
+        if (cache.size > 4) cache.delete(cache.keys().next().value);
+        ok(base);
+      } catch (err) { fallo(err); }
+    };
+    try {
+      if (esFBX) fbxLoader.parse(buf, '', onLoad, fallo);
+      else loader.parse(buf, '', onLoad, fallo);
+    } catch (e) { fallo(e); }
+  });
 }
 
-function cargarFBX(d) {
-  if (cache.has(d.src)) return Promise.resolve(cache.get(d.src));
-  console.log('🔽 Cargando FBX:', d.src);
-  return new Promise((ok, fallo) => fbxLoader.load(d.src, fbx => {
-    const obj = fbx;
-    const sobran = [];
-    obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
-    sobran.forEach(o => o.removeFromParent());
-    obj.updateMatrixWorld(true);
-    obj.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
-
-    const box0 = new THREE.Box3().setFromObject(obj);
-    const size0 = box0.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size0.x, size0.y, size0.z);
-    if (maxDim > 0 && (maxDim < 0.1 || maxDim > 20)) {
-      const k = 2 / maxDim;
-      obj.scale.multiplyScalar(k);
+async function cargarGLB(d) {
+  if (cache.has(d.src)) return cache.get(d.src);
+  if (d.src.startsWith('blob:')) {
+    // Archivo local
+    console.log('🔽 Cargando GLB local:', d.nombre);
+    return new Promise((ok, fallo) => loader.load(d.src, gltf => {
+      const obj = gltf.scene, sobran = [];
+      obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
+      sobran.forEach(o => o.removeFromParent());
       obj.updateMatrixWorld(true);
       obj.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
-    }
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
+      obj.position.sub(centro);
+      const base = { obj, size, clips: gltf.animations };
+      cache.set(d.src, base);
+      ok(base);
+    }, undefined, fallo));
+  }
+  return cargarConParse(d, loader, false);
+}
 
-    const box = new THREE.Box3().setFromObject(obj);
-    const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
-    obj.position.sub(centro);
-
-    const base = { obj, size, clips: fbx.animations || [] };
-    cache.set(d.src, base);
-    if (cache.size > 4) cache.delete(cache.keys().next().value);
-    ok(base);
-  }, e => { if (e.total) setEstado(`Cargando ${d.nombre}… ${Math.round(e.loaded / e.total * 100)}%`); }, err => {
-    console.error('❌ Error FBX:', d.src, err);
-    fallo(err);
-  }));
+async function cargarFBX(d) {
+  if (cache.has(d.src)) return cache.get(d.src);
+  if (d.src.startsWith('blob:')) {
+    console.log('🔽 Cargando FBX local:', d.nombre);
+    return new Promise((ok, fallo) => fbxLoader.load(d.src, fbx => {
+      const sobran = [];
+      fbx.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
+      sobran.forEach(o => o.removeFromParent());
+      fbx.updateMatrixWorld(true);
+      fbx.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
+      const b0 = new THREE.Box3().setFromObject(fbx);
+      const s0 = b0.getSize(new THREE.Vector3());
+      const maxDim = Math.max(s0.x, s0.y, s0.z);
+      if (maxDim > 0 && (maxDim < 0.1 || maxDim > 20)) { fbx.scale.multiplyScalar(2 / maxDim); fbx.updateMatrixWorld(true); }
+      const box = new THREE.Box3().setFromObject(fbx);
+      const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
+      fbx.position.sub(centro);
+      const base = { obj: fbx, size, clips: fbx.animations || [] };
+      cache.set(d.src, base);
+      ok(base);
+    }, undefined, fallo));
+  }
+  return cargarConParse(d, fbxLoader, true);
 }
 
 /* =====================================================================
@@ -970,7 +1045,7 @@ async function seleccionar(d, btn) {
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
   try {
-    const esFBX = /\.fbx$/i.test(d.src) || /\.fbx$/i.test(d.nombre + '');
+    const esFBX = /\.fbx$/i.test(d.archivo || d.nombre);
     const base = esFBX ? await cargarFBX(d) : await cargarGLB(d);
     if (def !== d) return;
     cfg = cargarCfg(d);
@@ -1005,11 +1080,13 @@ function construir(d, base) {
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
 
 /* =====================================================================
-   4) INTERFAZ
+   4) INTERFAZ  ← AQUÍ ESTÁ LA CORRECCIÓN DE SUBIR/BAJAR
    ===================================================================== */
 const ACCIONES = {
   mas() { cfg.s = Math.min(cfg.s * 1.08, 12); }, menos() { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
-  subir() { tipo === 'obj' ? cfg.oy += 0.06 : cfg.dy -= 0.02; }, bajar() { tipo === 'obj' ? cfg.oy -= 0.06 : cfg.dy += 0.02; },
+  // ✅ Subir = mover hacia arriba en pantalla (Y Three.js +). Bajar = al revés.
+  subir() { if (tipo === 'obj') cfg.oy += 0.06; else cfg.dy += 0.02; },
+  bajar() { if (tipo === 'obj') cfg.oy -= 0.06; else cfg.dy -= 0.02; },
   rotx() { rotarMundo(EJE.x, Math.PI / 2); }, roty() { rotarMundo(EJE.y, Math.PI / 2); }, rotz() { rotarMundo(EJE.z, Math.PI / 2); },
   reset() { cfg = cfgPorDefecto(); const b = cache.get(def.src); if (b) construir(def, b); },
   modo() { cfg.modo = { auto: 'cuerpo', cuerpo: 'obj', obj: 'auto' }[cfg.modo || 'auto']; const b = cache.get(def.src); if (b) construir(def, b); },
@@ -1154,7 +1231,7 @@ $('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
 $('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
 async function abrirArchivo(f) {
   if (!f || !esModelo(f.name)) return;
-  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true };
+  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true, archivo: f.name };
   defs.unshift(d); agregarItem(d, true); lista.scrollTop = 0; actualizarThumb(); seleccionar(d, d.btn);
 }
 $('#archivo').addEventListener('change', e => abrirArchivo(e.target.files[0]));
@@ -1366,7 +1443,7 @@ function aplicarTransformacionesAnclaje(dt) {
   if (poseState.hasData) {
     const s = rig ? (poseState.torso > 10 ? poseState.torso / Math.max(rig.torso, 0.01) : null) : null;
     const targetX = poseState.midX;
-    const targetY = poseState.midY + (cfg.dy || 0) * H;
+    const targetY = poseState.midY + (cfg.dy || 0) * H;   // dy>0 → Y aumenta → sube
     const targetS = s ?? (Math.min(W, H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
     if (!suave.init) { suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.init = true; }
     else { const k = Math.min(1, dt * 10); suave.x += (targetX - suave.x) * k; suave.y += (targetY - suave.y) * k; suave.s += (targetS - suave.s) * k; }
@@ -1380,7 +1457,7 @@ function aplicarTransformacionesAnclaje(dt) {
 function aplicarTransformacionesObjeto(dt) {
   if (tipo !== 'obj' || !cfg) return;
   const h = OBJ_BASE * Math.min(W, H) * 0.15;
-  objeto.position.set(W / 2 + cfg.ox * H, H / 2 + cfg.oy * H, 0);
+  objeto.position.set(W / 2 + cfg.ox * H, H / 2 + cfg.oy * H, 0);   // oy>0 → Y aumenta → sube
   objeto.scale.setScalar(cfg.s * h);
   objeto.visible = true;
 }
