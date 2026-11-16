@@ -192,14 +192,13 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   MOTOR DE FONDOS
+   MOTOR DE FONDOS (igual que antes)
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
   return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-
 function ladrillos(c, x, y, w, h, bw, bh, hsl, r) {
   c.fillStyle = '#050506'; c.fillRect(x, y, w, h);
   c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
@@ -328,7 +327,6 @@ function llama(c, x, y, s, t, seed, col) {
   c.beginPath(); c.moveTo(x - w2, y); c.quadraticCurveTo(x - w2, y - h2 * .5, x + sw * .5, y - h2);
   c.quadraticCurveTo(x + w2, y - h2 * .5, x + w2, y); c.closePath(); c.fill();
 }
-
 function escenaCristales(hA, hB, fondo, tono) {
   return {
     luz: { c: tono, h: .9, s: 1.5 },
@@ -658,6 +656,7 @@ let W = 640, H = 480, rotacion = 0, pose = null, hand = null, mostrarPuntos = fa
 let fondoActual = 'camara';
 let mapa = { vw: 640, vh: 480, s: 1, ox: 0, oy: 0 };
 const handLm = [null, null];
+let poseLm = null;   // ← NUEVO: guardamos landmarks del cuerpo para debug
 
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const motor = crearMotorFondos(mkCanvas);
@@ -725,13 +724,12 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS — Descarga robusta con fallback LFS
+   2) MODELOS — descarga robusta + validación de FBX
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 
-/** Construye lista de URLs alternativas (por si una falla) */
 function urlsModelo(nombre) {
-  const enc = encodeURIComponent(nombre);
+  const enc = nombre.split('/').map(encodeURIComponent).join('/');
   return [
     `https://cdn.jsdelivr.net/gh/${REPO_GITHUB}@${RAMA}/modelos/${enc}`,
     `https://media.githubusercontent.com/media/${REPO_GITHUB}/${RAMA}/modelos/${enc}`,
@@ -739,8 +737,24 @@ function urlsModelo(nombre) {
   ];
 }
 
-/** Descarga el binario probando todas las URLs hasta que una devuelva bytes válidos.
- *  Filtra punteros LFS (texto) y HTML de error. */
+/** Inspecciona los primeros bytes de un FBX para detectar el formato.
+ *  Así damos un mensaje claro si el archivo no es un FBX válido. */
+function validarFbx(buf) {
+  if (buf.byteLength < 32) return { ok: false, motivo: 'Archivo demasiado pequeño para ser un FBX' };
+  const head = new Uint8Array(buf, 0, Math.min(64, buf.byteLength));
+  const headText = new TextDecoder('latin1').decode(head);
+  // Binary FBX: primeros 20 chars "Kaydara FBX Binary  " (con espacios al final)
+  if (headText.startsWith('Kaydara FBX Binary')) return { ok: true, tipo: 'binary' };
+  // ASCII FBX: comentario inicial "; FBX 7.x.x project file" o presencia de FBXHeaderExtension
+  if (/^;[\s\S]*FBX[\s\S]*project file/i.test(headText)) return { ok: true, tipo: 'ascii' };
+  if (/FBXHeaderExtension/i.test(headText)) return { ok: true, tipo: 'ascii' };
+  if (headText.startsWith('PK')) return { ok: false, motivo: 'Es un ZIP, no un FBX (¿Archivo .blend o .max renombrado?)' };
+  if (headText.startsWith('{')) return { ok: false, motivo: 'Es un archivo JSON, no un FBX' };
+  if (headText.startsWith('<')) return { ok: false, motivo: 'Es XML/HTML, no un FBX' };
+  const preview = headText.slice(0, 32).replace(/[^\x20-\x7e]/g, '·');
+  return { ok: false, motivo: `Header desconocido: "${preview}…" (¿archivo corrupto o formato no soportado?)` };
+}
+
 async function descargarModelo(nombre) {
   const urls = urlsModelo(nombre);
   let ultimoError = null;
@@ -748,18 +762,15 @@ async function descargarModelo(nombre) {
     try {
       console.log('🌐 Probando:', url);
       const resp = await fetch(url, { cache: 'no-store' });
-      if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status} en ${url}`); continue; }
+      if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status}`); continue; }
       const buf = await resp.arrayBuffer();
       if (buf.byteLength < 256) {
         const txt = new TextDecoder().decode(new Uint8Array(buf));
-        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error(`Puntero LFS en ${url}`); continue; }
+        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error('Puntero LFS (no binario)'); continue; }
       }
-      const first = new Uint8Array(buf.slice(0, 64));
-      const txt = new TextDecoder().decode(first);
-      if (txt.startsWith('<!DOCTYPE') || txt.startsWith('<html') || txt.startsWith('<?xml')) {
-        // GLTF puede ser XML-legible (JSON), pero solo si empieza con '{'. HTML = error.
-        if (txt.startsWith('<')) { ultimoError = new Error(`Respuesta HTML en ${url}`); continue; }
-      }
+      // Validar signature HTML de error
+      const headText = new TextDecoder('latin1').decode(new Uint8Array(buf, 0, Math.min(32, buf.byteLength)));
+      if (headText.startsWith('<!DOCTYPE') || headText.startsWith('<html')) { ultimoError = new Error('Respuesta HTML (no binario)'); continue; }
       console.log(`✅ Binario descargado: ${buf.byteLength} bytes desde ${url}`);
       return buf;
     } catch (e) { ultimoError = e; console.warn('⚠️', url, e.message); }
@@ -837,13 +848,27 @@ function agregarItem(d, alPrincipio = false) {
 }
 const cache = new Map();
 
-/** Carga mediante descarga + parse (funciona con LFS y sin LFS) */
 async function cargarConParse(d, loader, esFBX) {
   if (cache.has(d.src)) return cache.get(d.src);
-  if (!d.archivo) throw new Error('Modelo sin nombre de archivo'); // locales con blob URL
+  if (!d.archivo) throw new Error('Modelo sin nombre de archivo');
   console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
   setEstado(`Descargando ${d.nombre}…`);
   const buf = await descargarModelo(d.archivo);
+
+  // Validación previa en FBX para evitar errores crípticos del parser
+  if (esFBX) {
+    const v = validarFbx(buf);
+    if (!v.ok) {
+      const err = new Error(`FBX inválido (${v.motivo}). Este archivo no se puede cargar.`);
+      console.error('❌', d.archivo, v.motivo);
+      // Diagnóstico: primeros bytes en hex para inspección
+      const hexHead = [...new Uint8Array(buf, 0, Math.min(16, buf.byteLength))].map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.error('   Primeros 16 bytes (hex):', hexHead);
+      throw err;
+    }
+    console.log('   ✓ Header FBX válido (' + v.tipo + ')');
+  }
+
   setEstado(`Procesando ${d.nombre}…`);
   return await new Promise((ok, fallo) => {
     const onLoad = obj => {
@@ -855,7 +880,6 @@ async function cargarConParse(d, loader, esFBX) {
         root.updateMatrixWorld(true);
         root.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
 
-        // Compensar unidades si es FBX y el tamaño es absurdo
         if (esFBX) {
           const b0 = new THREE.Box3().setFromObject(root);
           const s0 = b0.getSize(new THREE.Vector3());
@@ -873,7 +897,7 @@ async function cargarConParse(d, loader, esFBX) {
         const centro = box.getCenter(new THREE.Vector3());
         root.position.sub(centro);
 
-        const base = { obj: root, size, clips: (esFBX ? obj.animations : obj.animations) || [] };
+        const base = { obj: root, size, clips: (obj.animations || []) };
         cache.set(d.src, base);
         if (cache.size > 4) cache.delete(cache.keys().next().value);
         ok(base);
@@ -889,7 +913,6 @@ async function cargarConParse(d, loader, esFBX) {
 async function cargarGLB(d) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (d.src.startsWith('blob:')) {
-    // Archivo local
     console.log('🔽 Cargando GLB local:', d.nombre);
     return new Promise((ok, fallo) => loader.load(d.src, gltf => {
       const obj = gltf.scene, sobran = [];
@@ -938,6 +961,7 @@ async function cargarFBX(d) {
    ===================================================================== */
 let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
+let selecEnCurso = false;   // ← NUEVO: lock anti-doble-carga
 const EJE = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 const qTmp = new THREE.Quaternion();
 const cfgPorDefecto = () => ({ q: [0, 0, 0, 1], s: 1, dy: 0, ox: 0, oy: -0.1, mocap: true, modo: 'auto' });
@@ -1039,19 +1063,26 @@ function limpiarModelo() {
 function sincronizarSeg() {}
 
 async function seleccionar(d, btn) {
+  if (selecEnCurso) { console.log('⏳ Ya hay una carga en curso, ignorando click'); return; }
+  selecEnCurso = true;
   document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
   limpiarModelo(); def = d; cfg = null; twoHand.activo = false;
-  if (!d) { setEstado('Sin modelo'); refrescarBotones(); return; }
+  if (!d) { setEstado('Sin modelo'); refrescarBotones(); selecEnCurso = false; return; }
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
   try {
     const esFBX = /\.fbx$/i.test(d.archivo || d.nombre);
     const base = esFBX ? await cargarFBX(d) : await cargarGLB(d);
-    if (def !== d) return;
+    if (def !== d) { selecEnCurso = false; return; }
     cfg = cargarCfg(d);
     construir(d, base);
-  } catch (e) { console.error(e); setEstado('No pude cargar ' + d.nombre + ' — revisá la consola'); def = null; }
+  } catch (e) {
+    console.error(e);
+    setEstado('❌ ' + d.nombre + ': ' + (e?.message || e));
+    def = null;
+  }
   refrescarBotones(); sincronizarSeg();
+  selecEnCurso = false;
 }
 
 function construir(d, base) {
@@ -1060,6 +1091,15 @@ function construir(d, base) {
   rig = modo === 'obj' ? null : configurarRig(c);
   if (!rig && modo === 'cuerpo') rig = rigRigido(base.size);
   tipo = rig ? 'hum' : 'obj';
+
+  if (tipo === 'hum' && !rig.rigido) {
+    console.log(`🦴 ${d.nombre}: esqueleto humanoide detectado → modo personaje (mocap)`);
+  } else if (tipo === 'hum' && rig.rigido) {
+    console.log(`🦴 ${d.nombre}: sin esqueleto reconocible, anclado rígido al torso (modo cuerpo forzado)`);
+  } else {
+    console.log(`📦 ${d.nombre}: sin esqueleto reconocible → modo objeto${base.clips.length ? ' (con animación)' : ''}`);
+  }
+
   if (rig) {
     const pv = new THREE.Group(); pv.position.copy(rig.pivot);
     if (rig.rigido) pv.add(c); else { const rt = new THREE.Group(); rt.quaternion.copy(rig.qCorr); rt.add(c); pv.add(rt); }
@@ -1070,7 +1110,16 @@ function construir(d, base) {
   }
   clon = c; (tipo === 'hum' ? anclaje : objeto).add(ajuste);
   ajuste.quaternion.fromArray(cfg.q);
-  if (base.clips.length) { mixer = new THREE.AnimationMixer(c); mixer.clipAction(base.clips[0]).play(); }
+
+  // ⭐ FIX: animación SOLO en modo objeto
+  if (base.clips.length && tipo === 'obj') {
+    mixer = new THREE.AnimationMixer(c);
+    mixer.clipAction(base.clips[0]).play();
+    console.log(`🎬 Animación activada: "${base.clips[0].name || '(sin nombre)'}"`);
+  } else if (base.clips.length && tipo === 'hum') {
+    console.log(`⏸️ ${d.nombre}: animaciones ignoradas porque está sobre el cuerpo (modo mocap)`);
+  }
+
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo; suave.init = false;
   setEstado(!rig ? d.nombre + ' · objeto: pellizcá con 1 o 2 manos sobre él'
@@ -1080,11 +1129,10 @@ function construir(d, base) {
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
 
 /* =====================================================================
-   4) INTERFAZ  ← AQUÍ ESTÁ LA CORRECCIÓN DE SUBIR/BAJAR
+   4) INTERFAZ
    ===================================================================== */
 const ACCIONES = {
   mas() { cfg.s = Math.min(cfg.s * 1.08, 12); }, menos() { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
-  // ✅ Subir = mover hacia arriba en pantalla (Y Three.js +). Bajar = al revés.
   subir() { if (tipo === 'obj') cfg.oy += 0.06; else cfg.dy += 0.02; },
   bajar() { if (tipo === 'obj') cfg.oy -= 0.06; else cfg.dy -= 0.02; },
   rotx() { rotarMundo(EJE.x, Math.PI / 2); }, roty() { rotarMundo(EJE.y, Math.PI / 2); }, rotz() { rotarMundo(EJE.z, Math.PI / 2); },
@@ -1395,7 +1443,7 @@ function actualizarCursores(now) {
 }
 
 /* =====================================================================
-   7) POSE → RIG
+   7) POSE → RIG (cuerpo completo, no solo manos)
    ===================================================================== */
 const poseState = { midX: 0, midY: 0, torso: 0, hasData: false };
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
@@ -1403,6 +1451,7 @@ const _qDelta = new THREE.Quaternion(), _qParent = new THREE.Quaternion(), _qPar
 
 function aplicarPose(landmarks) {
   if (!landmarks) return;
+  poseLm = landmarks;   // ← guardamos para el overlay de debug
   const p11 = landmarks[11], p12 = landmarks[12], p23 = landmarks[23], p24 = landmarks[24];
   if (p11 && p12) {
     poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
@@ -1443,7 +1492,7 @@ function aplicarTransformacionesAnclaje(dt) {
   if (poseState.hasData) {
     const s = rig ? (poseState.torso > 10 ? poseState.torso / Math.max(rig.torso, 0.01) : null) : null;
     const targetX = poseState.midX;
-    const targetY = poseState.midY + (cfg.dy || 0) * H;   // dy>0 → Y aumenta → sube
+    const targetY = poseState.midY + (cfg.dy || 0) * H;
     const targetS = s ?? (Math.min(W, H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
     if (!suave.init) { suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.init = true; }
     else { const k = Math.min(1, dt * 10); suave.x += (targetX - suave.x) * k; suave.y += (targetY - suave.y) * k; suave.s += (targetS - suave.s) * k; }
@@ -1457,7 +1506,7 @@ function aplicarTransformacionesAnclaje(dt) {
 function aplicarTransformacionesObjeto(dt) {
   if (tipo !== 'obj' || !cfg) return;
   const h = OBJ_BASE * Math.min(W, H) * 0.15;
-  objeto.position.set(W / 2 + cfg.ox * H, H / 2 + cfg.oy * H, 0);   // oy>0 → Y aumenta → sube
+  objeto.position.set(W / 2 + cfg.ox * H, H / 2 + cfg.oy * H, 0);
   objeto.scale.setScalar(cfg.s * h);
   objeto.visible = true;
 }
@@ -1493,7 +1542,7 @@ function loop() {
 
   actualizarCursores(ahora);
 
-  if (mixer) mixer.update(dt);
+  if (mixer) mixer.update(dt);   // ⭐ mixer solo existe en modo 'obj'
   if (autoGiro && tipo === 'obj' && cfg) {
     ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.5));
     cfg.q = ajuste.quaternion.toArray();
@@ -1519,8 +1568,41 @@ function loop() {
     fctx.clearRect(0, 0, W, H);
   }
 
+  /* ---------- DEBUG: PUNTOS DE CUERPO COMPLETO + MANOS ---------- */
   if (mostrarPuntos) {
     dbg.clearRect(0, 0, W, H);
+    if (poseLm) {
+      // Líneas de esqueleto torso
+      const lineas = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+      dbg.strokeStyle = 'rgba(255,120,120,.85)';
+      dbg.lineWidth = 3;
+      for (const [a,b] of lineas) {
+        if (!poseLm[a] || !poseLm[b]) continue;
+        dbg.beginPath();
+        dbg.moveTo(sx(poseLm[a].x), sy(poseLm[a].y));
+        dbg.lineTo(sx(poseLm[b].x), sy(poseLm[b].y));
+        dbg.stroke();
+      }
+      // Puntos clave del cuerpo
+      const colores = {
+        11:'#ff5555',12:'#ff5555',  // hombros
+        13:'#ffaa55',14:'#ffaa55',  // codos
+        15:'#ffee55',16:'#ffee55',  // muñecas
+        23:'#55ff55',24:'#55ff55',  // caderas
+        25:'#55cc55',26:'#55cc55',  // rodillas
+        27:'#55aa55',28:'#55aa55',  // tobillos
+        0:'#55ccff',               // nariz
+      };
+      for (const [idx, color] of Object.entries(colores)) {
+        const p = poseLm[idx];
+        if (!p) continue;
+        dbg.fillStyle = color;
+        dbg.beginPath();
+        dbg.arc(sx(p.x), sy(p.y), 4, 0, TAU);
+        dbg.fill();
+      }
+    }
+    // Puntos de las manos
     dbg.fillStyle = '#00ff88';
     for (const lm of handLm) if (lm) for (const p of lm) { dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 3, 0, TAU); dbg.fill(); }
   } else if (dbgCanvas._lastHad) {
