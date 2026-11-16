@@ -1,1215 +1,388 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a">
-<title>Espejo AR PRO – Calabozos y Código</title>
-<style>
-  :root { --acento:#ffb400; --fondo:rgba(15,15,25,.82); --seg-b:env(safe-area-inset-bottom,0px); }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui,sans-serif; color:#fff; overscroll-behavior:none; }
-  #pantalla { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
-  #stage { position:relative; flex:none; background:#0b0b0e; overflow:hidden; touch-action:none; }
-  #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:cover; z-index:0; }
-  #fondo, #persona, #gl, #debug { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-  #fondo { z-index:1; } #persona { z-index:2; } #gl { z-index:3; } #debug { z-index:4; }
-  .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:12px; padding:7px 4px; font-size:12px;
-         cursor:pointer; text-align:center; line-height:1.15; backdrop-filter:blur(4px); transition:transform .1s, border-color .1s, background .1s; user-select:none; }
-  .btn .ico { display:block; font-size:22px; margin-bottom:1px; }
-  .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
-  .btn.hv0, .btn.hv1 { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
-  #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; }
-  #menu.oculto { bottom:auto; width:auto; }
-  #menu.oculto #menuContenido { display:none; }
-  #titulo { background:var(--fondo); border-radius:10px; padding:6px 8px; font-size:12px; text-align:center; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  #btnToggleMenu { cursor:pointer; padding:4px 8px; border-radius:8px; border:2px solid rgba(255,255,255,.25); }
-  #menuContenido { flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; }
-  #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
-  #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
-  #lista::-webkit-scrollbar { display:none; }
-  .item { display:flex; align-items:center; gap:7px; text-align:left; padding:8px; min-height:46px; flex:none; font-size:12px; }
-  .item .ico { font-size:20px; flex:none; }
-  .item span.n { overflow:hidden; text-overflow:ellipsis; word-break:break-word; flex:1; }
-  .item .badge { font-size:10px; opacity:.7; flex:none; }
-  #track { width:16px; background:rgba(255,255,255,.14); border-radius:8px; position:relative; flex:none; }
-  #thumb { position:absolute; left:0; right:0; background:var(--acento); border-radius:8px; min-height:34px; }
-  .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
-  .flecha { padding:4px; font-size:16px; }
-  #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start; max-height:calc(100% - 90px); overflow-y:auto; scrollbar-width:none; }
-  #controles::-webkit-scrollbar { display:none; }
-  #controles .btn { padding:7px 2px; font-size:11px; } #controles .btn .ico { font-size:20px; }
-  #controles.oculto { width:46px; grid-template-columns:1fr; }
-  #controles.oculto .btn:not(#toggleControles) { display:none; }
-  #toggleControles { font-size:16px !important; padding:8px !important; }
-  #stage[data-modo="hum"] .solo-obj, #stage[data-modo="obj"] .solo-hum, #stage[data-modo=""] .solo-obj, #stage[data-modo=""] .solo-hum { display:none; }
-  .ancho { grid-column:1 / -1; }
-  #barra { position:absolute; left:50%; bottom:calc(10px + var(--seg-b)); transform:translateX(-50%); display:flex; gap:6px; z-index:8; max-width:96%; }
-  #barra .btn { width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none; border-radius:14px; }
-  #stage.sin-ui #barra .btn:not(#bUI) { display:none; }
-  #stage.sin-ui #menu, #stage.sin-ui #controles, #stage.sin-ui #estado, #stage.sin-ui #menuFondos { display:none !important; }
-  #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px; border-radius:20px; font-size:13px; z-index:6; max-width:60%; text-align:center; pointer-events:none; transition:opacity .6s; white-space:pre-line; }
-  .cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20; border:3px solid #fff;
-            box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9); pointer-events:none; display:none;
-            background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
-  .cursor::after { content:""; position:absolute; inset:7px; border-radius:50%; background:rgba(0,0,0,.55); }
-  .cursor.pinch { transform:scale(.7); border-color:var(--acento); }
-  #cursor1 { border-color:#6cf; }
-  #menuFondos { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none;
-                width:min(560px, 94%); max-height:82%; background:rgba(15,15,25,.97); border:2px solid var(--acento); border-radius:16px; padding:12px; z-index:18;
-                display:grid; grid-template-columns:repeat(3,1fr); gap:8px; overflow-y:auto; }
-  #menuFondos.abierto { transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
-  #menuFondos h3 { grid-column:1 / -2; margin:0; font-size:14px; color:var(--acento); }
-  #cerrarFondos { grid-column:-2 / -1; padding:6px; }
-  .fondoOpt { padding:5px; border-radius:10px; cursor:pointer; text-align:center; border:2px solid transparent; background:rgba(255,255,255,.06); font-size:11px; }
-  .fondoOpt canvas, .fondoOpt .sw { width:100%; aspect-ratio:16/9; border-radius:6px; display:block; }
-  .fondoOpt .sw { display:flex; align-items:center; justify-content:center; font-size:26px; background:linear-gradient(135deg,#333,#777); }
-  .fondoOpt.activo { border-color:var(--acento); background:rgba(255,180,0,.22); }
-  #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.93); display:flex; flex-direction:column; align-items:center; justify-content:center;
-            gap:11px; text-align:center; padding:20px; overflow-y:auto; }
-  #inicio h1 { margin:0; font-size:24px; }
-  #inicio p { margin:0; max-width:560px; opacity:.88; line-height:1.45; font-size:13px; }
-  #inicio b { color:var(--acento); }
-  #btnIniciar { background:var(--acento); color:#111; border:none; border-radius:14px; padding:14px 30px; font-size:18px; font-weight:700; cursor:pointer; margin-top:6px; }
-  #error { color:#ff8a8a; font-size:13px; max-width:480px; }
-  #flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:40; transition:opacity .35s; }
-</style>
-<script type="importmap">
-{ "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-} }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR.js - Multi Marcador (Hiro, Kanji, Barcode 4x4 BCH)</title>
+
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
+
+    <link rel="stylesheet" href="css/estilos.css">
+
+    <style>
+        #camera-error {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 53, 69, 0.95);
+            color: white; padding: 18px 24px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px; font-weight: 600;
+            z-index: 5000; text-align: center;
+            max-width: 90vw; display: none;
+        }
+        #camera-error.visible { display: block; }
+
+        #js-error {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: #dc3545; color: white;
+            padding: 10px 14px;
+            font-family: monospace; font-size: 12px;
+            z-index: 99999; display: none;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        #js-error.visible { display: block; }
+
+        #panel-info.hidden { display: none !important; }
+    </style>
 </head>
-<body>
-<div id="pantalla">
-  <div id="stage" data-modo="" data-fondo="camara">
-    <video id="video" playsinline muted></video>
-    <canvas id="fondo"></canvas>
-    <canvas id="persona"></canvas>
-    <canvas id="gl"></canvas>
-    <canvas id="debug"></canvas>
-    <div id="menu">
-      <div id="titulo"><span>📂 Modelos</span><span id="btnToggleMenu" data-hover data-nodwell>◀</span></div>
-      <div id="menuContenido">
-        <div class="btn flecha" data-hover data-repeat id="arriba">▲</div>
-        <div id="listaWrap"><div id="lista" data-scroll></div><div id="track" data-scroll><div id="thumb"></div></div></div>
-        <div class="btn flecha" data-hover data-repeat id="abajo">▼</div>
-        <div class="fila">
-          <label class="btn" data-hover id="lblArchivo">📁<input id="archivo" type="file" accept=".glb,.gltf,.fbx" hidden></label>
-          <div class="btn" data-hover id="refrescar" title="Sincronizar">🔄</div>
-          <div class="btn" data-hover id="quitar">❌</div>
-        </div>
-      </div>
+<body style="margin: 0; overflow: hidden;">
+
+    <div id="js-error"></div>
+
+    <div id="panel-info">
+        <h3>Panel AR</h3>
+        <p>Marcador: <span id="marcador-id">Ninguno</span></p>
+        <p>Modelo: <span id="modelo-id">-</span></p>
+        <p>Estado: <span id="estado-id">Buscando...</span></p>
+        <p>FPS: <span id="fps-id">0</span></p>
     </div>
-    <div id="controles">
-      <div id="toggleControles" class="btn ancho" data-hover data-nodwell>▶</div>
-      <div class="btn" data-hover data-repeat data-accion="mas"><span class="ico">➕</span>Más grande</div>
-      <div class="btn" data-hover data-repeat data-accion="menos"><span class="ico">➖</span>Más chico</div>
-      <div class="btn" data-hover data-repeat data-accion="subir"><span class="ico">⬆️</span>Subir</div>
-      <div class="btn" data-hover data-repeat data-accion="bajar"><span class="ico">⬇️</span>Bajar</div>
-      <div class="btn" data-hover data-accion="rotx"><span class="ico">⤵️</span>Rotar X</div>
-      <div class="btn" data-hover data-accion="roty"><span class="ico">🔄</span>Rotar Y</div>
-      <div class="btn" data-hover data-accion="rotz"><span class="ico">↩️</span>Rotar Z</div>
-      <div class="btn" data-hover data-accion="reset"><span class="ico">♻️</span>Reiniciar</div>
-      <div class="btn ancho solo-hum" data-hover data-accion="mocap"><span class="ico">🕺</span>Copiar cuerpo</div>
-      <div class="btn solo-obj" data-hover data-accion="mover"><span class="ico">✋</span>Mover</div>
-      <div class="btn solo-obj" data-hover data-accion="rotar"><span class="ico">🔄</span>Rotar</div>
-      <div class="btn solo-obj" data-hover data-accion="escalar"><span class="ico">🔍</span>Escalar</div>
-      <div class="btn solo-obj" data-hover data-accion="giro"><span class="ico">↻</span>Giro</div>
-      <div class="btn ancho" data-hover data-accion="modo"><span class="ico">🧍</span><span id="lblModo">Modo</span></div>
-      <div class="btn ancho" data-hover data-accion="puntos"><span class="ico">🦴</span>Ver puntos</div>
-    </div>
-    <div id="barra">
-      <div class="btn" data-hover data-barra="lista">☰</div>
-      <div class="btn" data-hover data-barra="ajustes">⚙️</div>
-      <div class="btn" data-hover data-barra="fondo">🎨</div>
-      <div class="btn" data-hover data-barra="foto">📸</div>
-      <div class="btn" data-hover data-barra="pantalla">⛶</div>
-      <div class="btn" data-hover data-barra="girar">🔃</div>
-      <div class="btn" data-hover data-barra="ui" id="bUI">👁</div>
-    </div>
-    <div id="menuFondos"></div>
-    <div id="estado">Iniciando…</div>
-    <div class="cursor" id="cursor0"></div>
-    <div class="cursor" id="cursor1"></div>
-    <div id="flash"></div>
-    <div id="inicio">
-      <h1>🪞 Espejo AR PRO</h1>
-      <p>🖐️ <b>Una mano</b>: cursor sigue índice+pulgar. Pellizcá para clic.<br>
-         🙌 <b>Dos manos</b>: escalar/mover objetos.<br>
-         🎨 <b>Fondos</b>: escenarios procedurales.<br>
-         🧍 <b>Cualquier .glb / .fbx</b>: se rige automáticamente si es humanoide.</p>
-      <button id="btnIniciar">Iniciar cámara</button>
-      <div id="error"></div>
-    </div>
-  </div>
-</div>
 
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
-import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { FilesetResolver, HandLandmarker, PoseLandmarker }
-  from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
-
-/* ============================================================
-   ⚡ FIX #1: sincronizarSeg definida PRIMERO
-   ============================================================ */
-function sincronizarSeg() { /* no-op */ }
-
-const $ = s => document.querySelector(s);
-const TAU = Math.PI * 2;
-const DIST = 4.2, FOV = 42, OBJ_BASE = 1.35;
-const PINCH_ON = 0.28, PINCH_OFF = 0.42, DWELL_MS = 900;
-const MAX_CLICKS_IGNORADOS = 3;
-const MIRROR = true;
-
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
-const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-
-const REPO = 'BraianM-dev/pruebas';
-const RAMA = 'main';
-const CARPETA = 'modelos/';
-const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
-const qTmp = new THREE.Quaternion();
-
-function mkCanvas(w = 2, h = 2) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-function mulberry(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-
-/* ============================================================
-   MOTOR DE FONDOS
-   ============================================================ */
-function ladrillos(c, x, y, w, h, bw, bh, hsl, r) {
-  c.fillStyle = '#050506'; c.fillRect(x, y, w, h);
-  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
-  const lin = Math.max(2, bh * .09);
-  for (let f = 0, yy = y; yy < y + h; f++, yy += bh) {
-    const off = (f % 2) * bw * .5;
-    for (let xx = x - off; xx < x + w; xx += bw) {
-      c.fillStyle = `hsl(${hsl[0]+(r()*10-5)},${hsl[1]}%,${hsl[2]+(r()*10-5)}%)`;
-      c.fillRect(xx + 1.5, yy + 1.5, bw - 3, bh - 3);
-      c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(xx + 1.5, yy + 1.5, bw - 3, lin);
-      c.fillStyle = 'rgba(0,0,0,.30)'; c.fillRect(xx + 1.5, yy + bh - 1.5 - lin * 1.3, bw - 3, lin * 1.3);
-    }
-  }
-  c.restore();
-}
-function suelo(c, W, H, hz, hsl, r) {
-  c.fillStyle = `hsl(${hsl[0]},${hsl[1]}%,${hsl[2]*.5}%)`;
-  c.fillRect(0, hz, W, H - hz);
-  const vx = W / 2, N = 12, M = 14;
-  const X = (i, u) => vx + i * (W * .02 + W * .20 * u);
-  for (let k = 0; k < N; k++) {
-    const u0 = (k/N)**2, u1 = ((k+1)/N)**2;
-    const y0 = hz + (H-hz)*u0, y1 = hz + (H-hz)*u1;
-    for (let i = -M; i < M; i++) {
-      c.fillStyle = `hsl(${hsl[0]},${hsl[1]}%,${hsl[2]*(.55+.45*u1)+(r()*5-2.5)}%)`;
-      c.beginPath();
-      c.moveTo(X(i,u0),y0); c.lineTo(X(i+1,u0),y0);
-      c.lineTo(X(i+1,u1),y1); c.lineTo(X(i,u1),y1);
-      c.closePath(); c.fill();
-      c.strokeStyle='rgba(0,0,0,.55)'; c.lineWidth=1+u1*2.5; c.stroke();
-    }
-  }
-}
-function vineta(c, W, H, a) {
-  const g = c.createRadialGradient(W/2,H/2,Math.min(W,H)*.22,W/2,H/2,Math.max(W,H)*.78);
-  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(0,0,0,${a})`);
-  c.fillStyle = g; c.fillRect(0,0,W,H);
-}
-
-const ESCENAS = {
-  calabozo: {
-    luz: { c: 0xffa860 },
-    est(c, W, H, r, S) {
-      const hz = H * .66;
-      ladrillos(c, 0, 0, W, hz, W*.07, H*.075, [222,7,24], r);
-      suelo(c, W, H, hz, [28,10,20], r);
-      S.niebla = [170,150,140,.09]; S.vig = .8;
-    }
-  },
-  biblioteca: {
-    luz: { c: 0xb69cff },
-    est(c, W, H, r, S) {
-      const hz = H * .7;
-      ladrillos(c, 0, 0, W, hz, W*.06, H*.07, [268,14,13], r);
-      suelo(c, W, H, hz, [28,38,16], r);
-      S.niebla = [150,120,200,.07]; S.vig = .85;
-    }
-  },
-  cripta: {
-    luz: { c: 0x8affc0 },
-    est(c, W, H, r, S) {
-      const hz = H * .7;
-      ladrillos(c, 0, 0, W, hz, W*.065, H*.07, [190,9,14], r);
-      suelo(c, W, H, hz, [200,8,15], r);
-      S.niebla = [120,210,170,.2]; S.vig = .88;
-    }
-  },
-  volcan: {
-    luz: { c: 0xff6a20 },
-    est(c, W, H, r, S) {
-      const hz = H * .6;
-      const g = c.createLinearGradient(0,0,0,hz);
-      g.addColorStop(0,'#12030a'); g.addColorStop(.6,'#4a1004'); g.addColorStop(1,'#c2430f');
-      c.fillStyle = g; c.fillRect(0,0,W,hz+2);
-      c.fillStyle = '#080202'; c.fillRect(0,hz,W,H-hz);
-      S.niebla = [255,110,40,.09]; S.vig = .82;
-    }
-  }
-};
-
-const FONDOS = [
-  { id: 'camara', nombre: 'Cámara', ico: '📷' },
-  { id: 'calabozo', nombre: 'Calabozo', ico: '⛓' },
-  { id: 'biblioteca', nombre: 'Biblioteca', ico: '📚' },
-  { id: 'cripta', nombre: 'Cripta', ico: '💀' },
-  { id: 'volcan', nombre: 'Volcán', ico: '🌋' }
-];
-
-function crearMotorFondos(mk) {
-  let id = null, W = 0, H = 0, S = {}, est = null, r = null;
-  return {
-    fijar(nuevo, w, h) {
-      if (nuevo === id && w === W && h === H) return;
-      id = nuevo; W = w; H = h; S = {};
-      r = mulberry(nuevo.length * 997 + w * 31);
-      est = mk(w, h);
-      const ctx = est.getContext('2d');
-      const esc = ESCENAS[nuevo];
-      if (esc) { esc.est(ctx, w, h, r, S); if (S.vig) vineta(ctx, w, h, S.vig); }
-    },
-    dibujar(c, t, dt, sombra) {
-      if (!est) return;
-      c.drawImage(est, 0, 0);
-      if (sombra) {
-        c.fillStyle = 'rgba(0,0,0,.35)';
-        c.beginPath();
-        c.ellipse(sombra.x, sombra.y, sombra.rx||40, (sombra.rx||40)*0.35, 0, 0, TAU);
-        c.fill();
-      }
-      if (S.niebla) {
-        const [nr,ng,nb,na] = S.niebla;
-        const g = c.createRadialGradient(W/2, H*.6, 0, W/2, H*.6, Math.max(W,H)*.7);
-        g.addColorStop(0, `rgba(${nr},${ng},${nb},${na})`);
-        g.addColorStop(1, 'rgba(0,0,0,0)');
-        c.fillStyle = g; c.fillRect(0, 0, W, H);
-      }
-    }
-  };
-}
-
-/* ============================================================
-   ESTADO GLOBAL — todas las variables necesarias
-   ============================================================ */
-const stage = $('#stage'), video = $('#video'), lista = $('#lista'), track = $('#track'), thumb = $('#thumb');
-const fondoCv = $('#fondo'), personaCv = $('#persona'), glCanvas = $('#gl'), dbgCanvas = $('#debug');
-const fctx = fondoCv.getContext('2d'), pctx = personaCv.getContext('2d'), dbg = dbgCanvas.getContext('2d');
-
-let W = 640, H = 480, mapa = { ox: 0, oy: 0, vw: 640, vh: 480, s: 1 }, rotacion = 0;
-let hand = null, pose = null, handLm = [null, null], poseLm = null;
-let defs = [], def = null, cfg = null, clon = null, mixer = null, rig = null, tipo = null;
-let herramienta = 'mover', autoGiro = false, mostrarPuntos = false, fondoActual = 'camara';
-let prefs = JSON.parse(localStorage.getItem('espejo-prefs') || '{"lista":true,"ajustes":true,"fondo":"camara","vista":"llenar"}');
-let cache = new Map(), infoCache = JSON.parse(localStorage.getItem('espejo-info-v5') || '{}');
-let cargandoActual = null, contadorGen = 0, clicksIgnorados = 0;
-
-// ⚡ FIX: definir TODAS las estructuras que se referencian
-const twoHand = {
-  activo: false, smDist: 0, smMidX: 0, smMidY: 0,
-  lastDist: 0, lastMidX: 0, lastMidY: 0, cooldownHasta: 0
-};
-const suave = { init: false, x: 0, y: 0, s: 1 };
-
-const scene = new THREE.Scene();
-const camOrto = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
-const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1); scene.add(hemi);
-const sol = new THREE.DirectionalLight(0xffe0b0, 1.6); sol.position.set(2, 4, 3); scene.add(sol);
-const anclaje = new THREE.Group(), objeto = new THREE.Group(), ajuste = new THREE.Group();
-scene.add(anclaje); scene.add(objeto);
-anclaje.visible = false; objeto.visible = false;
-const motor = crearMotorFondos(mkCanvas);
-
-/* ============================================================
-   LAYOUT
-   ============================================================ */
-function layout() {
-  const rect = stage.parentElement.getBoundingClientRect();
-  let tw = rect.width, th = rect.height;
-  if (rotacion % 180) [tw, th] = [th, tw];
-  const aspect = video.videoWidth / video.videoHeight || 16 / 9;
-  if (prefs.vista === 'llenar') {
-    if (tw / th > aspect) { H = th; W = H * aspect; }
-    else { W = tw; H = W / aspect; }
-  } else {
-    if (tw / th > aspect) { W = tw; H = W / aspect; }
-    else { H = th; W = H * aspect; }
-  }
-  stage.style.width = W + 'px'; stage.style.height = H + 'px';
-  [fondoCv, personaCv, glCanvas, dbgCanvas].forEach(c => { c.width = W; c.height = H; });
-  renderer.setSize(W, H, false);
-  camOrto.left = -W/2; camOrto.right = W/2;
-  camOrto.top = H/2; camOrto.bottom = -H/2;
-  camOrto.updateProjectionMatrix();
-  const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-  const s = Math.max(W/vw, H/vh);
-  mapa = { ox: (W-vw*s)/2, oy: (H-vh*s)/2, vw, vh, s };
-  if (fondoActual !== 'camara') motor.fijar(fondoActual, W, H);
-  stage.style.transform = `rotate(${rotacion}deg)`;
-}
-let tLay;
-const layoutDeb = () => { clearTimeout(tLay); tLay = setTimeout(layout, 80); };
-addEventListener('resize', layoutDeb);
-
-function sx(x) { return mapa.ox + (MIRROR ? (1-x) : x) * mapa.vw * mapa.s; }
-function sy(y) { return mapa.oy + y * mapa.vh * mapa.s; }
-function puntoAStage(cx, cy) {
-  const r = stage.getBoundingClientRect();
-  return { x: (cx-r.left)*(W/r.width), y: (cy-r.top)*(H/r.height) };
-}
-function stageAViewport(x, y) {
-  const r = stage.getBoundingClientRect();
-  return { x: r.left + x*(r.width/W), y: r.top + y*(r.height/H) };
-}
-
-/* ============================================================
-   PREFS
-   ============================================================ */
-function guardarPrefs() { localStorage.setItem('espejo-prefs', JSON.stringify(prefs)); }
-function guardarInfoCache() { localStorage.setItem('espejo-info-v5', JSON.stringify(infoCache)); }
-function cfgPorDefecto() { return { s: 1, ox: 0, oy: 0, dy: 0, q: [0,0,0,1], modo: 'auto', mocap: true }; }
-function cargarCfg(d) {
-  const k = 'espejo-cfg-v5-' + (d.archivo || d.nombre);
-  try { return Object.assign(cfgPorDefecto(), JSON.parse(localStorage.getItem(k) || '{}')); }
-  catch { return cfgPorDefecto(); }
-}
-function guardarCfg() {
-  if (!def || !cfg) return;
-  localStorage.setItem('espejo-cfg-v5-' + (def.archivo || def.nombre), JSON.stringify(cfg));
-}
-function setEstado(t) {
-  const e = $('#estado');
-  e.textContent = t; e.style.opacity = 1;
-  clearTimeout(e._t);
-  e._t = setTimeout(() => e.style.opacity = .55, 3500);
-}
-function aplicarLuz(id) {
-  const esc = ESCENAS[id];
-  hemi.color.setHex(esc ? esc.luz.c : 0xffffff);
-}
-
-/* ============================================================
-   LOADERS
-   ============================================================ */
-const gltfLoader = new GLTFLoader();
-const draco = new DRACOLoader();
-draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-gltfLoader.setDRACOLoader(draco);
-gltfLoader.setMeshoptDecoder(MeshoptDecoder);
-const ktx2 = new KTX2Loader()
-  .setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/basis/')
-  .detectSupport(renderer);
-gltfLoader.setKTX2Loader(ktx2);
-const fbxLoader = new FBXLoader();
-
-function esModelo(n) { return /\.(glb|gltf|fbx)$/i.test(n); }
-function bonito(n) { return n.replace(/\.(glb|gltf|fbx)$/i,'').replace(/[-_]/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
-function infoIcono(arch) { const i = infoCache[arch]; if (!i) return ''; return i.rig ? '🦴' : i.anim ? '🎬' : '📦'; }
-
-function urlsModelo(nombre) {
-  const enc = nombre.split('/').map(encodeURIComponent).join('/');
-  return [
-    `https://media.githubusercontent.com/media/${REPO}/${RAMA}/${CARPETA}${enc}`,
-    `https://raw.githubusercontent.com/${REPO}/${RAMA}/${CARPETA}${enc}`,
-    `./${CARPETA}${enc}`
-  ];
-}
-
-async function descargarModelo(nombre, signal) {
-  const urls = urlsModelo(nombre);
-  let ultimoError = null;
-  for (const url of urls) {
-    if (signal?.aborted) throw new DOMException('Aborted','AbortError');
-    try {
-      const resp = await fetch(url, { cache: 'no-store', signal });
-      if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status}`); continue; }
-      const buf = await resp.arrayBuffer();
-      if (buf.byteLength < 256) {
-        const txt = new TextDecoder().decode(new Uint8Array(buf));
-        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error('LFS'); continue; }
-      }
-      return buf;
-    } catch (e) {
-      if (e?.name === 'AbortError') throw e;
-      ultimoError = e;
-    }
-  }
-  throw ultimoError || new Error('No se pudo descargar');
-}
-
-async function cargarGLB(d, signal) {
-  if (cache.has(d.src)) return cache.get(d.src);
-  const gltf = await gltfLoader.loadAsync(d.src);
-  if (signal?.aborted) throw new DOMException('Aborted','AbortError');
-  const obj = gltf.scene || gltf.scenes?.[0];
-  if (!obj) throw new Error('Sin escena');
-  const box = new THREE.Box3().setFromObject(obj);
-  const size = box.getSize(new THREE.Vector3());
-  const res = { obj, size, clips: gltf.animations || [] };
-  cache.set(d.src, res);
-  return res;
-}
-
-async function cargarFBX(d, signal) {
-  if (cache.has(d.src)) return cache.get(d.src);
-  let url = d.src;
-  try {
-    const buf = await descargarModelo(d.archivo, signal);
-    if (signal?.aborted) throw new DOMException('Aborted','AbortError');
-    if (buf.byteLength >= 4) {
-      const h = new Uint8Array(buf, 0, 4);
-      if (h[0] === 0x50 && h[1] === 0x4B) {
-        try {
-          const zip = await JSZip.loadAsync(buf);
-          const entry = Object.keys(zip.files).find(n => /\.fbx$/i.test(n) && !zip.files[n].dir);
-          if (entry) { const blob = await zip.files[entry].async('blob'); url = URL.createObjectURL(blob); }
-        } catch {}
-      }
-    }
-  } catch (e) { if (e?.name === 'AbortError') throw e; }
-  const obj = await fbxLoader.loadAsync(url);
-  if (signal?.aborted) throw new DOMException('Aborted','AbortError');
-  const box = new THREE.Box3().setFromObject(obj);
-  const size = box.getSize(new THREE.Vector3());
-  const res = { obj, size, clips: obj.animations || [] };
-  cache.set(d.src, res);
-  return res;
-}
-
-/* ============================================================
-   RIG + MOCAP
-   ============================================================ */
-const CAD = MIRROR ? [
-  ['arm','forearm','L',12,14,[ 0.15,-1,0]],
-  ['forearm','hand','L',14,16,[ 0.15,-1,0]],
-  ['arm','forearm','R',11,13,[-0.15,-1,0]],
-  ['forearm','hand','R',13,15,[-0.15,-1,0]],
-  ['upleg','leg','L',24,26,[ 0.05,-1,0]],
-  ['leg','foot','L',26,28,[ 0.05,-1,0]],
-  ['upleg','leg','R',23,25,[-0.05,-1,0]],
-  ['leg','foot','R',25,27,[-0.05,-1,0]]
-] : [
-  ['arm','forearm','R',12,14,[-0.15,-1,0]],
-  ['forearm','hand','R',14,16,[-0.15,-1,0]],
-  ['arm','forearm','L',11,13,[ 0.15,-1,0]],
-  ['forearm','hand','L',13,15,[ 0.15,-1,0]],
-  ['upleg','leg','R',24,26,[-0.05,-1,0]],
-  ['leg','foot','R',26,28,[-0.05,-1,0]],
-  ['upleg','leg','L',23,25,[ 0.05,-1,0]],
-  ['leg','foot','L',25,27,[ 0.05,-1,0]]
-];
-
-const R24 = (() => {
-  const out = [];
-  for (const p of [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]]) {
-    for (const sg of [[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]]) {
-      const m = new THREE.Matrix4().identity(); const e = m.elements;
-      e.fill(0); e[15] = 1;
-      for (let i = 0; i < 3; i++) e[p[i]*4+i] = sg[i];
-      if (m.determinant() > 0) out.push(m);
-    }
-  }
-  return out;
-})();
-
-function rolDe(name) {
-  const s = name.toLowerCase();
-  let lado = null;
-  if (/left/.test(s) || /(^|[^a-z0-9])l($|[^a-z0-9])/.test(s)) lado = 'L';
-  else if (/right/.test(s) || /(^|[^a-z0-9])r($|[^a-z0-9])/.test(s)) lado = 'R';
-  const t = s
-    .replace(/mixamorig/g,'').replace(/bip0?0?1|bip0?0?2/g,'').replace(/j_bip_[lrc]_/g,'')
-    .replace(/armature/g,'').replace(/^def/g,'').replace(/left|right/g,'')
-    .replace(/(^|[^a-z0-9])[lr](?=$|[^a-z0-9])/g,'$1').replace(/[^a-z]/g,'');
-  const roles = {
-    hips:/^(hips|pelvis|hip)$/, spine:/^(spine|chest|torso|spine1|spine2)$/,
-    neck:/^neck$/, head:/^head$/,
-    arm:/^(arm|upperarm|uparm)$/, forearm:/^(forearm|lowerarm|lowarm)$/, hand:/^(hand|wrist)$/,
-    upleg:/^(upleg|thigh|upperleg|uleg)$/, leg:/^(leg|calf|shin|lowerleg|lowleg)$/,
-    foot:/^(foot|ankle)$/, toe:/^(toebase|toe|toes|ball)$/
-  };
-  for (const [rol, re] of Object.entries(roles)) if (re.test(t)) return { rol, lado };
-  return {};
-}
-
-function configurarRig(raiz) {
-  raiz.updateMatrixWorld(true);
-  const Hs = {};
-  const encontrados = [];
-  raiz.traverse(o => {
-    if (!o.isBone) return;
-    const { rol, lado } = rolDe(o.name);
-    if (rol && !Hs[rol + (lado||'')]) {
-      Hs[rol + (lado||'')] = o;
-      encontrados.push(`${rol}${lado||''}`);
-    }
-  });
-  console.log(`🔍 Huesos: ${encontrados.join(', ') || 'NINGUNO'}`);
-  if (!['armL','armR','forearmL','forearmR'].every(k => Hs[k])) {
-    console.log(`❌ Rig incompleto: faltan ${['armL','armR','forearmL','forearmR'].filter(k => !Hs[k]).join(',')}`);
-    return null;
-  }
-  const P = k => Hs[k] ? Hs[k].getWorldPosition(new THREE.Vector3()) : null;
-  const avg = (a,b) => a && b ? a.clone().add(b).multiplyScalar(.5) : null;
-  const shL = P('armL'), shR = P('armR'), mid = avg(shL, shR);
-  const hipL = P('uplegL'), hipR = P('uplegR');
-  const hipMid = avg(hipL, hipR) || P('hips');
-  const cabeza = P('head') || P('neck');
-  const arriba = hipMid ? mid.clone().sub(hipMid) : (cabeza ? cabeza.clone().sub(mid) : null);
-  if (!arriba || arriba.lengthSq() < 1e-14) return null;
-  arriba.normalize();
-  const izq = shL.clone().sub(shR);
-  if (hipL && hipR) izq.normalize().add(hipL.clone().sub(hipR).normalize());
-  izq.addScaledVector(arriba, -izq.dot(arriba));
-  if (izq.lengthSq() < 1e-14) return null;
-  izq.normalize();
-  const frente = new THREE.Vector3().crossVectors(izq, arriba);
-  const M = new THREE.Matrix4().makeBasis(izq, arriba, frente).transpose();
-  const me = M.elements;
-  let mejor = null, mejorPuntaje = -Infinity;
-  for (const R of R24) {
-    let p = 0;
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) p += R.elements[c*4+r] * me[c*4+r];
-    if (p > mejorPuntaje) { mejorPuntaje = p; mejor = R; }
-  }
-  const qCorr = new THREE.Quaternion().setFromRotationMatrix(mejor);
-  const pc = v => v ? v.clone().applyQuaternion(qCorr) : null;
-  const midC = pc(mid), hipMidC = pc(hipMid);
-  const d2 = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
-  const torso = hipMidC ? d2(midC, hipMidC) : null;
-  const anchoHombros = d2(pc(shL), pc(shR));
-  const bajos = ['footL','footR','toeL','toeR'].map(k => pc(P(k))).filter(Boolean);
-  const piesY = bajos.length ? Math.min(...bajos.map(v => v.y)) : null;
-  const alto = piesY != null ? (midC.y - piesY) / 0.82 : (torso ? torso*3.2 : anchoHombros*3.85);
-  const qp = new THREE.Quaternion();
-  const cadenas = [];
-  for (const [a,b,lado,la,lb,dd] of CAD) {
-    const hueso = Hs[a+lado], hijo = Hs[b+lado];
-    if (!hueso || !hijo || !hueso.parent) continue;
-    const dir = hijo.getWorldPosition(new THREE.Vector3()).sub(hueso.getWorldPosition(new THREE.Vector3()));
-    if (dir.lengthSq() < 1e-16) continue;
-    hueso.parent.getWorldQuaternion(qp);
-    cadenas.push({ hueso, hijo, la, lb, q0: hueso.quaternion.clone(),
-                   a0: dir.normalize().applyQuaternion(qp.clone().invert()) });
-  }
-  const reposo = [];
-  raiz.traverse(o => { if (o.isBone) reposo.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
-  console.log(`✅ Rig OK: torso=${torso?.toFixed(2)}, alto=${alto?.toFixed(2)}`);
-  return { cadenas, reposo, qCorr, pivot: midC.clone().negate(), torso, anchoHombros, alto,
-           hPies: piesY != null ? midC.y - piesY : 0.82*alto, rigido: false };
-}
-
-function rigRigido(size) {
-  const h = size.y || 1;
-  return { cadenas:[], reposo:[], qCorr: new THREE.Quaternion(),
-    pivot: new THREE.Vector3(0, -0.32*h, 0), torso: h*0.31, anchoHombros: h*0.26, alto: h,
-    hPies: 0.82*h, rigido: true };
-}
-
-function volverAReposo() {
-  if (rig) for (const [b,p,q,s] of rig.reposo) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(s); }
-}
-function limpiarModelo() {
-  ajuste.removeFromParent(); ajuste.clear();
-  clon = null; mixer = null; rig = null; tipo = null;
-  stage.dataset.modo = ''; anclaje.visible = false; objeto.visible = false;
-}
-
-async function seleccionar(d, btn) {
-  if (cargandoActual) {
-    clicksIgnorados++;
-    if (clicksIgnorados < MAX_CLICKS_IGNORADOS) {
-      setEstado(`⏳ ${cargandoActual.nombre}… ${MAX_CLICKS_IGNORADOS-clicksIgnorados} click más para cancelar`);
-      return;
-    }
-    try { cargandoActual.abort.abort(); } catch {}
-    cargandoActual = null; clicksIgnorados = 0;
-  }
-  const abort = new AbortController();
-  const gen = ++contadorGen;
-  cargandoActual = { abort, gen, nombre: d?.nombre || 'modelo' };
-  clicksIgnorados = 0;
-  document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
-  limpiarModelo();
-  def = d; cfg = null; twoHand.activo = false;
-  if (!d) {
-    setEstado('Sin modelo'); refrescarBotones();
-    if (cargandoActual?.gen === gen) cargandoActual = null;
-    return;
-  }
-  btn?.classList.add('activo');
-  setEstado('Cargando ' + d.nombre + '…');
-  try {
-    const esFBX = /\.fbx$/i.test(d.archivo || d.nombre);
-    const base = esFBX ? await cargarFBX(d, abort.signal) : await cargarGLB(d, abort.signal);
-    if (abort.signal.aborted || gen !== contadorGen) return;
-    if (def !== d) return;
-    cfg = cargarCfg(d);
-    construir(d, base);
-    setEstado('✓ ' + d.nombre);
-  } catch (e) {
-    if (e?.name === 'AbortError') return;
-    console.error(e);
-    setEstado('❌ ' + d.nombre + ': ' + (e?.message || e));
-    def = null;
-  } finally {
-    if (cargandoActual?.gen === gen) {
-      cargandoActual = null; clicksIgnorados = 0;
-      refrescarBotones(); sincronizarSeg();
-    }
-  }
-}
-
-function construir(d, base) {
-  limpiarModelo();
-  const c = SkeletonUtils.clone(base.obj);
-  const modo = cfg.modo || 'auto';
-  rig = modo === 'obj' ? null : configurarRig(c);
-  if (!rig && modo === 'cuerpo') rig = rigRigido(base.size);
-  tipo = rig ? 'hum' : 'obj';
-  if (tipo === 'hum' && !rig.rigido) console.log(`🦴 ${d.nombre}: personaje (mocap)`);
-  else if (tipo === 'hum' && rig.rigido) console.log(`🦴 ${d.nombre}: anclado rígido`);
-  else console.log(`📦 ${d.nombre}: objeto${base.clips.length ? ' (animado)' : ''} [modo=${modo}]`);
-
-  if (rig) {
-    const pv = new THREE.Group(); pv.position.copy(rig.pivot);
-    if (rig.rigido) pv.add(c);
-    else { const rt = new THREE.Group(); rt.quaternion.copy(rig.qCorr); rt.add(c); pv.add(rt); }
-    ajuste.add(pv);
-  } else {
-    const hd = new THREE.Group(); hd.add(c);
-    hd.scale.setScalar(1 / (Math.max(base.size.x, base.size.y, base.size.z) || 1));
-    ajuste.add(hd);
-  }
-  clon = c;
-  (tipo === 'hum' ? anclaje : objeto).add(ajuste);
-  ajuste.quaternion.fromArray(cfg.q);
-  if (base.clips.length && tipo === 'obj') {
-    mixer = new THREE.AnimationMixer(c);
-    mixer.clipAction(base.clips[0]).play();
-  }
-  if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
-  stage.dataset.modo = tipo;
-  suave.init = false;
-
-  if (d.archivo) {
-    infoCache[d.archivo] = { tipo, anim: base.clips.length > 0, rig: !!(rig && !rig.rigido) };
-    guardarInfoCache();
-    const item = d.btn;
-    if (item) {
-      const old = item.querySelector('.badge'); if (old) old.remove();
-      const badge = infoIcono(d.archivo);
-      if (badge) { const s = document.createElement('span'); s.className='badge'; s.textContent=badge; item.appendChild(s); }
-    }
-  }
-}
-
-function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
-
-/* ============================================================
-   ACCIONES / UI
-   ============================================================ */
-const ACCIONES = {
-  mas() { cfg.s = Math.min(cfg.s * 1.08, 12); },
-  menos() { cfg.s = Math.max(cfg.s / 1.08, 0.04); },
-  subir() { if (tipo === 'obj') cfg.oy += 0.06; else cfg.dy += 0.02; },
-  bajar() { if (tipo === 'obj') cfg.oy -= 0.06; else cfg.dy -= 0.02; },
-  rotx() { rotarMundo(EJE.x, Math.PI/2); }, roty() { rotarMundo(EJE.y, Math.PI/2); }, rotz() { rotarMundo(EJE.z, Math.PI/2); },
-  reset() { cfg = cfgPorDefecto(); const b = cache.get(def.src); if (b) construir(def, b); },
-  modo() {
-    cfg.modo = { auto:'cuerpo', cuerpo:'obj', obj:'auto' }[cfg.modo || 'auto'];
-    const b = cache.get(def.src); if (b) construir(def, b);
-  },
-  mocap() { cfg.mocap = !cfg.mocap; if (cfg.mocap) volverAReposo(); },
-  mover() { herramienta = 'mover'; }, rotar() { herramienta = 'rotar'; }, escalar() { herramienta = 'escalar'; },
-  giro() { autoGiro = !autoGiro; }, puntos() { mostrarPuntos = !mostrarPuntos; }
-};
-
-function refrescarBotones() {
-  document.querySelectorAll('#controles .btn[data-accion]').forEach(b => {
-    const a = b.dataset.accion;
-    if (a === 'modo') {
-      $('#lblModo').textContent = !cfg ? 'Modo' :
-        cfg.modo === 'cuerpo' ? 'Sobre cuerpo' :
-        cfg.modo === 'obj' ? 'Como objeto' :
-        (tipo === 'hum' ? 'Auto: personaje' : 'Auto: objeto');
-      return;
-    }
-    b.classList.toggle('activo',
-      (a === 'mocap' && cfg?.mocap) || (a === herramienta && tipo === 'obj') ||
-      (a === 'giro' && autoGiro) || (a === 'puntos' && mostrarPuntos));
-  });
-}
-
-document.querySelectorAll('#controles .btn[data-accion]').forEach(b => {
-  b.addEventListener('click', () => {
-    const a = b.dataset.accion;
-    if (!cfg && a !== 'puntos') return;
-    ACCIONES[a]?.(); refrescarBotones(); guardarCfg(); sincronizarSeg();
-  });
-});
-
-function aplicarPaneles() {
-  $('#menu').classList.toggle('oculto', !prefs.lista);
-  $('#btnToggleMenu').textContent = prefs.lista ? '◀' : '▶';
-  $('#controles').classList.toggle('oculto', !prefs.ajustes);
-  $('#toggleControles').textContent = prefs.ajustes ? '▶' : '◀';
-  actualizarThumb();
-}
-const toggleLista = () => { prefs.lista = !prefs.lista; guardarPrefs(); aplicarPaneles(); };
-const toggleAjustes = () => { prefs.ajustes = !prefs.ajustes; guardarPrefs(); aplicarPaneles(); };
-$('#btnToggleMenu').addEventListener('click', e => { e.stopPropagation(); toggleLista(); });
-$('#toggleControles').addEventListener('click', e => { e.stopPropagation(); toggleAjustes(); });
-
-async function togglearFullscreen() {
-  try {
-    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    else await document.exitFullscreen();
-  } catch {}
-  layoutDeb();
-}
-
-function construirMenuFondos() {
-  const m = $('#menuFondos'); m.innerHTML = '';
-  m.insertAdjacentHTML('beforeend', '<h3>🎨 Fondos</h3><div class="btn" id="cerrarFondos" data-hover data-nodwell>✕</div>');
-  $('#cerrarFondos').addEventListener('click', () => toggleMenuFondos(false));
-  for (const f of FONDOS) {
-    const o = document.createElement('div');
-    o.className = 'fondoOpt'; o.dataset.bg = f.id; o.dataset.hover = ''; o.dataset.nodwell = '';
-    o.innerHTML = `<div class="sw">${f.ico}</div><div>${f.nombre}</div>`;
-    o.addEventListener('click', () => aplicarFondo(f.id));
-    if (f.id === fondoActual) o.classList.add('activo');
-    m.appendChild(o);
-  }
-}
-function toggleMenuFondos(forzar) {
-  const m = $('#menuFondos');
-  const abrir = forzar ?? !m.classList.contains('abierto');
-  m.classList.toggle('abierto', abrir);
-}
-function aplicarFondo(id, cerrar = true) {
-  fondoActual = id; prefs.fondo = id; guardarPrefs(); stage.dataset.fondo = id;
-  video.style.opacity = id === 'camara' ? 1 : 0;
-  fctx.clearRect(0,0,W,H); pctx.clearRect(0,0,W,H);
-  if (id !== 'camara') motor.fijar(id, W, H);
-  aplicarLuz(id);
-  document.querySelectorAll('.fondoOpt').forEach(b => b.classList.toggle('activo', b.dataset.bg === id));
-  if (cerrar) toggleMenuFondos(false);
-  sincronizarSeg();
-  setEstado('Fondo: ' + FONDOS.find(f => f.id === id).nombre);
-}
-
-let capturar = false;
-function tomarFoto() {
-  const cv = mkCanvas(W, H), c = cv.getContext('2d');
-  if (fondoActual === 'camara') {
-    c.save(); c.translate(W, 0); c.scale(-1, 1);
-    c.drawImage(video, -mapa.ox, -mapa.oy, mapa.vw*mapa.s, mapa.vh*mapa.s); c.restore();
-  } else { c.drawImage(fondoCv, 0, 0); c.drawImage(personaCv, 0, 0); }
-  c.drawImage(glCanvas, 0, 0, W, H);
-  cv.toBlob(b => {
-    if (!b) return;
-    const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-    a.download = `espejo-ar-${Date.now()}.png`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  }, 'image/png');
-  const fl = $('#flash'); fl.style.opacity = .85; setTimeout(() => fl.style.opacity = 0, 80);
-  setEstado('📸 Foto guardada');
-}
-
-const BARRA = {
-  lista: toggleLista, ajustes: toggleAjustes, fondo: () => toggleMenuFondos(),
-  foto: () => { capturar = true; }, pantalla: togglearFullscreen,
-  girar: () => { rotacion = (rotacion + 90) % 360; layout(); },
-  ui: () => { stage.classList.toggle('sin-ui'); }
-};
-document.querySelectorAll('[data-barra]').forEach(b => b.addEventListener('click', () => BARRA[b.dataset.barra]?.()));
-
-$('#quitar').addEventListener('click', () => seleccionar(null));
-$('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando…'); setEstado(`Lista: ${await sincronizar(true)} modelos`); });
-$('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
-$('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
-
-async function abrirArchivo(f) {
-  if (!f || !esModelo(f.name)) return;
-  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true, archivo: f.name };
-  defs.unshift(d); agregarItem(d, true); lista.scrollTop = 0; actualizarThumb(); seleccionar(d, d.btn);
-}
-$('#archivo').addEventListener('change', e => abrirArchivo(e.target.files[0]));
-
-function actualizarThumb() {
-  const h = lista.clientHeight, sh = lista.scrollHeight;
-  if (sh <= h + 1) { thumb.style.display = 'none'; return; }
-  const th = Math.max(34, h*h/sh);
-  thumb.style.display = 'block'; thumb.style.height = th + 'px';
-  thumb.style.top = (lista.scrollTop/(sh-h))*(h-th) + 'px';
-}
-lista.addEventListener('scroll', actualizarThumb);
-
-/* ============================================================
-   ENTRADA
-   ============================================================ */
-const ptrM = { activo:false, fuente:null, lx:0, ly:0 };
-const curs = [0,1].map(() => ({ x:0, y:0, visible:false, ultimo:0, pinch:false, bajada:false, subida:false }));
-const cursorEls = [$('#cursor0'), $('#cursor1')];
-
-stage.addEventListener('pointerdown', e => {
-  if (e.target.closest('#menu, #controles, #inicio, #menuFondos, #barra')) return;
-  ptrM.activo = true; ptrM.fuente = 'mouse';
-  const pt = puntoAStage(e.clientX, e.clientY);
-  ptrM.lx = pt.x; ptrM.ly = pt.y;
-});
-stage.addEventListener('pointermove', e => {
-  if (!ptrM.activo) return;
-  const pt = puntoAStage(e.clientX, e.clientY);
-  const dx = pt.x - ptrM.lx, dy = pt.y - ptrM.ly;
-  ptrM.lx = pt.x; ptrM.ly = pt.y;
-  if (tipo === 'obj' && cfg) {
-    const upp = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(FOV/2)) / H;
-    if (herramienta === 'mover') { cfg.ox += dx * upp; cfg.oy -= dy * upp; }
-    else if (herramienta === 'rotar') {
-      ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dx * 0.012));
-      cfg.q = ajuste.quaternion.toArray();
-    } else cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-dy * 0.006)));
-  }
-});
-stage.addEventListener('pointerup', () => { ptrM.activo = false; guardarCfg(); });
-stage.addEventListener('wheel', e => {
-  if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); }
-}, { passive: true });
-
-function procesarMano(res) {
-  const dets = (res.landmarks || []).slice(0, 2).map(lm => ({
-    lm, x: sx((lm[4].x + lm[8].x)/2), y: sy((lm[4].y + lm[8].y)/2)
-  }));
-  const asign = [null, null];
-  const slotsUsados = new Set(), detsUsadas = new Set(), cand = [];
-  for (let i = 0; i < 2; i++) for (let j = 0; j < dets.length; j++) {
-    cand.push([i, j, curs[i].visible ? Math.hypot(curs[i].x-dets[j].x, curs[i].y-dets[j].y) : 1e9+i]);
-  }
-  cand.sort((a,b) => a[2]-b[2]);
-  for (const [i,j] of cand) {
-    if (slotsUsados.has(i) || detsUsadas.has(j)) continue;
-    asign[i] = dets[j]; slotsUsados.add(i); detsUsadas.add(j);
-  }
-  for (let i = 0; i < 2; i++) {
-    handLm[i] = asign[i]?.lm || null;
-    procesarUnaMano(handLm[i], curs[i]);
-  }
-}
-function procesarUnaMano(lm, c) {
-  if (!lm) {
-    if (performance.now() - c.ultimo > 300) { c.visible = false; if (c.pinch) c.pinch = false; }
-    return;
-  }
-  c.ultimo = performance.now();
-  const d = (a,b) => Math.hypot((lm[a].x-lm[b].x)*mapa.vw, (lm[a].y-lm[b].y)*mapa.vh);
-  const tx = sx((lm[4].x + lm[8].x)/2), ty = sy((lm[4].y + lm[8].y)/2);
-  if (!c.visible) { c.x = tx; c.y = ty; }
-  c.x += (tx - c.x) * 0.45; c.y += (ty - c.y) * 0.45;
-  c.visible = true;
-  const ratio = d(4,8) / (d(0,9) || 1);
-  if (!c.pinch && ratio < PINCH_ON) c.pinch = true;
-  else if (c.pinch && ratio > PINCH_OFF) c.pinch = false;
-}
-function actualizarCursorVisual(i) {
-  const c = curs[i], el = cursorEls[i];
-  el.style.display = c.visible ? 'block' : 'none';
-  if (!c.visible) return;
-  el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
-  el.classList.toggle('pinch', c.pinch);
-}
-function actualizarCursores() { actualizarCursorVisual(0); actualizarCursorVisual(1); }
-
-/* ============================================================
-   POSE → RIG
-   ============================================================ */
-const poseState = { midX: 0, midY: 0, torso: 0, hasData: false };
-const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
-const _qDelta = new THREE.Quaternion(), _qParent = new THREE.Quaternion(), _qParentInv = new THREE.Quaternion();
-
-function aplicarPose(landmarks) {
-  if (!landmarks) return;
-  poseLm = landmarks;
-  const p11 = landmarks[11], p12 = landmarks[12], p23 = landmarks[23], p24 = landmarks[24];
-  if (p11 && p12) {
-    poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
-    poseState.midY = (sy(p11.y) + sy(p12.y)) * 0.5;
-  }
-  if (p11 && p12 && p23 && p24) {
-    const hx = (sx(p23.x) + sx(p24.x)) * 0.5;
-    const hy = (sy(p23.y) + sy(p24.y)) * 0.5;
-    poseState.torso = Math.hypot(poseState.midX - hx, hy - (sy(p11.y)+sy(p12.y))*0.5);
-  }
-  poseState.hasData = true;
-
-  if (!rig || rig.rigido || !cfg?.mocap || tipo !== 'hum') return;
-
-  for (const [b,p,q,s] of rig.reposo) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(s); }
-  anclaje.updateMatrixWorld(true);
-
-  for (const ch of rig.cadenas) {
-    const { hueso, hijo, la, lb } = ch;
-    const lmA = landmarks[la], lmB = landmarks[lb];
-    if (!lmA || !lmB) continue;
-    const ax = sx(lmA.x), ay = -sy(lmA.y);
-    const bx = sx(lmB.x), by = -sy(lmB.y);
-    _v1.set(bx - ax, by - ay, 0);
-    if (_v1.lengthSq() < 1e-8) continue;
-    _v1.normalize();
-    hueso.getWorldPosition(_v2); hijo.getWorldPosition(_v3); _v3.sub(_v2);
-    if (_v3.lengthSq() < 1e-10) continue;
-    _v3.normalize();
-    _qDelta.setFromUnitVectors(_v3, _v1);
-    hueso.parent.getWorldQuaternion(_qParent);
-    _qParentInv.copy(_qParent).invert();
-    hueso.quaternion.premultiply(_qParentInv).premultiply(_qDelta).premultiply(_qParent);
-    hueso.updateWorldMatrix(true, true);
-  }
-}
-
-function aplicarTransformacionesAnclaje(dt) {
-  if (tipo !== 'hum' || !cfg) return;
-  if (poseState.hasData) {
-    const s = rig ? (poseState.torso > 10 ? poseState.torso / Math.max(rig.torso, 0.01) : null) : null;
-    const targetX = poseState.midX - W/2;
-    const targetY = -poseState.midY + H/2 + (cfg.dy || 0) * H;
-    const targetS = s ?? (Math.min(W,H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
-    if (!suave.init) { suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.init = true; }
-    else {
-      const k = Math.min(1, dt * 10);
-      suave.x += (targetX - suave.x) * k;
-      suave.y += (targetY - suave.y) * k;
-      suave.s += (targetS - suave.s) * k;
-    }
-  } else if (!suave.init) {
-    suave.x = 0; suave.y = 0;
-    suave.s = (Math.min(W,H) * 0.28) / Math.max(rig?.torso || 0.3, 0.01);
-    suave.init = true;
-  }
-  anclaje.position.set(suave.x, suave.y, 0);
-  anclaje.scale.setScalar(cfg.s * suave.s);
-  anclaje.visible = true;
-}
-function aplicarTransformacionesObjeto(dt) {
-  if (tipo !== 'obj' || !cfg) return;
-  const h = OBJ_BASE * Math.min(W, H) * 0.15;
-  // ⚡ FIX: posición centrada en (0,0), no en (W/2, H/2)
-  objeto.position.set(cfg.ox * H, cfg.oy * H, 0);
-  objeto.scale.setScalar(cfg.s * h);
-  objeto.visible = true;
-}
-
-/* ============================================================
-   BUCLE
-   ============================================================ */
-let ultimoFrame = performance.now(), ultimoPose = 0, ultimoHand = 0, iniciado = false;
-const sombra = { x: 0, y: 0, rx: 0 };
-
-function loop() {
-  requestAnimationFrame(loop);
-  const ahora = performance.now();
-  const t = ahora / 1000;
-  const dt = Math.min((ahora - ultimoFrame) / 1000, 0.1);
-  ultimoFrame = ahora;
-
-  if (video.readyState >= 2 && hand && ahora - ultimoHand > 33) {
-    try { procesarMano(hand.detectForVideo(video, ahora)); } catch {}
-    ultimoHand = ahora;
-  }
-  if (video.readyState >= 2 && pose && ahora - ultimoPose > 50) {
-    try {
-      const r = pose.detectForVideo(video, ahora);
-      if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0]);
-    } catch {}
-    ultimoPose = ahora;
-  }
-
-  actualizarCursores();
-
-  if (mixer) mixer.update(dt);
-  if (autoGiro && tipo === 'obj' && cfg) {
-    ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.5));
-    cfg.q = ajuste.quaternion.toArray();
-  }
-
-  if (def && cfg) {
-    if (tipo === 'hum') {
-      aplicarTransformacionesAnclaje(dt);
-      objeto.visible = false;
-    } else {
-      aplicarTransformacionesObjeto(dt);
-      anclaje.visible = false;
-    }
-  }
-
-  if (fondoActual !== 'camara') {
-    sombra.x = tipo === 'hum' ? suave.x + W/2 : objeto.position.x + W/2;
-    sombra.y = tipo === 'hum' ? (suave.y + H/2) * 0.9 + 40 : H - 80;
-    sombra.rx = Math.min(W, H) * 0.12 * (cfg?.s || 1);
-    motor.dibujar(fctx, t, dt, sombra);
-  } else {
-    fctx.clearRect(0, 0, W, H);
-  }
-
-  if (mostrarPuntos) {
-    dbg.clearRect(0, 0, W, H);
-    if (poseLm) {
-      const lineas = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
-      dbg.strokeStyle = 'rgba(255,120,120,.85)'; dbg.lineWidth = 3;
-      for (const [a,b] of lineas) {
-        if (!poseLm[a] || !poseLm[b]) continue;
-        dbg.beginPath();
-        dbg.moveTo(sx(poseLm[a].x), sy(poseLm[a].y));
-        dbg.lineTo(sx(poseLm[b].x), sy(poseLm[b].y));
-        dbg.stroke();
-      }
-      const colores = { 11:'#ff5555',12:'#ff5555',13:'#ffaa55',14:'#ffaa55',
-                        15:'#ffee55',16:'#ffee55',23:'#55ff55',24:'#55ff55',
-                        25:'#55cc55',26:'#55cc55',27:'#55aa55',28:'#55aa55' };
-      for (const [idx,color] of Object.entries(colores)) {
-        const p = poseLm[idx]; if (!p) continue;
-        dbg.fillStyle = color;
-        dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 4, 0, TAU); dbg.fill();
-      }
-    }
-    dbg.fillStyle = '#00ff88';
-    for (const lm of handLm) {
-      if (lm) for (const p of lm) {
-        dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 3, 0, TAU); dbg.fill();
-      }
-    }
-  }
-
-  if (capturar) { capturar = false; tomarFoto(); }
-  renderer.render(scene, camOrto);
-}
-
-/* ============================================================
-   LISTA DE MODELOS
-   ============================================================ */
-const ICONOS = [
-  [/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],
-  [/dragon|dragón/i,'🐉'],[/cofre|chest/i,'📦'],[/diamante|gem|cristal/i,'💎'],
-  [/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],
-  [/desierto|desert/i,'🏜️'],[/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight/i,'⚔️'],
-  [/casa|house|castillo|castle/i,'🏰'],[/doctor/i,'🩺'],[/gato|cat/i,'🐱'],[/perro|dog/i,'🐶'],
-  [/ogro|ogre/i,'👹'],[/hechicera|witch/i,'🧙‍♀️'],[/guerrera|warrior/i,'⚔️']
-];
-function iconoDe(n) { return (ICONOS.find(([re]) => re.test(n)) || [null,'🧊'])[1]; }
-
-function agregarItem(d, alPrincipio = false) {
-  const b = document.createElement('div');
-  b.className = 'btn item'; b.dataset.hover = ''; b.dataset.nodwell = '';
-  const badgeHtml = d.badge ? `<span class="badge">${d.badge}</span>` : '';
-  b.innerHTML = `<span class="ico">${d.icono}</span><span class="n">${d.nombre}</span>${badgeHtml}`;
-  b.addEventListener('click', () => seleccionar(d, b));
-  d.btn = b;
-  alPrincipio ? lista.prepend(b) : lista.appendChild(b);
-}
-
-async function descubrirModelos(forzar = false) {
-  let nombres = [];
-  const k = 'espejo-lista-v5'; let c = null;
-  try { c = JSON.parse(localStorage.getItem(k) || 'null'); } catch {}
-  if (!forzar && c && Date.now() - c.t < 300000) nombres = c.n;
-  else {
-    try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${CARPETA.replace(/\/$/,'')}`);
-      if (r.ok) nombres = (await r.json()).filter(f => f.type === 'file').map(f => f.name);
-    } catch {}
-    nombres = nombres.filter(esModelo);
-    if (nombres.length) { try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), n: nombres })); } catch {} }
-    else if (c) nombres = c.n;
-  }
-  if (!nombres.length) nombres = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb'];
-  return [...new Set(nombres.filter(esModelo))].sort((a,b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-}
-
-async function sincronizar(forzar = false) {
-  const nombres = await descubrirModelos(forzar);
-  const locales = defs.filter(d => d.local);
-  const nuevos = nombres.map(n => ({
-    nombre: bonito(n), icono: iconoDe(n), archivo: n,
-    src: urlsModelo(n)[0], badge: infoCache[n] ? infoIcono(n) : ''
-  }));
-  defs = [...locales, ...nuevos];
-  lista.innerHTML = '';
-  for (const d of defs) agregarItem(d);
-  if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
-  $('#titulo').firstElementChild.textContent = `📂 Modelos (${defs.length})`;
-  actualizarThumb();
-  return defs.length;
-}
-
-/* ============================================================
-   INICIALIZACIÓN
-   ============================================================ */
-async function iniciar() {
-  if (iniciado) return;
-  iniciado = true;
-  const btn = $('#btnIniciar');
-  btn.disabled = true;
-  $('#error').textContent = '';
-  try {
-    setEstado('Pidiendo cámara…');
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
-    video.srcObject = stream;
-    await video.play();
-    await new Promise(r => { if (video.videoWidth) r(); else video.onloadedmetadata = r; });
-
-    setEstado('Cargando IA…');
-    const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-    hand = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: HAND_URL, delegate: 'GPU' }, numHands: 2, runningMode: 'VIDEO'
-    });
-    pose = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: POSE_URL, delegate: 'GPU' }, numPoses: 1, runningMode: 'VIDEO'
-    });
-
-    setEstado('Listo ✓');
-    $('#inicio').style.display = 'none';
-    layout();
-    await sincronizar();
-    loop();
-  } catch (e) {
-    console.error(e);
-    $('#error').textContent = 'Error: ' + (e?.message || e);
-    btn.disabled = false; iniciado = false;
-  }
-}
-$('#btnIniciar').addEventListener('click', iniciar);
-
-try { aplicarPaneles(); } catch {}
-try { construirMenuFondos(); } catch {}
-try { aplicarFondo(prefs.fondo || 'camara', false); } catch {}
-try { layout(); } catch {}
-try { refrescarBotones(); } catch {}
-
-console.log('%c✅ Espejo AR v6 · MIRROR=' + MIRROR + ' · twoHand definido · Todo OK', 'color:#ffb400;font-weight:bold');
-</script>
+    <div id="panel-historia" style="position:fixed; bottom:0; left:0; right:0; max-height:30%; overflow-y:auto; background:rgba(0,0,0,0.7); color:#fff; padding:10px; font-family:sans-serif;"></div>
+
+    <div id="camera-error">⚠️ No se pudo acceder a la cámara.<br>Verificá los permisos del navegador y que estés usando HTTPS.</div>
+
+    <a-scene
+        embedded
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam;
+              debugUIEnabled: false;
+              detectionMode: mono_and_matrix;
+              matrixCodeType: 4x4_BCH_13_5_5;
+              trackingMethod:best;">
+
+        <a-assets>
+            <a-asset-item id="modelo-dragon-glb" src="modelos/dragon.glb"></a-asset-item>
+            <a-asset-item id="modelo-mago-glb" src="modelos/mago.glb"></a-asset-item>
+            <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
+            <img id="imgDragon" src="modelos/demo.png">
+            <video id="videoEjemplo" src="modelos/ejemplo.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
+            <video id="videoEjemplo2" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
+            <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
+            <img id="arbol1" src="modelos/arbol1.png">
+            <img id="arbol2" src="modelos/arbol2.png">
+            <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
+            <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
+            <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
+            <a-asset-item id="evil-glb" src="modelos/evil.glb"></a-asset-item>
+        </a-assets>
+
+        <a-marker preset="hiro" id="Hiro" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-dragon-glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker preset="kanji" id="Kanji" registerevents>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/dragon.fbx)"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                animation="property: rotation; to: 0 10 0; dur: 3000; easing: linear; loop: true"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <!-- ✅ Barcode_0: se eliminaron el <a-plane> y <a-text> hardcodeados -->
+        <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-mago-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.5 0.5 0.5"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <!-- ✅ Barcode_1: se eliminó el <a-text> "Mago" -->
+        <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                fbx-model="src: url(modelos/mago.fbx)"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="0.01 0.01 0.01"
+                animation-mixer="clip: *; loop: repeat"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="2" id="Barcode_2" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-model-glb"
+                position="0 0 0"
+                rotation="-90 0 0"
+                scale="2 2 2"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1; height: 1"
+                material="shader:gif; src:url(modelos/fuego.gif)"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="4" id="Barcode_4" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.5; height: 1.5"
+                material="src: #imgDragon"
+                position="0 0.8 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <!-- ✅ Barcode_5: se eliminó el <a-text> "Ejemplo.mp4" -->
+        <a-marker type="barcode" value="5" id="Barcode_5" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 2; height: 1.2"
+                material="src: #videoEjemplo2"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="7" id="Barcode_7" registerevents>
+            <a-entity class="model-entity"
+                geometry="primitive: plane; width: 1.125; height: 2"
+                material="src: #Tablero"
+                position="0 0.5 0"
+                rotation="-90 0 0"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
+            <a-entity class="model-entity">
+                <a-entity position="-0.8 0 -0.3">
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+                <a-entity position="0.9 0 0.5">
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#modelo-naturaleza-glb"
+                position="0 0 0"
+                rotation="-90 5 0"
+                scale="2 2 2"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="10" id="Barcode_10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#esqueleto-glb"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="1 1 1"
+                animation-mixer></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
+            <a-entity class="model-entity"
+                gltf-model="#evil-glb"
+                position="0 0 0"
+                rotation="-60 0 0"
+                scale="100 100 100"
+                animation-mixer="clip: *; loop: repeat"></a-entity>
+            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- ✅ Scripts al final del body, en orden garantizado -->
+    <script src="js/utilidades.js"></script>
+    <script src="js/eventos.js"></script>
+
+    <script>
+        // ==================================================
+        // CAPTURA DE ERRORES VISIBLE EN PANTALLA
+        // ==================================================
+        window.addEventListener('error', function (e) {
+            const box = document.getElementById('js-error');
+            if (!box) return;
+            box.textContent = '❌ JS ERROR: ' + (e.message || e.error || 'desconocido') +
+                (e.filename ? '\n   en ' + e.filename + ':' + e.lineno : '');
+            box.classList.add('visible');
+            console.error('[AR] JS error:', e.message, e.filename, e.lineno);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            const box = document.getElementById('js-error');
+            if (!box) return;
+            const r = e.reason;
+            box.textContent = '❌ PROMISE REJECTION: ' + (r && r.message ? r.message : r);
+            box.classList.add('visible');
+            console.error('[AR] Unhandled rejection:', r);
+        });
+
+        // ==================================================
+        // DIAGNÓSTICO INICIAL
+        // ==================================================
+        if (typeof AFRAME === 'undefined') {
+            console.error('[AR] AFRAME no cargado desde CDN');
+        } else {
+            console.log('[AR] A-Frame OK, versión:', AFRAME.version);
+        }
+        if (typeof Utilidades === 'undefined') {
+            console.error('[AR] Utilidades no cargada desde js/utilidades.js');
+        } else {
+            console.log('[AR] Utilidades OK');
+        }
+        if (typeof Comunicacion === 'undefined') {
+            console.error('[AR] Comunicacion no definida');
+        } else {
+            console.log('[AR] Comunicacion OK');
+        }
+
+        // ==================================================
+        // ✅ NUEVO: Limpiar hijos sueltos del marker
+        // (etiquetas viejas tipo <a-text>/<a-plane>) que no sean
+        // .model-entity ni .stats-slot. Se llama antes de asignar
+        // o limpiar un modelo para no dejar restos de pruebas.
+        // ==================================================
+        function limpiarHijosSueltos(slot) {
+            if (typeof Utilidades === 'undefined') return;
+            const marker = Utilidades.markerElPorSlot(slot);
+            if (!marker) return;
+            Array.from(marker.children).forEach(function (child) {
+                if (child.classList.contains('model-entity')) return;
+                if (child.classList.contains('stats-slot')) return;
+                try { marker.removeChild(child); } catch (_) {}
+            });
+        }
+
+        // ==================================================
+        // LISTENER DE COMANDOS DEL DM (padre)
+        // ==================================================
+        window.addEventListener('message', function (e) {
+            if (!e.data || e.data.target !== 'ar-frame') return;
+            const cmd = e.data;
+            console.log('[AR] Comando recibido del DM:', cmd);
+
+            if (typeof Utilidades === 'undefined') {
+                console.warn('[AR] Utilidades no disponible, ignorando:', cmd.action);
+                return;
+            }
+
+            try {
+                switch (cmd.action) {
+                    case 'assign-model':
+                        // ✅ Limpiar etiquetas viejas antes de asignar el nuevo modelo
+                        limpiarHijosSueltos(cmd.slot);
+                        Utilidades.asignarModelo(cmd.slot, {
+                            type: cmd.modelType || 'gltf',
+                            url: cmd.modelUrl,
+                            name: cmd.modelName || 'Modelo',
+                            scale: cmd.scale,
+                            rotation: cmd.rotation,
+                            position: cmd.position,
+                            animated: cmd.animated !== false
+                        });
+                        break;
+                    case 'show-model': Utilidades.mostrarModelo(cmd.slot, true); break;
+                    case 'hide-model': Utilidades.mostrarModelo(cmd.slot, false); break;
+                    case 'assign-stats': Utilidades.asignarStats(cmd.slot, cmd.stats); break;
+                    case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
+                    case 'clear-model':
+                        // ✅ También limpia etiquetas viejas
+                        limpiarHijosSueltos(cmd.slot);
+                        Utilidades.limpiarModelo(cmd.slot);
+                        break;
+                    case 'toggle-panel': Utilidades.togglePanel(cmd.visible); break;
+                    case 'stop-camera':
+                        try {
+                            const video = document.getElementById('arjs-video') || document.querySelector('video');
+                            if (video && video.srcObject) {
+                                video.srcObject.getTracks().forEach(function (t) { try { t.stop(); } catch (_) {} });
+                                video.srcObject = null;
+                            }
+                            const sceneEl = document.querySelector('a-scene');
+                            if (sceneEl) sceneEl.style.display = 'none';
+                            console.log('[AR] Cámara detenida por logout');
+                        } catch (err) {
+                            console.warn('[AR] stop-camera error:', err);
+                        }
+                        break;
+                    default:
+                        console.warn('[AR] Comando desconocido:', cmd.action);
+                }
+            } catch (err) {
+                console.warn('[AR] Error ejecutando comando:', err);
+            }
+        });
+
+        // ==================================================
+        // ARRANQUE: avisar al padre cuando la escena cargue
+        // ==================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof Utilidades !== 'undefined' && Utilidades.iniciarFPS) {
+                Utilidades.iniciarFPS();
+            }
+        });
+
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+            const avisar = function () {
+                if (typeof Comunicacion !== 'undefined') {
+                    console.log('[AR] Enviando ar-frame-ready al padre');
+                    Comunicacion.enviarAlPadre({ action: 'ar-frame-ready' });
+                } else {
+                    console.warn('[AR] No puedo enviar ar-frame-ready: Comunicacion no existe');
+                }
+            };
+            if (scene.hasLoaded) setTimeout(avisar, 300);
+            else scene.addEventListener('loaded', function () { setTimeout(avisar, 300); });
+
+            scene.addEventListener('camera-error', function () {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.add('visible');
+            });
+            scene.addEventListener('arjs-video-loaded', function () {
+                const el = document.getElementById('camera-error');
+                if (el) el.classList.remove('visible');
+                console.log('[AR] Cámara cargada OK');
+            });
+        }
+
+        document.addEventListener("click", function () {
+            const t = document.getElementById('Tablero');
+            if (t) t.muted = !t.muted;
+        });
+    </script>
 </body>
 </html>
