@@ -16,13 +16,11 @@
   #video { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); object-fit:cover; z-index:0; transition:opacity .35s; }
   #fondo, #persona, #gl, #debug { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
   #fondo { z-index:1; } #persona { z-index:2; } #gl { z-index:3; } #debug { z-index:4; }
-
   .btn { background:var(--fondo); border:2px solid rgba(255,255,255,.25); color:#fff; border-radius:12px; padding:7px 4px; font-size:12px;
          cursor:pointer; text-align:center; line-height:1.15; backdrop-filter:blur(4px); transition:transform .1s, border-color .1s, background .1s; user-select:none; }
   .btn .ico { display:block; font-size:22px; margin-bottom:1px; }
   .btn.activo { border-color:var(--acento); background:rgba(255,180,0,.28); }
   .btn.hv0, .btn.hv1 { border-color:#fff; transform:scale(1.05); background:rgba(255,255,255,.22); }
-
   #menu { position:absolute; left:8px; top:8px; bottom:8px; width:158px; display:flex; flex-direction:column; gap:6px; z-index:5; transition:width .2s; }
   #menu.oculto { bottom:auto; width:auto; }
   #menu.oculto #menuContenido { display:none; }
@@ -39,7 +37,6 @@
   #thumb { position:absolute; left:0; right:0; background:var(--acento); border-radius:8px; min-height:34px; }
   .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
   .flecha { padding:4px; font-size:16px; }
-
   #controles { position:absolute; right:8px; top:8px; width:150px; display:grid; grid-template-columns:1fr 1fr; gap:6px; z-index:5; align-content:start;
                max-height:calc(100% - 90px); overflow-y:auto; scrollbar-width:none; }
   #controles::-webkit-scrollbar { display:none; }
@@ -49,17 +46,14 @@
   #toggleControles { font-size:16px !important; padding:8px !important; }
   #stage[data-modo="hum"] .solo-obj, #stage[data-modo="obj"] .solo-hum, #stage[data-modo=""] .solo-obj, #stage[data-modo=""] .solo-hum { display:none; }
   .ancho { grid-column:1 / -1; }
-
   #barra { position:absolute; left:50%; bottom:calc(10px + var(--seg-b)); transform:translateX(-50%); display:flex; gap:6px; z-index:8; max-width:96%; flex-wrap:nowrap; }
   #barra .btn { width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none; border-radius:14px; }
   #barra .btn small { display:none; }
   #stage.sin-ui #barra .btn:not(#bUI) { display:none; }
   #stage.sin-ui #bUI { opacity:.35; }
   #stage.sin-ui #menu, #stage.sin-ui #controles, #stage.sin-ui #estado, #stage.sin-ui #menuFondos { display:none !important; }
-
   #estado { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:var(--fondo); padding:6px 14px; border-radius:20px; font-size:13px;
-            z-index:6; max-width:44%; text-align:center; pointer-events:none; transition:opacity .6s; }
-
+            z-index:6; max-width:60%; text-align:center; pointer-events:none; transition:opacity .6s; white-space:pre-line; }
   .cursor { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; z-index:20; border:3px solid #fff;
             box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(255,180,0,.9); pointer-events:none; display:none;
             background:conic-gradient(var(--acento) calc(var(--p,0)*1turn), rgba(255,255,255,.12) 0); }
@@ -67,7 +61,6 @@
   .cursor.pinch { transform:scale(.7); border-color:var(--acento); }
   #cursor1 { border-color:#6cf; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 14px rgba(102,204,255,.9); }
   .cursor.dos-manos, #cursor1.dos-manos { border-color:#ff60ff; box-shadow:0 0 0 2px rgba(0,0,0,.6), 0 0 24px rgba(255,96,255,1); }
-
   #menuFondos { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none; transition:transform .2s, opacity .2s;
                 width:min(560px, 94%); max-height:82%; background:rgba(15,15,25,.97); border:2px solid var(--acento); border-radius:16px; padding:12px; z-index:18;
                 display:grid; grid-template-columns:repeat(3,1fr); gap:8px; overflow-y:auto; scrollbar-width:thin; box-shadow:0 0 50px rgba(255,180,0,.35); }
@@ -82,7 +75,6 @@
   .fondoOpt.activo { border-color:var(--acento); background:rgba(255,180,0,.22); }
   .fondoOpt .nombre { font-weight:600; }
   #menuFondos .btn.togg { grid-column:1 / -1; padding:9px; font-size:13px; }
-
   #inicio { position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.93); display:flex; flex-direction:column; align-items:center; justify-content:center;
             gap:11px; text-align:center; padding:20px; overflow-y:auto; }
   #inicio h1 { margin:0; font-size:24px; }
@@ -93,13 +85,11 @@
   #error { color:#ff8a8a; font-size:13px; max-width:480px; }
   #drop { position:absolute; inset:0; z-index:25; display:none; align-items:center; justify-content:center; background:rgba(255,180,0,.25); border:4px dashed var(--acento); font-size:22px; pointer-events:none; }
   #flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:40; transition:opacity .35s; }
-
   @media (max-width:700px) {
-    #menu { width:118px; } #controles { width:120px; } .item { font-size:11px; min-height:40px; } #estado { max-width:34%; font-size:11px; }
+    #menu { width:118px; } #controles { width:120px; } .item { font-size:11px; min-height:40px; } #estado { max-width:44%; font-size:11px; }
     #menuFondos { grid-template-columns:repeat(2,1fr); } #barra .btn { width:40px; height:40px; font-size:18px; } #barra { gap:4px; }
   }
 </style>
-
 <script type="importmap">
 { "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -115,7 +105,6 @@
     <canvas id="persona"></canvas>
     <canvas id="gl"></canvas>
     <canvas id="debug"></canvas>
-
     <div id="menu">
       <div id="titulo"><span>📂 Modelos</span><span id="btnToggleMenu" data-hover data-nodwell title="Ocultar lista">◀</span></div>
       <div id="menuContenido">
@@ -129,7 +118,6 @@
         </div>
       </div>
     </div>
-
     <div id="controles">
       <div id="toggleControles" class="btn ancho" data-hover data-nodwell title="Ocultar ajustes">▶</div>
       <div class="btn" data-hover data-repeat data-accion="mas"><span class="ico">➕</span>Más grande</div>
@@ -148,7 +136,6 @@
       <div class="btn ancho" data-hover data-accion="modo"><span class="ico">🧍</span><span id="lblModo">Modo</span></div>
       <div class="btn ancho" data-hover data-accion="puntos"><span class="ico">🦴</span>Ver puntos</div>
     </div>
-
     <div id="barra">
       <div class="btn" data-hover data-barra="lista"    title="Mostrar / ocultar lista de modelos (M)">☰</div>
       <div class="btn" data-hover data-barra="ajustes"  title="Mostrar / ocultar ajustes">⚙️</div>
@@ -159,20 +146,19 @@
       <div class="btn" data-hover data-barra="orient"   title="Bloquear orientación (auto / horizontal / vertical)">🧭</div>
       <div class="btn" data-hover data-barra="ui" id="bUI" title="Ocultar / mostrar todo (H)">👁</div>
     </div>
-
     <div id="menuFondos"></div>
     <div id="estado">Iniciando…</div>
     <div class="cursor" id="cursor0"></div>
     <div class="cursor" id="cursor1"></div>
     <div id="drop">Soltá el archivo .glb / .fbx acá</div>
     <div id="flash"></div>
-
     <div id="inicio">
-      <h1>🪞 Espejo AR PRO · Calabozos &amp; Código</h1>
+      <h1>🪞 Espejo AR · Calabozos &amp; Código</h1>
       <p>🖐️ <b>Una mano</b>: el cursor sigue tu índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1 s. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
       <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar). ⛶ pantalla completa · 🔃 girar vista · 🧭 orientación · 👁 ocultar menús · 📸 foto.</p>
       <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide (Mixamo, Unreal, Rigify, VRM…) se ajusta solo a tu torso y copia tus movimientos; si no, aparece como objeto. El botón 🧍 <i>Modo</i> permite forzar «sobre mi cuerpo» u «objeto».</p>
+      <p>💡 <b>Consejo</b>: si un modelo tarda, podés clickear otra vez hasta 3 veces para cancelarlo y cargar otro.</p>
       <p>👀 Alejate hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -192,7 +178,7 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   MOTOR DE FONDOS (igual que antes)
+   MOTOR DE FONDOS
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
@@ -359,11 +345,8 @@ function escenaCristales(hA, hB, fondo, tono) {
     },
   };
 }
-
 const ESCENAS = {
-  calabozo: {
-    luz: { c: 0xffa860, h: .8, s: 1.8 },
-    est(c, W, H, r, S) {
+  calabozo: { luz: { c: 0xffa860, h: .8, s: 1.8 }, est(c, W, H, r, S) {
       const hz = H * .66;
       ladrillos(c, 0, 0, W, hz, W * .07, H * .075, [222, 7, 24], r);
       suelo(c, W, H, hz, [28, 10, 20], r);
@@ -373,11 +356,8 @@ const ESCENAS = {
       calavera(c, W * .12, hz + H * .2, H * .06); calavera(c, W * .18, hz + H * .25, H * .045); calavera(c, W * .87, hz + H * .22, H * .055);
       S.luces = [{ x: W * .2, y: H * .285, s: H * .07, col: [255, 150, 60] }, { x: W * .8, y: H * .285, s: H * .07, col: [255, 150, 60] }];
       S.brasas = true; S.niebla = [170, 150, 140, .09]; S.vig = .8;
-    },
-  },
-  pasillo: {
-    luz: { c: 0xff9a50, h: .8, s: 1.8 },
-    est(c, W, H, r, S) {
+  } },
+  pasillo: { luz: { c: 0xff9a50, h: .8, s: 1.8 }, est(c, W, H, r, S) {
       const cx = W / 2, cy = H * .47, ZE = 7;
       const X = (x0, z) => cx + (x0 - cx) / z, Y = (y0, z) => cy + (y0 - cy) / z;
       c.fillStyle = '#030304'; c.fillRect(0, 0, W, H);
@@ -410,11 +390,8 @@ const ESCENAS = {
       }
       S.luces.push({ x: cx, y: db - dh * .1, s: dh * .06, col: [255, 70, 30] });
       S.brasas = true; S.niebla = [170, 150, 140, .1]; S.vig = .85;
-    },
-  },
-  biblioteca: {
-    luz: { c: 0xb69cff, h: 1, s: 1.5 },
-    est(c, W, H, r, S) {
+  } },
+  biblioteca: { luz: { c: 0xb69cff, h: 1, s: 1.5 }, est(c, W, H, r, S) {
       const hz = H * .7;
       ladrillos(c, 0, 0, W, hz, W * .06, H * .07, [268, 14, 13], r);
       suelo(c, W, H, hz, [28, 38, 16], r);
@@ -434,11 +411,8 @@ const ESCENAS = {
       const g = c.createRadialGradient(W * .5, H * .3, 0, W * .5, H * .3, H * .2); g.addColorStop(0, `rgba(150,110,255,${.25 * p})`); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H * .6);
       c.restore();
       for (const v of S.velas) { const y = v.y + Math.sin(t * 1.5 + v.ph) * H * .015; c.fillStyle = '#e8dcc0'; c.fillRect(v.x - 3, y, 6, H * .045); llama(c, v.x, y, H * .028, t, v.ph, [255, 200, 110]); }
-    },
-  },
-  cripta: {
-    luz: { c: 0x8affc0, h: .9, s: 1.5 },
-    est(c, W, H, r, S) {
+    } },
+  cripta: { luz: { c: 0x8affc0, h: .9, s: 1.5 }, est(c, W, H, r, S) {
       const hz = H * .7;
       ladrillos(c, 0, 0, W, hz, W * .065, H * .07, [190, 9, 14], r);
       suelo(c, W, H, hz, [200, 8, 15], r);
@@ -450,13 +424,10 @@ const ESCENAS = {
       soporteAntorcha(c, W * .27 + W * .06, H * .3, H * .09); soporteAntorcha(c, W * .73 - W * .06, H * .3, H * .09);
       S.luces = [{ x: W * .33, y: H * .285, s: H * .06, col: [90, 255, 150] }, { x: W * .67, y: H * .285, s: H * .06, col: [90, 255, 150] }];
       S.niebla = [120, 210, 170, .2]; S.vig = .88;
-    },
-  },
+  } },
   cristales: escenaCristales(300, 190, ['#06050f', '#0a0f22'], 0xa0a0ff),
   hielo: escenaCristales(195, 215, ['#071522', '#0f2a40'], 0x9fd8ff),
-  volcan: {
-    luz: { c: 0xff6a20, h: .7, s: 2 },
-    est(c, W, H, r, S) {
+  volcan: { luz: { c: 0xff6a20, h: .7, s: 2 }, est(c, W, H, r, S) {
       const hz = H * .6;
       const g = c.createLinearGradient(0, 0, 0, hz); g.addColorStop(0, '#12030a'); g.addColorStop(.6, '#4a1004'); g.addColorStop(1, '#c2430f'); c.fillStyle = g; c.fillRect(0, 0, W, hz + 2);
       c.fillStyle = '#1a0805'; c.beginPath(); c.moveTo(0, hz); for (let x = 0; x <= W; x += W / 12) c.lineTo(x, hz - H * (.04 + r() * .09)); c.lineTo(W, hz); c.closePath(); c.fill();
@@ -473,8 +444,7 @@ const ESCENAS = {
       }
       S.luces = []; S.brasas = true; S.brasasFn = (r2) => ({ x: r2() * W, y: S.lava.y0 + r2() * (S.lava.y1 - S.lava.y0) });
       S.niebla = [255, 110, 40, .09]; S.vig = .82;
-    },
-    din(c, W, H, t, S) {
+    }, din(c, W, H, t, S) {
       c.save(); c.globalCompositeOperation = 'lighter';
       for (let i = 0; i < 34; i++) {
         const y = S.lava.y0 + ((i * 37.7) % 100) / 100 * (S.lava.y1 - S.lava.y0), amp = 3 + (y / H) * 8;
@@ -485,11 +455,8 @@ const ESCENAS = {
       g.addColorStop(0, `rgba(255,170,60,${.75 * p})`); g.addColorStop(1, 'rgba(255,60,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(S.crater.x, S.crater.y, S.crater.w * 5, 0, TAU); c.fill();
       const g2 = c.createLinearGradient(0, S.lava.y0, 0, H); g2.addColorStop(0, 'rgba(255,90,20,0)'); g2.addColorStop(1, `rgba(255,110,30,${.35 * p})`); c.fillStyle = g2; c.fillRect(0, S.lava.y0, W, H - S.lava.y0);
       c.restore();
-    },
-  },
-  codigo: {
-    luz: { c: 0x40ffc0, h: .9, s: 1.6 },
-    est(c, W, H, r, S) {
+    } },
+  codigo: { luz: { c: 0x40ffc0, h: .9, s: 1.6 }, est(c, W, H, r, S) {
       const hz = H * .7;
       ladrillos(c, 0, 0, W, hz, W * .06, H * .065, [165, 25, 7], r);
       suelo(c, W, H, hz, [170, 30, 8], r);
@@ -501,8 +468,7 @@ const ESCENAS = {
       S.luces = [{ x: W * .18, y: H * .295, s: H * .07, col: [60, 255, 200] }, { x: W * .82, y: H * .295, s: H * .07, col: [60, 255, 200] }];
       S.cols = Array.from({ length: Math.floor(W / 20) }, (_, i) => ({ x: i * 20 + 10, y: r() * H, v: 60 + r() * 140, len: 8 + (r() * 14 | 0), ph: r() * 99 }));
       S.lt = 0; S.niebla = [60, 200, 170, .06]; S.vig = .85;
-    },
-    din(c, W, H, t, S) {
+    }, din(c, W, H, t, S) {
       const dt = Math.min(.1, t - S.lt); S.lt = t;
       const chars = '{}[]()<>/=;:+-*&|#$%@0123456789abcdefxyz', fs = 16;
       c.save(); c.beginPath(); c.rect(0, 0, W, S.hz); c.clip(); c.font = `${fs}px monospace`; c.textAlign = 'center';
@@ -516,11 +482,8 @@ const ESCENAS = {
       c.restore();
       const p = .6 + .4 * Math.sin(t * 2.2); c.save(); c.globalCompositeOperation = 'lighter'; c.font = `bold ${S.puerta.s}px monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.shadowColor = '#ffb400'; c.shadowBlur = 24; c.fillStyle = `rgba(255,180,0,${.55 * p + .2})`; c.fillText('</>', S.puerta.cx, S.puerta.cy); c.restore();
-    },
-  },
-  castillo: {
-    luz: { c: 0x9fb4ff, h: 1.1, s: 1.3 },
-    est(c, W, H, r, S) {
+    } },
+  castillo: { luz: { c: 0x9fb4ff, h: 1.1, s: 1.3 }, est(c, W, H, r, S) {
       const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#04061a'); g.addColorStop(.6, '#1b1440'); g.addColorStop(1, '#3a2152'); c.fillStyle = g; c.fillRect(0, 0, W, H);
       S.estrellas = Array.from({ length: 140 }, () => ({ x: r() * W, y: r() * H * .6, s: r() * 1.8 + .4, ph: r() * 9 }));
       for (const e of S.estrellas) { c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(e.x, e.y, e.s, e.s); }
@@ -538,8 +501,7 @@ const ESCENAS = {
       for (const [x, y] of [[.305, .5], [.665, .5], [.485, .42], [.485, .52], [.35, .66], [.5, .67], [.6, .66], [.28, .46]]) S.ventanas.push({ x: W * x, y: H * y, w: W * .012, h: H * .03, ph: r() * 9 });
       c.fillStyle = '#05040d'; c.beginPath(); c.moveTo(0, H); c.lineTo(0, H * .9); for (let x = 0; x <= W; x += W / 12) c.lineTo(x, H * .88 + r() * H * .04); c.lineTo(W, H); c.closePath(); c.fill();
       S.niebla = [150, 150, 220, .08]; S.vig = .75;
-    },
-    din(c, W, H, t, S) {
+    }, din(c, W, H, t, S) {
       c.save(); c.globalCompositeOperation = 'lighter';
       for (const e of S.estrellas) if (e.s > 1.2) { c.fillStyle = `rgba(255,255,255,${.35 + .35 * Math.sin(t * 2 + e.ph)})`; c.fillRect(e.x, e.y, e.s, e.s); }
       const g = c.createRadialGradient(S.luna.x, S.luna.y, S.luna.r, S.luna.x, S.luna.y, S.luna.r * 4); g.addColorStop(0, 'rgba(200,210,255,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -552,11 +514,9 @@ const ESCENAS = {
         c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x - s * 1.2, y - s * (1 + a), x - s * 2.4, y + s * .2 * a); c.quadraticCurveTo(x - s, y + s * .3, x, y);
         c.quadraticCurveTo(x + s * 1.2, y - s * (1 + a), x + s * 2.4, y + s * .2 * a); c.quadraticCurveTo(x + s, y + s * .3, x, y); c.fill();
       }
-    },
-  },
+    } },
   vacio: { luz: { c: 0xffffff, h: 1.6, s: 2.2 }, est(c, W, H, r, S) { c.fillStyle = '#000'; c.fillRect(0, 0, W, H); S.vig = 0; } },
 };
-
 function crearMotorFondos(mk) {
   const M = { id: null, W: 0, H: 0, est: null, S: {}, esc: null, parts: [], nieb: [], sprite: null, rnd: mulberry(99), acum: 0, flicker: 1 };
   M.fijar = (id, W, H) => {
@@ -614,13 +574,13 @@ const CARPETA = 'modelos/';
 const REPO_GITHUB = 'BraianM-dev/pruebas';
 const RAMA = 'main';
 const BASE_LISTA = ['mago.glb','evil.glb','esqueleto_animado.glb','dragon.glb','cofre.glb','roca_diamante.glb','pilar.glb',
-                    'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb',
-                    'personaje.fbx','animacion.fbx'];
+                    'Naturaleza.glb','Desierto.glb','Arboles_y_rocas.glb','arbol.glb','model.glb'];
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 const DWELL_MS = 1300, PINCH_ON = 0.30, PINCH_OFF = 0.42;
 const DIST = 3, FOV = 50, OBJ_BASE = 1.1;
+const MAX_CLICKS_IGNORADOS = 3;
 
 const FONDOS = [
   { id: 'camara',     nombre: 'Cámara real',          ico: '📷' },
@@ -656,7 +616,7 @@ let W = 640, H = 480, rotacion = 0, pose = null, hand = null, mostrarPuntos = fa
 let fondoActual = 'camara';
 let mapa = { vw: 640, vh: 480, s: 1, ox: 0, oy: 0 };
 const handLm = [null, null];
-let poseLm = null;   // ← NUEVO: guardamos landmarks del cuerpo para debug
+let poseLm = null;
 
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const motor = crearMotorFondos(mkCanvas);
@@ -724,7 +684,7 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS — descarga robusta + validación de FBX
+   2) MODELOS — descarga robusta + abort + validación FBX
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 
@@ -737,43 +697,78 @@ function urlsModelo(nombre) {
   ];
 }
 
-/** Inspecciona los primeros bytes de un FBX para detectar el formato.
- *  Así damos un mensaje claro si el archivo no es un FBX válido. */
-function validarFbx(buf) {
-  if (buf.byteLength < 32) return { ok: false, motivo: 'Archivo demasiado pequeño para ser un FBX' };
-  const head = new Uint8Array(buf, 0, Math.min(64, buf.byteLength));
-  const headText = new TextDecoder('latin1').decode(head);
-  // Binary FBX: primeros 20 chars "Kaydara FBX Binary  " (con espacios al final)
-  if (headText.startsWith('Kaydara FBX Binary')) return { ok: true, tipo: 'binary' };
-  // ASCII FBX: comentario inicial "; FBX 7.x.x project file" o presencia de FBXHeaderExtension
-  if (/^;[\s\S]*FBX[\s\S]*project file/i.test(headText)) return { ok: true, tipo: 'ascii' };
-  if (/FBXHeaderExtension/i.test(headText)) return { ok: true, tipo: 'ascii' };
-  if (headText.startsWith('PK')) return { ok: false, motivo: 'Es un ZIP, no un FBX (¿Archivo .blend o .max renombrado?)' };
-  if (headText.startsWith('{')) return { ok: false, motivo: 'Es un archivo JSON, no un FBX' };
-  if (headText.startsWith('<')) return { ok: false, motivo: 'Es XML/HTML, no un FBX' };
-  const preview = headText.slice(0, 32).replace(/[^\x20-\x7e]/g, '·');
-  return { ok: false, motivo: `Header desconocido: "${preview}…" (¿archivo corrupto o formato no soportado?)` };
+function abortErr() {
+  const e = new Error('Carga cancelada'); e.name = 'AbortError'; return e;
 }
 
-async function descargarModelo(nombre) {
+function validarFbx(buf) {
+  if (buf.byteLength < 32) return { ok: false, motivo: 'Archivo demasiado pequeño' };
+  const head = new Uint8Array(buf, 0, Math.min(64, buf.byteLength));
+  const headText = new TextDecoder('latin1').decode(head);
+  if (headText.startsWith('Kaydara FBX Binary')) return { ok: true, tipo: 'binary' };
+  if (/^;[\s\S]*FBX[\s\S]*project file/i.test(headText)) return { ok: true, tipo: 'ascii' };
+  if (/FBXHeaderExtension/i.test(headText)) return { ok: true, tipo: 'ascii' };
+  if (headText.startsWith('PK')) return { ok: false, motivo: 'Es un ZIP (¿.blend renombrado?)' };
+  if (headText.startsWith('{')) return { ok: false, motivo: 'Es JSON, no FBX' };
+  if (headText.startsWith('<')) return { ok: false, motivo: 'Es XML/HTML, no FBX' };
+  const preview = headText.slice(0, 32).replace(/[^\x20-\x7e]/g, '·');
+  return { ok: false, motivo: `Header desconocido: "${preview}…"` };
+}
+
+async function descargarModelo(nombre, signal) {
   const urls = urlsModelo(nombre);
   let ultimoError = null;
   for (const url of urls) {
+    if (signal?.aborted) throw abortErr();
     try {
       console.log('🌐 Probando:', url);
-      const resp = await fetch(url, { cache: 'no-store' });
+      const resp = await fetch(url, { cache: 'no-store', signal });
       if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status}`); continue; }
+
+      const total = parseInt(resp.headers.get('content-length') || '0', 10);
+
+      // Streaming con progreso
+      if (resp.body && total > 0) {
+        const reader = resp.body.getReader();
+        const chunks = [];
+        let received = 0, ultUpdate = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (signal?.aborted) { try { reader.cancel(); } catch {} throw abortErr(); }
+          chunks.push(value);
+          received += value.length;
+          const now = performance.now();
+          if (now - ultUpdate > 200 || received === total) {
+            ultUpdate = now;
+            setEstado(`⬇️ ${nombre}\n${(received/1048576).toFixed(1)} / ${(total/1048576).toFixed(1)} MB (${Math.round(received/total*100)}%)`);
+          }
+        }
+        const buf = new Uint8Array(received);
+        let off = 0;
+        for (const c of chunks) { buf.set(c, off); off += c.length; }
+        if (received < 256) {
+          const txt = new TextDecoder().decode(buf);
+          if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error('Puntero LFS'); continue; }
+        }
+        console.log(`✅ Binario descargado: ${received} bytes`);
+        return buf.buffer;
+      }
+
+      // Fallback sin streaming
       const buf = await resp.arrayBuffer();
       if (buf.byteLength < 256) {
         const txt = new TextDecoder().decode(new Uint8Array(buf));
-        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error('Puntero LFS (no binario)'); continue; }
+        if (txt.startsWith('version https://git-lfs')) { ultimoError = new Error('Puntero LFS'); continue; }
       }
-      // Validar signature HTML de error
       const headText = new TextDecoder('latin1').decode(new Uint8Array(buf, 0, Math.min(32, buf.byteLength)));
-      if (headText.startsWith('<!DOCTYPE') || headText.startsWith('<html')) { ultimoError = new Error('Respuesta HTML (no binario)'); continue; }
-      console.log(`✅ Binario descargado: ${buf.byteLength} bytes desde ${url}`);
+      if (headText.startsWith('<!DOCTYPE') || headText.startsWith('<html')) { ultimoError = new Error('HTML'); continue; }
+      console.log(`✅ Binario descargado: ${buf.byteLength} bytes`);
       return buf;
-    } catch (e) { ultimoError = e; console.warn('⚠️', url, e.message); }
+    } catch (e) {
+      if (e?.name === 'AbortError') throw e;
+      ultimoError = e; console.warn('⚠️', url, e.message);
+    }
   }
   throw ultimoError || new Error('No se pudo descargar el modelo');
 }
@@ -821,7 +816,7 @@ const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/es
 const iconoDe = n => (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
 const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
 
-let defs = [], ultimaFirma = '', ultimaSync = 0;
+let defs = [], ultimaFirma = '';
 function poblarLista(nombres) {
   const locales = defs.filter(d => d.local);
   defs = [...locales, ...nombres.map(n => ({ nombre: bonito(n), icono: iconoDe(n), archivo: n, src: urlsModelo(n)[0] }))];
@@ -833,7 +828,6 @@ function poblarLista(nombres) {
 }
 async function sincronizar(forzar = false) {
   const n = await descubrirModelos(forzar);
-  ultimaSync = Date.now();
   const firma = n.join('|');
   if (firma !== ultimaFirma || forzar) { ultimaFirma = firma; poblarLista(n); }
   return n.length;
@@ -848,30 +842,29 @@ function agregarItem(d, alPrincipio = false) {
 }
 const cache = new Map();
 
-async function cargarConParse(d, loader, esFBX) {
+async function cargarConParse(d, loader, esFBX, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (!d.archivo) throw new Error('Modelo sin nombre de archivo');
-  console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
-  setEstado(`Descargando ${d.nombre}…`);
-  const buf = await descargarModelo(d.archivo);
 
-  // Validación previa en FBX para evitar errores crípticos del parser
+  console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
+  const buf = await descargarModelo(d.archivo, signal);
+  if (signal?.aborted) throw abortErr();
+
   if (esFBX) {
     const v = validarFbx(buf);
     if (!v.ok) {
-      const err = new Error(`FBX inválido (${v.motivo}). Este archivo no se puede cargar.`);
       console.error('❌', d.archivo, v.motivo);
-      // Diagnóstico: primeros bytes en hex para inspección
       const hexHead = [...new Uint8Array(buf, 0, Math.min(16, buf.byteLength))].map(b => b.toString(16).padStart(2, '0')).join(' ');
       console.error('   Primeros 16 bytes (hex):', hexHead);
-      throw err;
+      throw new Error(`FBX inválido: ${v.motivo}`);
     }
     console.log('   ✓ Header FBX válido (' + v.tipo + ')');
   }
 
-  setEstado(`Procesando ${d.nombre}…`);
+  setEstado(`⚙️ Procesando ${d.nombre}… (puede tardar si es pesado)`);
   return await new Promise((ok, fallo) => {
     const onLoad = obj => {
+      if (signal?.aborted) return fallo(abortErr());
       try {
         const root = esFBX ? obj : obj.scene;
         const sobran = [];
@@ -879,24 +872,19 @@ async function cargarConParse(d, loader, esFBX) {
         sobran.forEach(o => o.removeFromParent());
         root.updateMatrixWorld(true);
         root.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
-
         if (esFBX) {
           const b0 = new THREE.Box3().setFromObject(root);
           const s0 = b0.getSize(new THREE.Vector3());
           const maxDim = Math.max(s0.x, s0.y, s0.z);
           if (maxDim > 0 && (maxDim < 0.1 || maxDim > 20)) {
-            const k = 2 / maxDim;
-            root.scale.multiplyScalar(k);
+            root.scale.multiplyScalar(2 / maxDim);
             root.updateMatrixWorld(true);
             root.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.boundingBox = null; } });
           }
         }
-
         const box = new THREE.Box3().setFromObject(root);
-        const size = box.getSize(new THREE.Vector3());
-        const centro = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3()), centro = box.getCenter(new THREE.Vector3());
         root.position.sub(centro);
-
         const base = { obj: root, size, clips: (obj.animations || []) };
         cache.set(d.src, base);
         if (cache.size > 4) cache.delete(cache.keys().next().value);
@@ -910,10 +898,9 @@ async function cargarConParse(d, loader, esFBX) {
   });
 }
 
-async function cargarGLB(d) {
+async function cargarGLB(d, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (d.src.startsWith('blob:')) {
-    console.log('🔽 Cargando GLB local:', d.nombre);
     return new Promise((ok, fallo) => loader.load(d.src, gltf => {
       const obj = gltf.scene, sobran = [];
       obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
@@ -928,13 +915,12 @@ async function cargarGLB(d) {
       ok(base);
     }, undefined, fallo));
   }
-  return cargarConParse(d, loader, false);
+  return cargarConParse(d, loader, false, signal);
 }
 
-async function cargarFBX(d) {
+async function cargarFBX(d, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (d.src.startsWith('blob:')) {
-    console.log('🔽 Cargando FBX local:', d.nombre);
     return new Promise((ok, fallo) => fbxLoader.load(d.src, fbx => {
       const sobran = [];
       fbx.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isLight || o.isCamera) sobran.push(o); });
@@ -953,15 +939,18 @@ async function cargarFBX(d) {
       ok(base);
     }, undefined, fallo));
   }
-  return cargarConParse(d, fbxLoader, true);
+  return cargarConParse(d, fbxLoader, true, signal);
 }
 
 /* =====================================================================
-   3) ESTADO DEL MODELO + RIG
+   3) ESTADO DE CARGA + MODELO + RIG
    ===================================================================== */
+let cargandoActual = null;   // { abort, gen, nombre } | null
+let contadorGen = 0;
+let clicksIgnorados = 0;
+
 let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
-let selecEnCurso = false;   // ← NUEVO: lock anti-doble-carga
 const EJE = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 const qTmp = new THREE.Quaternion();
 const cfgPorDefecto = () => ({ q: [0, 0, 0, 1], s: 1, dy: 0, ox: 0, oy: -0.1, mocap: true, modo: 'auto' });
@@ -1025,7 +1014,6 @@ function configurarRig(raiz) {
   for (const R of R24) { let p = 0; for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) p += R.elements[c * 4 + r] * me[c * 4 + r]; if (p > mejorPuntaje) { mejorPuntaje = p; mejor = R; } }
   const qCorr = new THREE.Quaternion().setFromRotationMatrix(mejor);
   const pc = v => v ? v.clone().applyQuaternion(qCorr) : null;
-
   const midC = pc(mid), hipMidC = pc(hipMid);
   const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const torso = hipMidC ? d2(midC, hipMidC) : null;
@@ -1053,36 +1041,72 @@ function rigRigido(size) {
   return { cadenas: [], reposo: [], qCorr: new THREE.Quaternion(), pivot: new THREE.Vector3(0, -0.32 * h, 0), torso: h * 0.31, anchoHombros: h * 0.26, alto: h, hPies: 0.82 * h, rigido: true };
 }
 function volverAReposo() { if (rig) for (const [b, p, q, s] of rig.reposo) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(s); } }
-
 function limpiarModelo() {
   ajuste.removeFromParent(); ajuste.clear();
   clon = null; mixer = null; rig = null; tipo = null;
   stage.dataset.modo = ''; anclaje.visible = false; objeto.visible = false;
 }
-
 function sincronizarSeg() {}
 
 async function seleccionar(d, btn) {
-  if (selecEnCurso) { console.log('⏳ Ya hay una carga en curso, ignorando click'); return; }
-  selecEnCurso = true;
+  // ── Chequeo de carga concurrente con máximo de clicks ignorados ──
+  if (cargandoActual) {
+    clicksIgnorados++;
+    if (clicksIgnorados < MAX_CLICKS_IGNORADOS) {
+      const restantes = MAX_CLICKS_IGNORADOS - clicksIgnorados;
+      console.log(`⏳ Click ignorado (${clicksIgnorados}/${MAX_CLICKS_IGNORADOS}). ${restantes} más para cancelar.`);
+      setEstado(`⏳ Cargando "${cargandoActual.nombre}"…\n${restantes} click${restantes > 1 ? 's' : ''} más para cancelar`);
+      return;
+    }
+    // 4to click: cancelar y seguir con el nuevo
+    console.log(`🛑 Cancelando "${cargandoActual.nombre}" por insistencia`);
+    try { cargandoActual.abort.abort(); } catch {}
+    cargandoActual = null;
+    clicksIgnorados = 0;
+  }
+
+  const abort = new AbortController();
+  const gen = ++contadorGen;
+  cargandoActual = { abort, gen, nombre: d?.nombre || 'modelo' };
+  clicksIgnorados = 0;
+
   document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
   limpiarModelo(); def = d; cfg = null; twoHand.activo = false;
-  if (!d) { setEstado('Sin modelo'); refrescarBotones(); selecEnCurso = false; return; }
+
+  if (!d) {
+    setEstado('Sin modelo'); refrescarBotones();
+    if (cargandoActual?.gen === gen) cargandoActual = null;
+    return;
+  }
+
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
+
   try {
     const esFBX = /\.fbx$/i.test(d.archivo || d.nombre);
-    const base = esFBX ? await cargarFBX(d) : await cargarGLB(d);
-    if (def !== d) { selecEnCurso = false; return; }
+    const base = esFBX ? await cargarFBX(d, abort.signal) : await cargarGLB(d, abort.signal);
+    if (abort.signal.aborted || gen !== contadorGen) {
+      console.log(`🛑 Carga de "${d.nombre}" descartada`);
+      return;
+    }
+    if (def !== d) return;
     cfg = cargarCfg(d);
     construir(d, base);
+    setEstado('✓ ' + d.nombre);
   } catch (e) {
+    if (e?.name === 'AbortError') {
+      console.log(`🛑 Carga de "${d.nombre}" cancelada`);
+      return;
+    }
     console.error(e);
     setEstado('❌ ' + d.nombre + ': ' + (e?.message || e));
     def = null;
+  } finally {
+    if (cargandoActual?.gen === gen) {
+      cargandoActual = null; clicksIgnorados = 0;
+      refrescarBotones(); sincronizarSeg();
+    }
   }
-  refrescarBotones(); sincronizarSeg();
-  selecEnCurso = false;
 }
 
 function construir(d, base) {
@@ -1092,13 +1116,9 @@ function construir(d, base) {
   if (!rig && modo === 'cuerpo') rig = rigRigido(base.size);
   tipo = rig ? 'hum' : 'obj';
 
-  if (tipo === 'hum' && !rig.rigido) {
-    console.log(`🦴 ${d.nombre}: esqueleto humanoide detectado → modo personaje (mocap)`);
-  } else if (tipo === 'hum' && rig.rigido) {
-    console.log(`🦴 ${d.nombre}: sin esqueleto reconocible, anclado rígido al torso (modo cuerpo forzado)`);
-  } else {
-    console.log(`📦 ${d.nombre}: sin esqueleto reconocible → modo objeto${base.clips.length ? ' (con animación)' : ''}`);
-  }
+  if (tipo === 'hum' && !rig.rigido) console.log(`🦴 ${d.nombre}: esqueleto humanoide detectado → modo personaje (mocap)`);
+  else if (tipo === 'hum' && rig.rigido) console.log(`🦴 ${d.nombre}: anclado rígido (sin esqueleto)`);
+  else console.log(`📦 ${d.nombre}: modo objeto${base.clips.length ? ' (con animación)' : ''}`);
 
   if (rig) {
     const pv = new THREE.Group(); pv.position.copy(rig.pivot);
@@ -1111,20 +1131,17 @@ function construir(d, base) {
   clon = c; (tipo === 'hum' ? anclaje : objeto).add(ajuste);
   ajuste.quaternion.fromArray(cfg.q);
 
-  // ⭐ FIX: animación SOLO en modo objeto
+  // ⭐ Animación SOLO en modo objeto
   if (base.clips.length && tipo === 'obj') {
     mixer = new THREE.AnimationMixer(c);
     mixer.clipAction(base.clips[0]).play();
     console.log(`🎬 Animación activada: "${base.clips[0].name || '(sin nombre)'}"`);
   } else if (base.clips.length && tipo === 'hum') {
-    console.log(`⏸️ ${d.nombre}: animaciones ignoradas porque está sobre el cuerpo (modo mocap)`);
+    console.log(`⏸️ ${d.nombre}: animaciones ignoradas en modo cuerpo`);
   }
 
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo; suave.init = false;
-  setEstado(!rig ? d.nombre + ' · objeto: pellizcá con 1 o 2 manos sobre él'
-    : rig.rigido ? d.nombre + ' · pegado a tu cuerpo (sin copiar movimientos)'
-    : d.nombre + ' · esqueleto humanoide reconocido: copia tu cuerpo, mostrá hombros y cintura');
 }
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
 
@@ -1154,7 +1171,6 @@ document.querySelectorAll('#controles .btn[data-accion]').forEach(b => b.addEven
   if (!cfg && a !== 'puntos') return;
   ACCIONES[a]?.(); refrescarBotones(); guardarCfg(); sincronizarSeg();
 }));
-
 function aplicarPaneles() {
   $('#menu').classList.toggle('oculto', !prefs.lista);
   $('#btnToggleMenu').textContent = prefs.lista ? '◀' : '▶';
@@ -1173,10 +1189,10 @@ async function togglearFullscreen() {
   try {
     if (!enPantallaCompleta()) {
       const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
-      if (!f) { setEstado('Este navegador no permite pantalla completa: usá 👁 para ocultar los menús'); toggleUI(); return; }
+      if (!f) { setEstado('Este navegador no permite pantalla completa'); toggleUI(); return; }
       await f.call(el, { navigationUI: 'hide' });
     } else await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-  } catch (e) { console.warn('Fullscreen:', e); setEstado('No se pudo cambiar la pantalla completa'); }
+  } catch (e) { console.warn('Fullscreen:', e); }
   layoutDeb();
 }
 const ORIENT = ['auto', 'landscape', 'portrait']; let orient = 0;
@@ -1185,7 +1201,7 @@ async function ciclarOrientacion() {
   try {
     if (orient === 0) screen.orientation.unlock(); else await screen.orientation.lock(ORIENT[orient]);
     setEstado('Orientación: ' + ['automática', 'horizontal', 'vertical'][orient]);
-  } catch { orient = 0; setEstado('Este navegador solo permite bloquear la orientación en pantalla completa; si no, girá el dispositivo o usá 🔃'); }
+  } catch { orient = 0; setEstado('Bloqueo de orientación no soportado'); }
 }
 function refrescarBarra() {
   const set = (k, v) => document.querySelector(`[data-barra="${k}"]`)?.classList.toggle('activo', !!v);
@@ -1213,9 +1229,9 @@ function construirMenuFondos() {
   m.append(t1, t2); etiquetasToggles();
 }
 function etiquetasToggles() {
-  $('#toggPersona').textContent = prefs.persona ? '👤 Mostrarme junto al personaje: SÍ' : '👤 Mostrarme junto al personaje: NO (el personaje ocupa mi lugar)';
+  $('#toggPersona').textContent = prefs.persona ? '👤 Mostrarme junto al personaje: SÍ' : '👤 Mostrarme junto al personaje: NO';
   $('#toggPersona').classList.toggle('activo', prefs.persona);
-  $('#toggVista').textContent = prefs.vista === 'llenar' ? '↔ Vista: llenar pantalla (recorta bordes)' : '↔ Vista: ajustar (se ve toda la cámara)';
+  $('#toggVista').textContent = prefs.vista === 'llenar' ? '↔ Vista: llenar pantalla' : '↔ Vista: ajustar';
 }
 function generarMiniaturas() {
   if (miniaturasListas) return; miniaturasListas = true;
@@ -1225,7 +1241,7 @@ function generarMiniaturas() {
     try {
       mm.fijar(id, 240, 135); const cv = mkCanvas(240, 135); mm.dibujar(cv.getContext('2d'), 2.5, 0.03, null);
       o.querySelector('.sw').replaceWith(cv);
-    } catch (e) { console.warn('miniatura', id, e); }
+    } catch (e) {}
   }
 }
 function toggleMenuFondos(forzar) {
@@ -1274,7 +1290,7 @@ addEventListener('keydown', e => {
 });
 
 $('#quitar').addEventListener('click', () => seleccionar(null));
-$('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando con el repositorio…'); setEstado(`Lista actualizada: ${await sincronizar(true)} modelos`); });
+$('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando…'); setEstado(`Lista: ${await sincronizar(true)} modelos`); });
 $('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
 $('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
 async function abrirArchivo(f) {
@@ -1299,7 +1315,6 @@ lista.addEventListener('scroll', actualizarThumb);
    ===================================================================== */
 const crearPuntero = () => ({ activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false });
 const ptrM = crearPuntero(), ptrs = [crearPuntero(), crearPuntero()];
-
 function pDown(p, x, y, info, fuente) {
   Object.assign(p, { activo: true, fuente, sx: x, sy: y, lx: x, ly: y, arrastrando: false, repetido: false, enTrack: false, el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop });
   if (info?.scroll) { p.modo = 'scroll'; p.enTrack = !!info.track; }
@@ -1348,7 +1363,6 @@ const curs = [0, 1].map(() => ({ x: 0, y: 0, visible: false, ultimo: 0, pinch: f
 const cursorEls = [$('#cursor0'), $('#cursor1')];
 const hoverState = [{ el: null, desde: 0, bloqueado: null }, { el: null, desde: 0, bloqueado: null }];
 const twoHand = { activo: false, smDist: 0, smMidX: 0, smMidY: 0, lastDist: 0, lastMidX: 0, lastMidY: 0, cooldownHasta: 0 };
-
 function procesarMano(res) {
   const dets = (res.landmarks || []).slice(0, 2).map(lm => ({ lm, x: sx((lm[4].x + lm[8].x) / 2), y: sy((lm[4].y + lm[8].y) / 2) }));
   const asign = [null, null], slotsUsados = new Set(), detsUsadas = new Set(), cand = [];
@@ -1443,15 +1457,14 @@ function actualizarCursores(now) {
 }
 
 /* =====================================================================
-   7) POSE → RIG (cuerpo completo, no solo manos)
+   7) POSE → RIG
    ===================================================================== */
 const poseState = { midX: 0, midY: 0, torso: 0, hasData: false };
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
 const _qDelta = new THREE.Quaternion(), _qParent = new THREE.Quaternion(), _qParentInv = new THREE.Quaternion();
-
 function aplicarPose(landmarks) {
   if (!landmarks) return;
-  poseLm = landmarks;   // ← guardamos para el overlay de debug
+  poseLm = landmarks;
   const p11 = landmarks[11], p12 = landmarks[12], p23 = landmarks[23], p24 = landmarks[24];
   if (p11 && p12) {
     poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
@@ -1510,24 +1523,19 @@ function aplicarTransformacionesObjeto(dt) {
   objeto.scale.setScalar(cfg.s * h);
   objeto.visible = true;
 }
-function hPiesObj() {
-  const h = OBJ_BASE * Math.min(W, H) * 0.15;
-  return h * 0.45 * (cfg?.s || 1);
-}
+function hPiesObj() { return OBJ_BASE * Math.min(W, H) * 0.15 * 0.45 * (cfg?.s || 1); }
 
 /* =====================================================================
    8) BUCLE
    ===================================================================== */
 let ultimoFrame = performance.now(), ultimoPose = 0, ultimoHand = 0, iniciado = false;
 const sombra = { x: 0, y: 0, rx: 0 };
-
 function loop() {
   requestAnimationFrame(loop);
   const ahora = performance.now();
   const t = ahora / 1000;
   const dt = Math.min((ahora - ultimoFrame) / 1000, 0.1);
   ultimoFrame = ahora;
-
   if (video.readyState >= 2 && hand && ahora - ultimoHand > 33) {
     try { procesarMano(hand.detectForVideo(video, ahora)); } catch (e) {}
     ultimoHand = ahora;
@@ -1539,10 +1547,8 @@ function loop() {
     } catch (e) {}
     ultimoPose = ahora;
   }
-
   actualizarCursores(ahora);
-
-  if (mixer) mixer.update(dt);   // ⭐ mixer solo existe en modo 'obj'
+  if (mixer) mixer.update(dt);
   if (autoGiro && tipo === 'obj' && cfg) {
     ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dt * 0.5));
     cfg.q = ajuste.quaternion.toArray();
@@ -1551,7 +1557,6 @@ function loop() {
     if (tipo === 'hum') { aplicarTransformacionesAnclaje(dt); objeto.visible = false; }
     else { aplicarTransformacionesObjeto(dt); anclaje.visible = false; }
   }
-
   if (fondoActual !== 'camara') {
     if (tipo === 'hum' && anclaje.visible && rig) {
       sombra.x = suave.x;
@@ -1567,51 +1572,29 @@ function loop() {
   } else {
     fctx.clearRect(0, 0, W, H);
   }
-
-  /* ---------- DEBUG: PUNTOS DE CUERPO COMPLETO + MANOS ---------- */
   if (mostrarPuntos) {
     dbg.clearRect(0, 0, W, H);
     if (poseLm) {
-      // Líneas de esqueleto torso
       const lineas = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
-      dbg.strokeStyle = 'rgba(255,120,120,.85)';
-      dbg.lineWidth = 3;
+      dbg.strokeStyle = 'rgba(255,120,120,.85)'; dbg.lineWidth = 3;
       for (const [a,b] of lineas) {
         if (!poseLm[a] || !poseLm[b]) continue;
-        dbg.beginPath();
-        dbg.moveTo(sx(poseLm[a].x), sy(poseLm[a].y));
-        dbg.lineTo(sx(poseLm[b].x), sy(poseLm[b].y));
-        dbg.stroke();
+        dbg.beginPath(); dbg.moveTo(sx(poseLm[a].x), sy(poseLm[a].y)); dbg.lineTo(sx(poseLm[b].x), sy(poseLm[b].y)); dbg.stroke();
       }
-      // Puntos clave del cuerpo
-      const colores = {
-        11:'#ff5555',12:'#ff5555',  // hombros
-        13:'#ffaa55',14:'#ffaa55',  // codos
-        15:'#ffee55',16:'#ffee55',  // muñecas
-        23:'#55ff55',24:'#55ff55',  // caderas
-        25:'#55cc55',26:'#55cc55',  // rodillas
-        27:'#55aa55',28:'#55aa55',  // tobillos
-        0:'#55ccff',               // nariz
-      };
+      const colores = { 11:'#ff5555',12:'#ff5555',13:'#ffaa55',14:'#ffaa55',15:'#ffee55',16:'#ffee55',
+                        23:'#55ff55',24:'#55ff55',25:'#55cc55',26:'#55cc55',27:'#55aa55',28:'#55aa55',0:'#55ccff' };
       for (const [idx, color] of Object.entries(colores)) {
-        const p = poseLm[idx];
-        if (!p) continue;
-        dbg.fillStyle = color;
-        dbg.beginPath();
-        dbg.arc(sx(p.x), sy(p.y), 4, 0, TAU);
-        dbg.fill();
+        const p = poseLm[idx]; if (!p) continue;
+        dbg.fillStyle = color; dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 4, 0, TAU); dbg.fill();
       }
     }
-    // Puntos de las manos
     dbg.fillStyle = '#00ff88';
     for (const lm of handLm) if (lm) for (const p of lm) { dbg.beginPath(); dbg.arc(sx(p.x), sy(p.y), 3, 0, TAU); dbg.fill(); }
   } else if (dbgCanvas._lastHad) {
     dbg.clearRect(0, 0, W, H);
   }
   dbgCanvas._lastHad = mostrarPuntos;
-
   if (capturar) { capturar = false; tomarFoto(); }
-
   renderer.render(scene, camOrto);
 }
 
@@ -1630,7 +1613,6 @@ async function iniciar() {
     video.srcObject = stream;
     await video.play();
     await new Promise(r => { if (video.videoWidth) r(); else video.onloadedmetadata = r; });
-
     setEstado('Cargando modelos de IA…');
     const vision = await FilesetResolver.forVisionTasks(WASM_URL);
     hand = await HandLandmarker.createFromOptions(vision, {
@@ -1641,7 +1623,6 @@ async function iniciar() {
       baseOptions: { modelAssetPath: POSE_URL, delegate: 'GPU' },
       numPoses: 1, runningMode: 'VIDEO',
     });
-
     setEstado('Listo ✓');
     $('#inicio').style.display = 'none';
     layout();
@@ -1655,9 +1636,6 @@ async function iniciar() {
 }
 $('#btnIniciar').addEventListener('click', iniciar);
 
-/* =====================================================================
-   ARRANQUE
-   ===================================================================== */
 try { aplicarPaneles(); } catch (e) { console.error('aplicarPaneles:', e); }
 try { construirMenuFondos(); } catch (e) { console.error('construirMenuFondos:', e); }
 try { aplicarFondo(prefs.fondo || 'camara', false); } catch (e) { console.error('aplicarFondo:', e); }
