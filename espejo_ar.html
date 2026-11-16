@@ -30,9 +30,15 @@
   #listaWrap { flex:1; min-height:0; display:flex; gap:5px; }
   #lista { flex:1; min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; scrollbar-width:none; touch-action:pan-y; }
   #lista::-webkit-scrollbar { display:none; }
-  .item { display:flex; align-items:center; gap:7px; text-align:left; padding:8px; min-height:46px; flex:none; font-size:12px; }
-  .item .ico { display:inline; font-size:20px; margin:0; }
-  .item span.n { overflow:hidden; text-overflow:ellipsis; word-break:break-word; }
+  .item { position:relative; display:flex; align-items:center; gap:7px; text-align:left; padding:8px; min-height:46px; flex:none; font-size:12px; }
+  .item .ico { display:inline; font-size:20px; margin:0; flex:none; }
+  .item span.n { overflow:hidden; text-overflow:ellipsis; word-break:break-word; flex:1; }
+  .item .badge { font-size:10px; opacity:.7; flex:none; }
+  .item.invalido { opacity:.38; border-color:rgba(255,80,80,.5) !important; }
+  .item.invalido .ico { filter:grayscale(1); }
+  .item.invalido span.n { text-decoration: line-through; text-decoration-color:rgba(255,80,80,.5); }
+  .item.validando .ico { animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
   #track { width:16px; background:rgba(255,255,255,.14); border-radius:8px; position:relative; flex:none; }
   #thumb { position:absolute; left:0; right:0; background:var(--acento); border-radius:8px; min-height:34px; }
   .fila { display:flex; gap:6px; } .fila .btn { flex:1; }
@@ -116,6 +122,9 @@
           <div class="btn" data-hover id="refrescar" title="Sincronizar con el repositorio">🔄</div>
           <div class="btn" data-hover id="quitar" title="Quitar modelo">❌</div>
         </div>
+        <div class="fila">
+          <div class="btn" data-hover id="toggleInvalidos" title="Mostrar/ocultar archivos inválidos" style="flex:2">👁 Ver inválidos</div>
+        </div>
       </div>
     </div>
     <div id="controles">
@@ -143,7 +152,7 @@
       <div class="btn" data-hover data-barra="foto"     title="Sacar foto (P)">📸</div>
       <div class="btn" data-hover data-barra="pantalla" title="Pantalla completa (F)">⛶</div>
       <div class="btn" data-hover data-barra="girar"    title="Girar la vista 90°">🔃</div>
-      <div class="btn" data-hover data-barra="orient"   title="Bloquear orientación (auto / horizontal / vertical)">🧭</div>
+      <div class="btn" data-hover data-barra="orient"   title="Bloquear orientación">🧭</div>
       <div class="btn" data-hover data-barra="ui" id="bUI" title="Ocultar / mostrar todo (H)">👁</div>
     </div>
     <div id="menuFondos"></div>
@@ -156,9 +165,9 @@
       <h1>🪞 Espejo AR · Calabozos &amp; Código</h1>
       <p>🖐️ <b>Una mano</b>: el cursor sigue tu índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1 s. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
-      <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar). ⛶ pantalla completa · 🔃 girar vista · 🧭 orientación · 👁 ocultar menús · 📸 foto.</p>
-      <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide (Mixamo, Unreal, Rigify, VRM…) se ajusta solo a tu torso y copia tus movimientos; si no, aparece como objeto. El botón 🧍 <i>Modo</i> permite forzar «sobre mi cuerpo» u «objeto».</p>
-      <p>💡 <b>Consejo</b>: si un modelo tarda, podés clickear otra vez hasta 3 veces para cancelarlo y cargar otro.</p>
+      <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar).</p>
+      <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide se ajusta a tu torso y copia tus movimientos; si no, aparece como objeto. 🧍 <i>Modo</i> permite forzar.</p>
+      <p>💡 <b>Los archivos se validan al entrar</b>. Los que no son FBX/GLB reales aparecen como <b>❌ inválidos</b> (no se descargan al clickear). Podés mostrar/ocultarlos con el botón <b>👁 Ver inválidos</b>.</p>
       <p>👀 Alejate hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -178,7 +187,7 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   MOTOR DE FONDOS
+   MOTOR DE FONDOS (sin cambios)
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
@@ -597,7 +606,7 @@ const FONDOS = [
 ];
 
 const PREF_KEY = 'espejoAR.prefs';
-const prefs = Object.assign({ lista: true, ajustes: innerWidth > 700, fondo: 'camara', vista: 'llenar', persona: false },
+const prefs = Object.assign({ lista: true, ajustes: innerWidth > 700, fondo: 'camara', vista: 'llenar', persona: false, mostrarInvalidos: false },
   (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; } })());
 const guardarPrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {} };
 
@@ -611,13 +620,11 @@ function setEstado(t) {
   estadoEl.textContent = t; estadoEl.style.opacity = 1; clearTimeout(tEstado);
   tEstado = setTimeout(() => { estadoEl.style.opacity = 0; }, 9000);
 }
-
 let W = 640, H = 480, rotacion = 0, pose = null, hand = null, mostrarPuntos = false;
 let fondoActual = 'camara';
 let mapa = { vw: 640, vh: 480, s: 1, ox: 0, oy: 0 };
 const handLm = [null, null];
 let poseLm = null;
-
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const motor = crearMotorFondos(mkCanvas);
 
@@ -670,10 +677,8 @@ addEventListener('resize', layoutDeb); addEventListener('orientationchange', lay
 document.addEventListener('fullscreenchange', () => { layoutDeb(); refrescarBarra(); });
 document.addEventListener('webkitfullscreenchange', () => { layoutDeb(); refrescarBarra(); });
 video.addEventListener('resize', layoutDeb);
-
 const sx = xn => (1 - xn) * mapa.vw * mapa.s - mapa.ox;
 const sy = yn => yn * mapa.vh * mapa.s - mapa.oy;
-
 function puntoAStage(clientX, clientY) {
   const rx = clientX - innerWidth / 2, ry = clientY - innerHeight / 2, rad = rotacion * Math.PI / 180, c = Math.cos(rad), s = Math.sin(rad);
   return { x: rx * c + ry * s + W / 2, y: -rx * s + ry * c + H / 2 };
@@ -684,7 +689,7 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS — descarga robusta + abort + validación FBX
+   2) MODELOS — con pre-validación de headers
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 
@@ -697,23 +702,87 @@ function urlsModelo(nombre) {
   ];
 }
 
-function abortErr() {
-  const e = new Error('Carga cancelada'); e.name = 'AbortError'; return e;
+// ---- Cachés persistentes ----
+const VALID_KEY = 'espejoAR.valid.v1';
+const INFO_KEY = 'espejoAR.info.v1';
+const validCache = (() => { try { return JSON.parse(localStorage.getItem(VALID_KEY) || '{}'); } catch { return {}; } })();
+const infoCache = (() => { try { return JSON.parse(localStorage.getItem(INFO_KEY) || '{}'); } catch { return {}; } })();
+const guardarValidCache = () => { try { localStorage.setItem(VALID_KEY, JSON.stringify(validCache)); } catch {} };
+const guardarInfoCache = () => { try { localStorage.setItem(INFO_KEY, JSON.stringify(infoCache)); } catch {} };
+
+/** Clasifica los primeros 32 bytes como FBX/GLB válido o no. */
+function clasificarBytes(bytes, esFBX) {
+  const headText = new TextDecoder('latin1').decode(bytes);
+  if (bytes.length === 0) return { valido: false, motivo: 'Vacío' };
+  if (esFBX) {
+    if (headText.startsWith('Kaydara FBX Binary')) return { valido: true, tipo: 'fbx-bin' };
+    if (headText.startsWith('PK')) return { valido: false, motivo: 'Es un ZIP (probablemente .blend renombrado)' };
+    if (headText.startsWith('{')) return { valido: false, motivo: 'Es JSON, no FBX' };
+    if (headText.startsWith('<')) return { valido: false, motivo: 'Es XML/HTML, no FBX' };
+    if (/^;[\s\S]{0,200}FBX[\s\S]{0,50}project file/i.test(headText)) return { valido: true, tipo: 'fbx-ascii' };
+    if (/FBXHeaderExtension/i.test(headText)) return { valido: true, tipo: 'fbx-ascii' };
+    return { valido: false, motivo: 'Header no es FBX (¿corrupto?)' };
+  } else {
+    if (headText.startsWith('glTF')) return { valido: true, tipo: 'glb' };
+    if (headText.startsWith('{')) return { valido: true, tipo: 'gltf-json' };
+    if (headText.startsWith('PK')) return { valido: false, motivo: 'Es ZIP, no GLB' };
+    if (headText.startsWith('<')) return { valido: false, motivo: 'Es HTML/XML, no GLB' };
+    return { valido: false, motivo: 'Header no es GLB' };
+  }
 }
 
-function validarFbx(buf) {
-  if (buf.byteLength < 32) return { ok: false, motivo: 'Archivo demasiado pequeño' };
-  const head = new Uint8Array(buf, 0, Math.min(64, buf.byteLength));
-  const headText = new TextDecoder('latin1').decode(head);
-  if (headText.startsWith('Kaydara FBX Binary')) return { ok: true, tipo: 'binary' };
-  if (/^;[\s\S]*FBX[\s\S]*project file/i.test(headText)) return { ok: true, tipo: 'ascii' };
-  if (/FBXHeaderExtension/i.test(headText)) return { ok: true, tipo: 'ascii' };
-  if (headText.startsWith('PK')) return { ok: false, motivo: 'Es un ZIP (¿.blend renombrado?)' };
-  if (headText.startsWith('{')) return { ok: false, motivo: 'Es JSON, no FBX' };
-  if (headText.startsWith('<')) return { ok: false, motivo: 'Es XML/HTML, no FBX' };
-  const preview = headText.slice(0, 32).replace(/[^\x20-\x7e]/g, '·');
-  return { ok: false, motivo: `Header desconocido: "${preview}…"` };
+/** Valida con una petición Range de solo 32 bytes. Cachea el resultado. */
+async function validarRemoto(nombre) {
+  if (validCache[nombre]) return validCache[nombre];
+  const esFBX = /\.fbx$/i.test(nombre);
+  const urls = urlsModelo(nombre);
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { headers: { 'Range': 'bytes=0-31' } });
+      if (!r.ok && r.status !== 206) continue;
+      const buf = await r.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      const total = parseInt(r.headers.get('content-range')?.split('/')[1] || r.headers.get('content-length') || '0', 10);
+      const cls = clasificarBytes(bytes, esFBX);
+      const res = { ...cls, size: total || null };
+      validCache[nombre] = res;
+      guardarValidCache();
+      return res;
+    } catch {}
+  }
+  const err = { valido: false, motivo: 'No accesible' };
+  validCache[nombre] = err;
+  guardarValidCache();
+  return err;
 }
+
+/** Valida todos los archivos en paralelo (concurrencia 4). */
+async function validarTodos(nombres) {
+  const pendientes = nombres.filter(n => !validCache[n]);
+  if (!pendientes.length) return;
+  console.log(`🔍 Validando ${pendientes.length} archivos…`);
+  setEstado(`🔍 Validando ${pendientes.length} archivos…`);
+  let listos = 0;
+  const CONCURRENT = 4;
+  const cola = [...pendientes];
+  const runners = [];
+  for (let i = 0; i < CONCURRENT; i++) {
+    runners.push((async () => {
+      while (cola.length) {
+        const n = cola.shift();
+        try { await validarRemoto(n); } catch {}
+        listos++;
+        if (listos % 5 === 0) setEstado(`🔍 Validando ${listos}/${pendientes.length}…`);
+      }
+    })());
+  }
+  await Promise.all(runners);
+  console.log(`✓ Validación completa`);
+  setEstado(`✓ Validación completa`);
+  poblarLista(ultimoNombres);
+}
+
+function abortErr() { const e = new Error('Carga cancelada'); e.name = 'AbortError'; return e; }
 
 async function descargarModelo(nombre, signal) {
   const urls = urlsModelo(nombre);
@@ -724,10 +793,7 @@ async function descargarModelo(nombre, signal) {
       console.log('🌐 Probando:', url);
       const resp = await fetch(url, { cache: 'no-store', signal });
       if (!resp.ok) { ultimoError = new Error(`HTTP ${resp.status}`); continue; }
-
       const total = parseInt(resp.headers.get('content-length') || '0', 10);
-
-      // Streaming con progreso
       if (resp.body && total > 0) {
         const reader = resp.body.getReader();
         const chunks = [];
@@ -754,8 +820,6 @@ async function descargarModelo(nombre, signal) {
         console.log(`✅ Binario descargado: ${received} bytes`);
         return buf.buffer;
       }
-
-      // Fallback sin streaming
       const buf = await resp.arrayBuffer();
       if (buf.byteLength < 256) {
         const txt = new TextDecoder().decode(new Uint8Array(buf));
@@ -780,6 +844,7 @@ function repoActual() {
   }
   return REPO_GITHUB;
 }
+let ultimoNombres = [];
 async function descubrirModelos(forzar = false) {
   let nombres = [];
   try {
@@ -806,36 +871,78 @@ async function descubrirModelos(forzar = false) {
     }
   }
   if (!nombres.length) nombres = BASE_LISTA;
-  const unicos = [...new Set(nombres.filter(esModelo))];
-  console.log('📦 Modelos encontrados:', unicos);
-  return unicos.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+  ultimoNombres = [...new Set(nombres.filter(esModelo))].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+  console.log('📦 Modelos encontrados:', ultimoNombres);
+  return ultimoNombres;
 }
 const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],[/dragon|dragón/i,'🐉'],[/cofre|chest/i,'📦'],
   [/diamante|gem|cristal/i,'💎'],[/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],[/desierto|desert/i,'🏜️'],
-  [/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰'],[/\.fbx$/i,'📦']];
-const iconoDe = n => (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
+  [/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰']];
+function iconoDe(n, valid) {
+  if (valid && !valid.valido) return '❌';
+  return (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
+}
 const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
 
 let defs = [], ultimaFirma = '';
+function infoIcono(nombre) {
+  const info = infoCache[nombre];
+  if (!info) return '';
+  if (info.tipo === 'hum') return '🦴';
+  if (info.anim) return '🎬';
+  return '📦';
+}
 function poblarLista(nombres) {
+  nombres = nombres || ultimoNombres;
   const locales = defs.filter(d => d.local);
-  defs = [...locales, ...nombres.map(n => ({ nombre: bonito(n), icono: iconoDe(n), archivo: n, src: urlsModelo(n)[0] }))];
+  const mostrarInv = prefs.mostrarInvalidos;
+  const nuevos = nombres.map(n => {
+    const v = validCache[n];
+    const nombre = bonito(n);
+    const icono = iconoDe(n, v);
+    let titulo = '';
+    if (v) {
+      if (!v.valido) titulo = `❌ ${v.motivo}`;
+      else {
+        const size = v.size ? `${(v.size/1048576).toFixed(1)} MB` : '';
+        const tipo = v.tipo ? v.tipo.toUpperCase() : '';
+        titulo = [tipo, size].filter(Boolean).join(' · ');
+      }
+    } else {
+      titulo = '⏳ Validando…';
+    }
+    const info = infoCache[n];
+    const badge = info ? infoIcono(n) : '';
+    return { nombre, icono, archivo: n, src: urlsModelo(n)[0], valido: v?.valido, motivo: v?.motivo, size: v?.size, titulo, badge };
+  });
+  // Filtrar inválidos si corresponde
+  const visibles = mostrarInv ? nuevos : nuevos.filter(d => d.valido !== false);
+  defs = [...locales, ...visibles];
   lista.innerHTML = '';
   for (const d of defs) agregarItem(d);
   if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
-  $('#titulo').firstElementChild.textContent = `📂 Modelos (${defs.length})`;
+  const totalValidos = nuevos.filter(d => d.valido === true).length;
+  const totalInvalidos = nuevos.filter(d => d.valido === false).length;
+  const pendientes = nuevos.filter(d => !d.valido && d.valido !== false).length;
+  $('#titulo').firstElementChild.textContent = `📂 (${totalValidos}✓${totalInvalidos ? ` / ${totalInvalidos}✗` : ''}${pendientes ? ` / ${pendientes}⏳` : ''})`;
   actualizarThumb();
 }
 async function sincronizar(forzar = false) {
   const n = await descubrirModelos(forzar);
   const firma = n.join('|');
   if (firma !== ultimaFirma || forzar) { ultimaFirma = firma; poblarLista(n); }
+  validarTodos(n); // sin await, corre en background
   return n.length;
 }
 function agregarItem(d, alPrincipio = false) {
   const b = document.createElement('div');
-  b.className = 'btn item'; b.dataset.hover = ''; b.dataset.nodwell = '';
-  b.innerHTML = `<span class="ico">${d.icono}</span><span class="n">${d.nombre}</span>`;
+  b.className = 'btn item';
+  b.dataset.hover = ''; b.dataset.nodwell = '';
+  if (d.valido === false) b.classList.add('invalido');
+  if (!d.valido && d.valido !== false && validCache[d.archivo] === undefined) b.classList.add('validando');
+  if (d.titulo) b.title = d.titulo;
+  const badgeHtml = d.badge ? `<span class="badge">${d.badge}</span>` : '';
+  b.innerHTML = `<span class="ico">${d.icono}</span><span class="n">${d.nombre}</span>${badgeHtml}`;
   b.addEventListener('click', () => seleccionar(d, b));
   d.btn = b;
   alPrincipio ? lista.prepend(b) : lista.appendChild(b);
@@ -845,23 +952,10 @@ const cache = new Map();
 async function cargarConParse(d, loader, esFBX, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (!d.archivo) throw new Error('Modelo sin nombre de archivo');
-
   console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
   const buf = await descargarModelo(d.archivo, signal);
   if (signal?.aborted) throw abortErr();
-
-  if (esFBX) {
-    const v = validarFbx(buf);
-    if (!v.ok) {
-      console.error('❌', d.archivo, v.motivo);
-      const hexHead = [...new Uint8Array(buf, 0, Math.min(16, buf.byteLength))].map(b => b.toString(16).padStart(2, '0')).join(' ');
-      console.error('   Primeros 16 bytes (hex):', hexHead);
-      throw new Error(`FBX inválido: ${v.motivo}`);
-    }
-    console.log('   ✓ Header FBX válido (' + v.tipo + ')');
-  }
-
-  setEstado(`⚙️ Procesando ${d.nombre}… (puede tardar si es pesado)`);
+  setEstado(`⚙️ Procesando ${d.nombre}…`);
   return await new Promise((ok, fallo) => {
     const onLoad = obj => {
       if (signal?.aborted) return fallo(abortErr());
@@ -897,7 +991,6 @@ async function cargarConParse(d, loader, esFBX, signal) {
     } catch (e) { fallo(e); }
   });
 }
-
 async function cargarGLB(d, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (d.src.startsWith('blob:')) {
@@ -917,7 +1010,6 @@ async function cargarGLB(d, signal) {
   }
   return cargarConParse(d, loader, false, signal);
 }
-
 async function cargarFBX(d, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (d.src.startsWith('blob:')) {
@@ -943,12 +1035,11 @@ async function cargarFBX(d, signal) {
 }
 
 /* =====================================================================
-   3) ESTADO DE CARGA + MODELO + RIG
+   3) ESTADO + RIG
    ===================================================================== */
-let cargandoActual = null;   // { abort, gen, nombre } | null
+let cargandoActual = null;
 let contadorGen = 0;
 let clicksIgnorados = 0;
-
 let def = null, tipo = null, cfg = null, rig = null, mixer = null, clon = null;
 let herramienta = 'mover', autoGiro = false;
 const EJE = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
@@ -957,7 +1048,6 @@ const cfgPorDefecto = () => ({ q: [0, 0, 0, 1], s: 1, dy: 0, ox: 0, oy: -0.1, mo
 const claveCfg = d => 'espejoAR.cfg2.' + d.src;
 function cargarCfg(d) { try { const c = JSON.parse(localStorage.getItem(claveCfg(d)) || 'null'); if (c) return { ...cfgPorDefecto(), ...c }; } catch {} return cfgPorDefecto(); }
 function guardarCfg() { if (!def || def.src.startsWith('blob:')) return; try { localStorage.setItem(claveCfg(def), JSON.stringify(cfg)); } catch {} }
-
 const ROLES = {
   hips: /^(hips|pelvis|hip)$/, arm: /^(arm|upperarm|uparm)$/, forearm: /^(forearm|lowerarm|lowarm)$/, hand: /^(hand|wrist)$/,
   upleg: /^(upleg|thigh|upperleg|uleg)$/, leg: /^(leg|calf|shin|lowerleg|lowleg)$/, foot: /^(foot|ankle)$/,
@@ -1049,7 +1139,11 @@ function limpiarModelo() {
 function sincronizarSeg() {}
 
 async function seleccionar(d, btn) {
-  // ── Chequeo de carga concurrente con máximo de clicks ignorados ──
+  // Bloquear inválidos
+  if (d && d.valido === false) {
+    setEstado(`❌ ${d.nombre}: ${d.motivo || 'archivo inválido'}\nNo se descarga.`);
+    return;
+  }
   if (cargandoActual) {
     clicksIgnorados++;
     if (clicksIgnorados < MAX_CLICKS_IGNORADOS) {
@@ -1058,46 +1152,34 @@ async function seleccionar(d, btn) {
       setEstado(`⏳ Cargando "${cargandoActual.nombre}"…\n${restantes} click${restantes > 1 ? 's' : ''} más para cancelar`);
       return;
     }
-    // 4to click: cancelar y seguir con el nuevo
     console.log(`🛑 Cancelando "${cargandoActual.nombre}" por insistencia`);
     try { cargandoActual.abort.abort(); } catch {}
     cargandoActual = null;
     clicksIgnorados = 0;
   }
-
   const abort = new AbortController();
   const gen = ++contadorGen;
   cargandoActual = { abort, gen, nombre: d?.nombre || 'modelo' };
   clicksIgnorados = 0;
-
   document.querySelectorAll('.item').forEach(b => b.classList.remove('activo'));
   limpiarModelo(); def = d; cfg = null; twoHand.activo = false;
-
   if (!d) {
     setEstado('Sin modelo'); refrescarBotones();
     if (cargandoActual?.gen === gen) cargandoActual = null;
     return;
   }
-
   btn?.classList.add('activo');
   setEstado('Cargando ' + d.nombre + '…');
-
   try {
     const esFBX = /\.fbx$/i.test(d.archivo || d.nombre);
     const base = esFBX ? await cargarFBX(d, abort.signal) : await cargarGLB(d, abort.signal);
-    if (abort.signal.aborted || gen !== contadorGen) {
-      console.log(`🛑 Carga de "${d.nombre}" descartada`);
-      return;
-    }
+    if (abort.signal.aborted || gen !== contadorGen) { console.log(`🛑 Carga de "${d.nombre}" descartada`); return; }
     if (def !== d) return;
     cfg = cargarCfg(d);
     construir(d, base);
     setEstado('✓ ' + d.nombre);
   } catch (e) {
-    if (e?.name === 'AbortError') {
-      console.log(`🛑 Carga de "${d.nombre}" cancelada`);
-      return;
-    }
+    if (e?.name === 'AbortError') { console.log(`🛑 Carga de "${d.nombre}" cancelada`); return; }
     console.error(e);
     setEstado('❌ ' + d.nombre + ': ' + (e?.message || e));
     def = null;
@@ -1115,11 +1197,9 @@ function construir(d, base) {
   rig = modo === 'obj' ? null : configurarRig(c);
   if (!rig && modo === 'cuerpo') rig = rigRigido(base.size);
   tipo = rig ? 'hum' : 'obj';
-
-  if (tipo === 'hum' && !rig.rigido) console.log(`🦴 ${d.nombre}: esqueleto humanoide detectado → modo personaje (mocap)`);
+  if (tipo === 'hum' && !rig.rigido) console.log(`🦴 ${d.nombre}: personaje (mocap)`);
   else if (tipo === 'hum' && rig.rigido) console.log(`🦴 ${d.nombre}: anclado rígido (sin esqueleto)`);
   else console.log(`📦 ${d.nombre}: modo objeto${base.clips.length ? ' (con animación)' : ''}`);
-
   if (rig) {
     const pv = new THREE.Group(); pv.position.copy(rig.pivot);
     if (rig.rigido) pv.add(c); else { const rt = new THREE.Group(); rt.quaternion.copy(rig.qCorr); rt.add(c); pv.add(rt); }
@@ -1130,8 +1210,6 @@ function construir(d, base) {
   }
   clon = c; (tipo === 'hum' ? anclaje : objeto).add(ajuste);
   ajuste.quaternion.fromArray(cfg.q);
-
-  // ⭐ Animación SOLO en modo objeto
   if (base.clips.length && tipo === 'obj') {
     mixer = new THREE.AnimationMixer(c);
     mixer.clipAction(base.clips[0]).play();
@@ -1139,9 +1217,24 @@ function construir(d, base) {
   } else if (base.clips.length && tipo === 'hum') {
     console.log(`⏸️ ${d.nombre}: animaciones ignoradas en modo cuerpo`);
   }
-
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo; suave.init = false;
+  // Guardar info aprendida para badge
+  if (d.archivo) {
+    infoCache[d.archivo] = { tipo, anim: base.clips.length > 0, rig: !!(rig && !rig.rigido) };
+    guardarInfoCache();
+    // Actualizar badge en la lista
+    const item = d.btn;
+    if (item) {
+      const oldBadge = item.querySelector('.badge');
+      if (oldBadge) oldBadge.remove();
+      const badge = infoCache[d.archivo] ? infoIcono(d.archivo) : '';
+      if (badge) {
+        const span = document.createElement('span'); span.className = 'badge'; span.textContent = badge;
+        item.appendChild(span);
+      }
+    }
+  }
 }
 function rotarMundo(eje, ang) { ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(eje, ang)); cfg.q = ajuste.quaternion.toArray(); }
 
@@ -1176,13 +1269,17 @@ function aplicarPaneles() {
   $('#btnToggleMenu').textContent = prefs.lista ? '◀' : '▶';
   $('#controles').classList.toggle('oculto', !prefs.ajustes);
   $('#toggleControles').textContent = prefs.ajustes ? '▶' : '◀';
-  refrescarBarra(); actualizarThumb();
+  etiquetasToggles(); refrescarBarra(); actualizarThumb();
 }
 const toggleLista = () => { prefs.lista = !prefs.lista; guardarPrefs(); aplicarPaneles(); };
 const toggleAjustes = () => { prefs.ajustes = !prefs.ajustes; guardarPrefs(); aplicarPaneles(); };
 const toggleUI = () => { stage.classList.toggle('sin-ui'); refrescarBarra(); };
+function toggleInvalidos() {
+  prefs.mostrarInvalidos = !prefs.mostrarInvalidos; guardarPrefs(); etiquetasToggles(); poblarLista(ultimoNombres);
+}
 $('#btnToggleMenu').addEventListener('click', e => { e.stopPropagation(); toggleLista(); });
 $('#toggleControles').addEventListener('click', e => { e.stopPropagation(); toggleAjustes(); });
+$('#toggleInvalidos').addEventListener('click', toggleInvalidos);
 
 const enPantallaCompleta = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
 async function togglearFullscreen() {
@@ -1208,7 +1305,6 @@ function refrescarBarra() {
   set('lista', prefs.lista); set('ajustes', prefs.ajustes); set('fondo', $('#menuFondos').classList.contains('abierto'));
   set('pantalla', enPantallaCompleta()); set('ui', stage.classList.contains('sin-ui'));
 }
-
 let miniaturasListas = false;
 function construirMenuFondos() {
   const m = $('#menuFondos'); m.innerHTML = '';
@@ -1229,9 +1325,14 @@ function construirMenuFondos() {
   m.append(t1, t2); etiquetasToggles();
 }
 function etiquetasToggles() {
-  $('#toggPersona').textContent = prefs.persona ? '👤 Mostrarme junto al personaje: SÍ' : '👤 Mostrarme junto al personaje: NO';
-  $('#toggPersona').classList.toggle('activo', prefs.persona);
-  $('#toggVista').textContent = prefs.vista === 'llenar' ? '↔ Vista: llenar pantalla' : '↔ Vista: ajustar';
+  const ti = $('#toggleInvalidos');
+  if (ti) {
+    ti.textContent = prefs.mostrarInvalidos ? '👁 Ocultar inválidos' : '👁 Ver inválidos';
+    ti.classList.toggle('activo', prefs.mostrarInvalidos);
+  }
+  const tp = $('#toggPersona'), tv = $('#toggVista');
+  if (tp) tp.textContent = prefs.persona ? '👤 Mostrarme junto al personaje: SÍ' : '👤 Mostrarme junto al personaje: NO';
+  if (tv) tv.textContent = prefs.vista === 'llenar' ? '↔ Vista: llenar pantalla' : '↔ Vista: ajustar';
 }
 function generarMiniaturas() {
   if (miniaturasListas) return; miniaturasListas = true;
@@ -1241,7 +1342,7 @@ function generarMiniaturas() {
     try {
       mm.fijar(id, 240, 135); const cv = mkCanvas(240, 135); mm.dibujar(cv.getContext('2d'), 2.5, 0.03, null);
       o.querySelector('.sw').replaceWith(cv);
-    } catch (e) {}
+    } catch {}
   }
 }
 function toggleMenuFondos(forzar) {
@@ -1260,7 +1361,6 @@ function aplicarFondo(id, cerrar = true) {
   sincronizarSeg();
   setEstado('Fondo: ' + FONDOS.find(f => f.id === id).nombre);
 }
-
 let capturar = false;
 function tomarFoto() {
   const cv = mkCanvas(W, H), c = cv.getContext('2d');
@@ -1276,7 +1376,6 @@ function tomarFoto() {
   const fl = $('#flash'); fl.style.opacity = .85; setTimeout(() => { fl.style.opacity = 0; }, 80);
   setEstado('📸 Foto guardada');
 }
-
 const BARRA = {
   lista: toggleLista, ajustes: toggleAjustes, fondo: () => toggleMenuFondos(), foto: () => { capturar = true; },
   pantalla: togglearFullscreen, girar: () => { rotacion = (rotacion + 90) % 360; layout(); }, orient: ciclarOrientacion, ui: toggleUI,
@@ -1288,14 +1387,19 @@ addEventListener('keydown', e => {
   if (k === 'h') toggleUI(); else if (k === 'f') togglearFullscreen(); else if (k === 'm') toggleLista();
   else if (k === 'b') toggleMenuFondos(); else if (k === 'p') capturar = true; else if (k === 'escape') toggleMenuFondos(false);
 });
-
 $('#quitar').addEventListener('click', () => seleccionar(null));
-$('#refrescar').addEventListener('click', async () => { setEstado('Sincronizando…'); setEstado(`Lista: ${await sincronizar(true)} modelos`); });
+$('#refrescar').addEventListener('click', async () => {
+  setEstado('Sincronizando…');
+  // Forzar revalidación limpiando el cache de validación
+  Object.keys(validCache).forEach(k => delete validCache[k]);
+  guardarValidCache();
+  setEstado(`Lista: ${await sincronizar(true)} modelos`);
+});
 $('#arriba').addEventListener('click', () => lista.scrollBy({ top: -110 }));
 $('#abajo').addEventListener('click', () => lista.scrollBy({ top: 110 }));
 async function abrirArchivo(f) {
   if (!f || !esModelo(f.name)) return;
-  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true, archivo: f.name };
+  const d = { nombre: bonito(f.name), icono: '📁', src: URL.createObjectURL(f), local: true, archivo: f.name, valido: true };
   defs.unshift(d); agregarItem(d, true); lista.scrollTop = 0; actualizarThumb(); seleccionar(d, d.btn);
 }
 $('#archivo').addEventListener('change', e => abrirArchivo(e.target.files[0]));
@@ -1311,7 +1415,7 @@ function actualizarThumb() {
 lista.addEventListener('scroll', actualizarThumb);
 
 /* =====================================================================
-   5) ENTRADA UNIFICADA
+   5) ENTRADA
    ===================================================================== */
 const crearPuntero = () => ({ activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false });
 const ptrM = crearPuntero(), ptrs = [crearPuntero(), crearPuntero()];
@@ -1357,7 +1461,7 @@ stage.addEventListener('pointerup', () => { if (ptrM.fuente === 'mouse') pUp(ptr
 stage.addEventListener('wheel', e => { if (cfg) { cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-e.deltaY * 0.0015))); guardarCfg(); } }, { passive: true });
 
 /* =====================================================================
-   6) MANOS → CURSORES
+   6) MANOS
    ===================================================================== */
 const curs = [0, 1].map(() => ({ x: 0, y: 0, visible: false, ultimo: 0, pinch: false, bajada: false, subida: false }));
 const cursorEls = [$('#cursor0'), $('#cursor1')];
@@ -1389,7 +1493,6 @@ function bajoCursor(px, py) {
   return { el: e.closest('[data-hover]'), scroll: e.closest('[data-scroll]'), track: !!e.closest('#track') };
 }
 const enEscenaLibre = (x, y) => { const i = bajoCursor(x, y); return !i.el && !i.scroll; };
-
 function actualizarCursorVisual(now, i, soloPosicion = false) {
   const c = curs[i], el = cursorEls[i], hs = hoverState[i];
   el.style.display = c.visible ? 'block' : 'none';
@@ -1466,10 +1569,7 @@ function aplicarPose(landmarks) {
   if (!landmarks) return;
   poseLm = landmarks;
   const p11 = landmarks[11], p12 = landmarks[12], p23 = landmarks[23], p24 = landmarks[24];
-  if (p11 && p12) {
-    poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
-    poseState.midY = H - (sy(p11.y) + sy(p12.y)) * 0.5;
-  }
+  if (p11 && p12) { poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5; poseState.midY = H - (sy(p11.y) + sy(p12.y)) * 0.5; }
   if (p11 && p12 && p23 && p24) {
     const hx = (sx(p23.x) + sx(p24.x)) * 0.5, hy = H - (sy(p23.y) + sy(p24.y)) * 0.5;
     poseState.torso = Math.hypot(poseState.midX - hx, poseState.midY - hy);
@@ -1487,9 +1587,7 @@ function aplicarPose(landmarks) {
     _v1.set(bx - ax, by - ay, 0);
     if (_v1.lengthSq() < 1e-8) continue;
     _v1.normalize();
-    hueso.getWorldPosition(_v2);
-    hijo.getWorldPosition(_v3);
-    _v3.sub(_v2);
+    hueso.getWorldPosition(_v2); hijo.getWorldPosition(_v3); _v3.sub(_v2);
     if (_v3.lengthSq() < 1e-10) continue;
     _v3.normalize();
     _qDelta.setFromUnitVectors(_v3, _v1);
@@ -1504,14 +1602,11 @@ function aplicarTransformacionesAnclaje(dt) {
   if (tipo !== 'hum' || !cfg) return;
   if (poseState.hasData) {
     const s = rig ? (poseState.torso > 10 ? poseState.torso / Math.max(rig.torso, 0.01) : null) : null;
-    const targetX = poseState.midX;
-    const targetY = poseState.midY + (cfg.dy || 0) * H;
+    const targetX = poseState.midX, targetY = poseState.midY + (cfg.dy || 0) * H;
     const targetS = s ?? (Math.min(W, H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
     if (!suave.init) { suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.init = true; }
     else { const k = Math.min(1, dt * 10); suave.x += (targetX - suave.x) * k; suave.y += (targetY - suave.y) * k; suave.s += (targetS - suave.s) * k; }
-  } else if (!suave.init) {
-    suave.x = W / 2; suave.y = H * 0.55; suave.s = (Math.min(W, H) * 0.28) / Math.max(rig?.torso || 0.3, 0.01); suave.init = true;
-  }
+  } else if (!suave.init) { suave.x = W / 2; suave.y = H * 0.55; suave.s = (Math.min(W, H) * 0.28) / Math.max(rig?.torso || 0.3, 0.01); suave.init = true; }
   anclaje.position.set(suave.x, suave.y, 0);
   anclaje.scale.setScalar(cfg.s * suave.s);
   anclaje.visible = true;
@@ -1541,10 +1636,7 @@ function loop() {
     ultimoHand = ahora;
   }
   if (video.readyState >= 2 && pose && ahora - ultimoPose > 50) {
-    try {
-      const r = pose.detectForVideo(video, ahora);
-      if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0]);
-    } catch (e) {}
+    try { const r = pose.detectForVideo(video, ahora); if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0]); } catch (e) {}
     ultimoPose = ahora;
   }
   actualizarCursores(ahora);
@@ -1642,7 +1734,7 @@ try { aplicarFondo(prefs.fondo || 'camara', false); } catch (e) { console.error(
 try { layout(); } catch (e) { console.error('layout:', e); }
 try { refrescarBotones(); } catch (e) { console.error('refrescarBotones:', e); }
 
-console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Hacé clic en "Iniciar cámara".', 'color:#ffb400;font-weight:bold');
+console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Los archivos inválidos se ocultan por defecto.', 'color:#ffb400;font-weight:bold');
 </script>
 </body>
 </html>
