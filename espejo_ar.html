@@ -97,6 +97,7 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
 <div id="pantalla">
@@ -159,7 +160,7 @@
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
       <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar).</p>
       <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide se ajusta a tu torso y copia tus movimientos; si no, aparece como objeto. 🧍 <i>Modo</i> permite forzar.</p>
-      <p>💡 Si un modelo tarda en cargar, podés clickear hasta 3 veces más para cancelarlo y cargar otro.</p>
+      <p>💡 Si un modelo tarda en cargar, podés clickear hasta 3 veces más para cancelarlo y cargar otro. Los .fbx que sean ZIPs renombrados se extraen automáticamente.</p>
       <p>👀 Alejate hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -684,7 +685,7 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS
+   2) MODELOS — con detección de ZIP y extracción
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
 function urlsModelo(nombre) {
@@ -694,6 +695,30 @@ function urlsModelo(nombre) {
     `https://media.githubusercontent.com/media/${REPO_GITHUB}/${RAMA}/modelos/${enc}`,
     `https://raw.githubusercontent.com/${REPO_GITHUB}/${RAMA}/modelos/${enc}`,
   ];
+}
+
+/** Detecta si los primeros bytes son de un ZIP (PK\x03\x04). */
+function esZip(buf) {
+  if (buf.byteLength < 4) return false;
+  const h = new Uint8Array(buf, 0, 4);
+  return h[0] === 0x50 && h[1] === 0x4B && h[2] === 0x03 && h[3] === 0x04;
+}
+
+/** Si el buffer es un ZIP, extrae el primer archivo .fbx o .glb que encuentre.
+ *  Si no hay ninguno, lanza un error claro. */
+async function extraerDeZip(buf, nombreOriginal) {
+  try {
+    const zip = await JSZip.loadAsync(buf);
+    const archivos = Object.keys(zip.files).filter(n => /\.(fbx|glb|gltf)$/i.test(n));
+    if (!archivos.length) throw new Error(`El ZIP no contiene FBX/GLB (contenido: ${Object.keys(zip.files).slice(0,5).join(', ')}…)`);
+    // Preferir FBX
+    const elegido = archivos.find(n => /\.fbx$/i.test(n)) || archivos[0];
+    console.log(`📦 Extrayendo "${elegido}" del ZIP de ${nombreOriginal}`);
+    const data = await zip.files[elegido].async('arraybuffer');
+    return { buf: data, nombre: elegido };
+  } catch (e) {
+    throw new Error(`No se pudo extraer el ZIP: ${e.message}`);
+  }
 }
 
 function abortErr() { const e = new Error('Carga cancelada'); e.name = 'AbortError'; return e; }
@@ -795,7 +820,6 @@ const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/es
 const iconoDe = n => (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
 const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
 
-// Info cache: solo guarda resultados de cargas EXITOSAS (para badges 🦴/🎬/📦)
 const INFO_KEY = 'espejoAR.info.v1';
 const infoCache = (() => { try { return JSON.parse(localStorage.getItem(INFO_KEY) || '{}'); } catch { return {}; } })();
 const guardarInfoCache = () => { try { localStorage.setItem(INFO_KEY, JSON.stringify(infoCache)); } catch {} };
@@ -845,8 +869,18 @@ async function cargarConParse(d, loader, esFBX, signal) {
   if (cache.has(d.src)) return cache.get(d.src);
   if (!d.archivo) throw new Error('Modelo sin nombre de archivo');
   console.log((esFBX ? '🔽 Cargando FBX: ' : '🔽 Cargando GLB: ') + d.archivo);
-  const buf = await descargarModelo(d.archivo, signal);
+  let buf = await descargarModelo(d.archivo, signal);
   if (signal?.aborted) throw abortErr();
+
+  // Detectar ZIP y extraer
+  if (esZip(buf)) {
+    console.log(`📦 ${d.archivo} es un ZIP, extrayendo contenido…`);
+    const extraido = await extraerDeZip(buf, d.archivo);
+    buf = extraido.buf;
+    esFBX = /\.fbx$/i.test(extraido.nombre);
+    console.log(`✅ Extraído "${extraido.nombre}" (${buf.byteLength} bytes), esFBX=${esFBX}`);
+  }
+
   setEstado(`⚙️ Procesando ${d.nombre}…`);
   return await new Promise((ok, fallo) => {
     const onLoad = obj => {
@@ -1106,7 +1140,6 @@ function construir(d, base) {
   }
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo; suave.init = false;
-  // Guardar info para badge
   if (d.archivo) {
     infoCache[d.archivo] = { tipo, anim: base.clips.length > 0, rig: !!(rig && !rig.rigido) };
     guardarInfoCache();
@@ -1608,7 +1641,7 @@ try { aplicarFondo(prefs.fondo || 'camara', false); } catch (e) { console.error(
 try { layout(); } catch (e) { console.error('layout:', e); }
 try { refrescarBotones(); } catch (e) { console.error('refrescarBotones:', e); }
 
-console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Hacé clic en "Iniciar cámara".', 'color:#ffb400;font-weight:bold');
+console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Los .fbx que sean ZIP se extraen automáticamente.', 'color:#ffb400;font-weight:bold');
 </script>
 </body>
 </html>
