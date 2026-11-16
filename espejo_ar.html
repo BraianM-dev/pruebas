@@ -167,7 +167,7 @@
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
       <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena (o tu personaje toma tu lugar).</p>
       <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide se ajusta a tu torso y copia tus movimientos; si no, aparece como objeto. 🧍 <i>Modo</i> permite forzar.</p>
-      <p>💡 <b>Los archivos se validan al entrar</b>. Los que no son FBX/GLB reales aparecen como <b>❌ inválidos</b> (no se descargan al clickear). Podés mostrar/ocultarlos con el botón <b>👁 Ver inválidos</b>.</p>
+      <p>💡 <b>Los archivos que no son FBX/GLB reales</b> (ej. .blend renombrado) se marcan con ❌ y se ocultan por defecto. Podés verlos con <b>👁 Ver inválidos</b>.</p>
       <p>👀 Alejate hasta que se vean hombros y cintura.</p>
       <button id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -187,7 +187,7 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker }
   from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 /* =====================================================================
-   MOTOR DE FONDOS (sin cambios)
+   MOTOR DE FONDOS
    ===================================================================== */
 const TAU = Math.PI * 2;
 function mulberry(a) {
@@ -600,7 +600,7 @@ const FONDOS = [
   { id: 'cristales',  nombre: 'Cueva de cristales',   ico: '💎' },
   { id: 'hielo',      nombre: 'Cueva helada',         ico: '❄️' },
   { id: 'volcan',     nombre: 'Foso de lava',         ico: '🌋' },
-  { id: 'codigo',     nombre: 'Código (runas)',       ico: '💻' },
+  { id: 'codigo',     nombre: 'Código (runas)', ico: '💻' },
   { id: 'castillo',   nombre: 'Castillo nocturno',    ico: '🏰' },
   { id: 'vacio',      nombre: 'Vacío negro',          ico: '⬛' },
 ];
@@ -689,10 +689,9 @@ function stageAViewport(px, py) {
 }
 
 /* =====================================================================
-   2) MODELOS — con pre-validación de headers
+   2) MODELOS — Validación segura sin Range header
    ===================================================================== */
 const esModelo = n => /\.(glb|gltf|fbx)$/i.test(n);
-
 function urlsModelo(nombre) {
   const enc = nombre.split('/').map(encodeURIComponent).join('/');
   return [
@@ -702,71 +701,87 @@ function urlsModelo(nombre) {
   ];
 }
 
-// ---- Cachés persistentes ----
-const VALID_KEY = 'espejoAR.valid.v1';
+// Caché v2 - ignora el v1 envenenado del intento anterior
+const VALID_KEY = 'espejoAR.valid.v2';
 const INFO_KEY = 'espejoAR.info.v1';
 const validCache = (() => { try { return JSON.parse(localStorage.getItem(VALID_KEY) || '{}'); } catch { return {}; } })();
 const infoCache = (() => { try { return JSON.parse(localStorage.getItem(INFO_KEY) || '{}'); } catch { return {}; } })();
 const guardarValidCache = () => { try { localStorage.setItem(VALID_KEY, JSON.stringify(validCache)); } catch {} };
 const guardarInfoCache = () => { try { localStorage.setItem(INFO_KEY, JSON.stringify(infoCache)); } catch {} };
 
-/** Clasifica los primeros 32 bytes como FBX/GLB válido o no. */
+/** Clasifica SOLO los primeros 32 bytes. Nunca decodifica el buffer completo. */
 function clasificarBytes(bytes, esFBX) {
-  const headText = new TextDecoder('latin1').decode(bytes);
-  if (bytes.length === 0) return { valido: false, motivo: 'Vacío' };
+  const head = (bytes || new Uint8Array(0)).slice(0, 32);
+  if (head.length < 4) return { valido: null, motivo: 'Sin datos suficientes' };
+  const headText = new TextDecoder('latin1').decode(head);
   if (esFBX) {
     if (headText.startsWith('Kaydara FBX Binary')) return { valido: true, tipo: 'fbx-bin' };
     if (headText.startsWith('PK')) return { valido: false, motivo: 'Es un ZIP (probablemente .blend renombrado)' };
     if (headText.startsWith('{')) return { valido: false, motivo: 'Es JSON, no FBX' };
-    if (headText.startsWith('<')) return { valido: false, motivo: 'Es XML/HTML, no FBX' };
+    if (headText.startsWith('<')) return { valido: false, motivo: 'Es HTML/XML, no FBX' };
     if (/^;[\s\S]{0,200}FBX[\s\S]{0,50}project file/i.test(headText)) return { valido: true, tipo: 'fbx-ascii' };
     if (/FBXHeaderExtension/i.test(headText)) return { valido: true, tipo: 'fbx-ascii' };
-    return { valido: false, motivo: 'Header no es FBX (¿corrupto?)' };
+    return { valido: null, motivo: 'Header no reconocido como FBX' };
   } else {
     if (headText.startsWith('glTF')) return { valido: true, tipo: 'glb' };
     if (headText.startsWith('{')) return { valido: true, tipo: 'gltf-json' };
     if (headText.startsWith('PK')) return { valido: false, motivo: 'Es ZIP, no GLB' };
     if (headText.startsWith('<')) return { valido: false, motivo: 'Es HTML/XML, no GLB' };
-    return { valido: false, motivo: 'Header no es GLB' };
+    return { valido: null, motivo: 'Header no reconocido como GLB' };
   }
 }
 
-/** Valida con una petición Range de solo 32 bytes. Cachea el resultado. */
+/** Valida descargando solo el primer chunk (sin Range header, sin preflight CORS).
+ *  - Éxito clasificable → { valido: true|false, motivo?, tipo?, size }
+ *  - Red/CORS falla en TODAS las URLs → null (indeterminado, NO se oculta)
+ */
 async function validarRemoto(nombre) {
-  if (validCache[nombre]) return validCache[nombre];
+  if (Object.prototype.hasOwnProperty.call(validCache, nombre)) return validCache[nombre];
   const esFBX = /\.fbx$/i.test(nombre);
   const urls = urlsModelo(nombre);
   for (const url of urls) {
     try {
-      const r = await fetch(url, { headers: { 'Range': 'bytes=0-31' } });
-      if (!r.ok && r.status !== 206) continue;
-      const buf = await r.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      const total = parseInt(r.headers.get('content-range')?.split('/')[1] || r.headers.get('content-length') || '0', 10);
-      const cls = clasificarBytes(bytes, esFBX);
-      const res = { ...cls, size: total || null };
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const total = parseInt(r.headers.get('content-length') || '0', 10) || null;
+      let headBytes;
+      if (r.body && typeof r.body.getReader === 'function') {
+        const reader = r.body.getReader();
+        try {
+          const { value } = await reader.read();
+          headBytes = value ? value.slice(0, 32) : new Uint8Array(0);
+        } finally {
+          try { await reader.cancel(); } catch {}
+        }
+      } else {
+        const buf = await r.arrayBuffer();
+        headBytes = new Uint8Array(buf).slice(0, 32);
+      }
+      const cls = clasificarBytes(headBytes, esFBX);
+      const res = { ...cls, size: total };
       validCache[nombre] = res;
       guardarValidCache();
       return res;
-    } catch {}
+    } catch (e) {
+      console.warn(`⚠️ ${nombre} via ${url.split('/')[2]}:`, e.message);
+    }
   }
-  const err = { valido: false, motivo: 'No accesible' };
-  validCache[nombre] = err;
+  // Todas las URLs fallaron - indeterminado, NO marcar como inválido
+  console.warn(`⚠️ ${nombre}: validación indeterminada (red/CORS). Se mostrará igual.`);
+  validCache[nombre] = null; // cacheado como null (no reintentar hasta refresh)
   guardarValidCache();
-  return err;
+  return null;
 }
 
-/** Valida todos los archivos en paralelo (concurrencia 4). */
 async function validarTodos(nombres) {
-  const pendientes = nombres.filter(n => !validCache[n]);
-  if (!pendientes.length) return;
+  const pendientes = nombres.filter(n => !Object.prototype.hasOwnProperty.call(validCache, n));
+  if (!pendientes.length) { poblarLista(ultimoNombres); return; }
   console.log(`🔍 Validando ${pendientes.length} archivos…`);
   setEstado(`🔍 Validando ${pendientes.length} archivos…`);
   let listos = 0;
-  const CONCURRENT = 4;
   const cola = [...pendientes];
   const runners = [];
-  for (let i = 0; i < CONCURRENT; i++) {
+  for (let i = 0; i < 4; i++) {
     runners.push((async () => {
       while (cola.length) {
         const n = cola.shift();
@@ -878,8 +893,8 @@ async function descubrirModelos(forzar = false) {
 const ICONOS = [[/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],[/dragon|dragón/i,'🐉'],[/cofre|chest/i,'📦'],
   [/diamante|gem|cristal/i,'💎'],[/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],[/desierto|desert/i,'🏜️'],
   [/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight|caballero/i,'⚔️'],[/casa|house|castillo|castle/i,'🏰']];
-function iconoDe(n, valid) {
-  if (valid && !valid.valido) return '❌';
+function iconoDe(n, v) {
+  if (v && v.valido === false) return '❌';
   return (ICONOS.find(([re]) => re.test(n)) || [null, '🧊'])[1];
 }
 const bonito = n => n.replace(/\.(glb|gltf|fbx)$/i, '').replace(/[_-]+/g, ' ');
@@ -897,25 +912,26 @@ function poblarLista(nombres) {
   const locales = defs.filter(d => d.local);
   const mostrarInv = prefs.mostrarInvalidos;
   const nuevos = nombres.map(n => {
-    const v = validCache[n];
+    const v = validCache[n]; // puede ser undefined (pendiente), null (indeterminado), o { valido:true|false,... }
     const nombre = bonito(n);
     const icono = iconoDe(n, v);
     let titulo = '';
-    if (v) {
-      if (!v.valido) titulo = `❌ ${v.motivo}`;
-      else {
-        const size = v.size ? `${(v.size/1048576).toFixed(1)} MB` : '';
-        const tipo = v.tipo ? v.tipo.toUpperCase() : '';
-        titulo = [tipo, size].filter(Boolean).join(' · ');
-      }
-    } else {
+    if (v === null) {
+      titulo = '⚠️ Validación indeterminada (red/CORS), se puede intentar cargar';
+    } else if (v === undefined) {
       titulo = '⏳ Validando…';
+    } else if (v.valido === false) {
+      titulo = `❌ ${v.motivo || 'Inválido'}`;
+    } else if (v.valido === true) {
+      const size = v.size ? `${(v.size/1048576).toFixed(1)} MB` : '';
+      const tipo = v.tipo ? v.tipo.toUpperCase() : '';
+      titulo = [tipo, size].filter(Boolean).join(' · ');
     }
-    const info = infoCache[n];
-    const badge = info ? infoIcono(n) : '';
-    return { nombre, icono, archivo: n, src: urlsModelo(n)[0], valido: v?.valido, motivo: v?.motivo, size: v?.size, titulo, badge };
+    const badge = infoCache[n] ? infoIcono(n) : '';
+    const valido = v === undefined ? undefined : v === null ? null : v.valido;
+    return { nombre, icono, archivo: n, src: urlsModelo(n)[0], valido, motivo: v?.motivo, size: v?.size, titulo, badge };
   });
-  // Filtrar inválidos si corresponde
+  // Filtro: solo ocultar los EXPLÍCITAMENTE inválidos (valido === false)
   const visibles = mostrarInv ? nuevos : nuevos.filter(d => d.valido !== false);
   defs = [...locales, ...visibles];
   lista.innerHTML = '';
@@ -923,15 +939,20 @@ function poblarLista(nombres) {
   if (def) defs.find(d => d.src === def.src)?.btn?.classList.add('activo');
   const totalValidos = nuevos.filter(d => d.valido === true).length;
   const totalInvalidos = nuevos.filter(d => d.valido === false).length;
-  const pendientes = nuevos.filter(d => !d.valido && d.valido !== false).length;
-  $('#titulo').firstElementChild.textContent = `📂 (${totalValidos}✓${totalInvalidos ? ` / ${totalInvalidos}✗` : ''}${pendientes ? ` / ${pendientes}⏳` : ''})`;
+  const pendientes = nuevos.filter(d => d.valido === undefined).length;
+  const indeterminados = nuevos.filter(d => d.valido === null).length;
+  let partes = [`${totalValidos}✓`];
+  if (totalInvalidos) partes.push(`${totalInvalidos}✗`);
+  if (pendientes) partes.push(`${pendientes}⏳`);
+  if (indeterminados) partes.push(`${indeterminados}?`);
+  $('#titulo').firstElementChild.textContent = `📂 (${partes.join(' / ')})`;
   actualizarThumb();
 }
 async function sincronizar(forzar = false) {
   const n = await descubrirModelos(forzar);
   const firma = n.join('|');
   if (firma !== ultimaFirma || forzar) { ultimaFirma = firma; poblarLista(n); }
-  validarTodos(n); // sin await, corre en background
+  validarTodos(n); // corre en background, sin await
   return n.length;
 }
 function agregarItem(d, alPrincipio = false) {
@@ -939,7 +960,7 @@ function agregarItem(d, alPrincipio = false) {
   b.className = 'btn item';
   b.dataset.hover = ''; b.dataset.nodwell = '';
   if (d.valido === false) b.classList.add('invalido');
-  if (!d.valido && d.valido !== false && validCache[d.archivo] === undefined) b.classList.add('validando');
+  if (d.valido === undefined) b.classList.add('validando');
   if (d.titulo) b.title = d.titulo;
   const badgeHtml = d.badge ? `<span class="badge">${d.badge}</span>` : '';
   b.innerHTML = `<span class="ico">${d.icono}</span><span class="n">${d.nombre}</span>${badgeHtml}`;
@@ -1139,7 +1160,7 @@ function limpiarModelo() {
 function sincronizarSeg() {}
 
 async function seleccionar(d, btn) {
-  // Bloquear inválidos
+  // Solo bloquear los explícitamente inválidos
   if (d && d.valido === false) {
     setEstado(`❌ ${d.nombre}: ${d.motivo || 'archivo inválido'}\nNo se descarga.`);
     return;
@@ -1219,16 +1240,14 @@ function construir(d, base) {
   }
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo; suave.init = false;
-  // Guardar info aprendida para badge
   if (d.archivo) {
     infoCache[d.archivo] = { tipo, anim: base.clips.length > 0, rig: !!(rig && !rig.rigido) };
     guardarInfoCache();
-    // Actualizar badge en la lista
     const item = d.btn;
     if (item) {
       const oldBadge = item.querySelector('.badge');
       if (oldBadge) oldBadge.remove();
-      const badge = infoCache[d.archivo] ? infoIcono(d.archivo) : '';
+      const badge = infoIcono(d.archivo);
       if (badge) {
         const span = document.createElement('span'); span.className = 'badge'; span.textContent = badge;
         item.appendChild(span);
@@ -1390,7 +1409,7 @@ addEventListener('keydown', e => {
 $('#quitar').addEventListener('click', () => seleccionar(null));
 $('#refrescar').addEventListener('click', async () => {
   setEstado('Sincronizando…');
-  // Forzar revalidación limpiando el cache de validación
+  // Limpiar caché de validación para forzar re-validación
   Object.keys(validCache).forEach(k => delete validCache[k]);
   guardarValidCache();
   setEstado(`Lista: ${await sincronizar(true)} modelos`);
@@ -1415,7 +1434,7 @@ function actualizarThumb() {
 lista.addEventListener('scroll', actualizarThumb);
 
 /* =====================================================================
-   5) ENTRADA
+   5) ENTRADA UNIFICADA
    ===================================================================== */
 const crearPuntero = () => ({ activo: false, modo: null, el: null, fuente: null, sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false, scroll0: 0, enTrack: false, ultRep: 0, repetido: false });
 const ptrM = crearPuntero(), ptrs = [crearPuntero(), crearPuntero()];
@@ -1734,7 +1753,7 @@ try { aplicarFondo(prefs.fondo || 'camara', false); } catch (e) { console.error(
 try { layout(); } catch (e) { console.error('layout:', e); }
 try { refrescarBotones(); } catch (e) { console.error('refrescarBotones:', e); }
 
-console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Los archivos inválidos se ocultan por defecto.', 'color:#ffb400;font-weight:bold');
+console.log('%cEspejo AR PRO listo. Formatos: .glb .gltf .fbx. Hacé clic en "Iniciar cámara".', 'color:#ffb400;font-weight:bold');
 </script>
 </body>
 </html>
