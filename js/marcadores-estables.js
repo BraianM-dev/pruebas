@@ -32,6 +32,16 @@
         if (!this.isReady || !this._arAnchor) return tickOriginal.apply(this, arguments);
         const el = this.el;
 
+        // Umbral automático (Otsu): AR.js trae el umbral FIJO en 100 y con
+        // poca luz o el papel inclinado el negro se ve gris y no lo lee.
+        // Medido con cámara: un código pasó de leerse en el 7 % de los
+        // cuadros al 100 %, sin bajar la velocidad (el "adaptativo" la baja a la mitad).
+        const ctx = this._arAnchor.arSession && this._arAnchor.arSession.arContext;
+        if (ctx && ctx.arController && !ctx._umbralAutomatico) {
+            ctx.arController.setThresholdMode(2);   // 2 = AR_LABELING_THRESH_MODE_AUTO_OTSU
+            ctx._umbralAutomatico = true;
+        }
+
         // El tick original avisa markerFound/markerLost cada vez que el
         // código aparece o se pierde un cuadro: lo silenciamos y avisamos
         // nosotros solo cuando el modelo de verdad aparece o se va.
