@@ -15,6 +15,8 @@
     <!-- Requerido para que el gif funcione -->
     <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
     <!-- Nuestros propios archivos -->
+    <!-- Varias copias del mismo marcador a la vez (árboles del código 8) -->
+    <script src="js/multi-marcador.js"></script>
     <link rel="stylesheet" href="css/estilos.css">
     <!-- <script src="js/conexion.js" defer></script> -->
     <script src="js/utilidades.js" defer></script>
@@ -52,6 +54,8 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
+            <img id="arbol3" src="modelos/arbol3.png">
+            <img id="arbol4" src="modelos/arbol4.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
@@ -192,51 +196,42 @@
                 height="2">
             </a-video>
         </a-marker>  
-        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8 Árboles -->
-        <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
-        <!-- Árbol 1 -->
-        <a-entity position="-0.8 0 -0.3">        
-            <a-plane
-                src="#arbol1"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.65 0"
-                rotation="0 45 0">
-            </a-plane>
-            <a-plane
-                src="#arbol1"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.65 0"
-                rotation="0 -45 0">
-            </a-plane>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8: ÁRBOLES
+             Se pueden poner VARIAS copias impresas del código 8 a la vez.
+             Cada copia muestra UN árbol centrado, girando sobre sí mismo:
+               1 copia -> árbol A · 2 copias -> A y B · 3 -> A, B y C · 4 -> A, B, C y D
+             Para agregar más árboles: copiar un bloque "Árbol" y cambiar la imagen.
+             (lo maneja js/multi-marcador.js) -->
+        <a-entity id="Barcode_8" multi-marcador="valor: 8" registerevents>
+            <!-- Árbol A -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol B -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol C (otoño) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol D (cerezo) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
         </a-entity>
-        <!-- Árbol 2 -->
-        <a-entity position="0.9 0 0.5">
-            <a-plane
-                src="#arbol2"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.55 0"
-                rotation="0 45 0">
-            </a-plane>
-            <a-plane
-                src="#arbol2"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.55 0"
-                rotation="0 -45 0">
-            </a-plane>     
-        </a-entity>
-        </a-marker>
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 9 -->
         <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity
