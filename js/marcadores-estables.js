@@ -65,17 +65,71 @@
         this._mostrado = mostrar;
     };
 
-    // --- la barrita ---
+    // --- cámara elegida (si la PC tiene varias) ---
+    // AR.js acepta "deviceId" en <a-scene arjs="...">: le pasamos la que
+    // se eligió en el selector, guardada en este navegador.
+    let camaraGuardada = null;
+    try { camaraGuardada = localStorage.getItem('camaraAR'); } catch (e) { /* sin localStorage */ }
+    const SistemaAR = AFRAME.systems.arjs;
+    if (SistemaAR && camaraGuardada) {
+        const initOriginal = SistemaAR.prototype.init;
+        SistemaAR.prototype.init = function () {
+            this.data.deviceId = camaraGuardada;
+            return initOriginal.apply(this, arguments);
+        };
+    }
+    // Si la cámara guardada ya no está enchufada, volvemos a la de siempre
+    window.addEventListener('camera-error', function () {
+        if (!camaraGuardada) return;
+        try { localStorage.removeItem('camaraAR'); } catch (e) { /* nada */ }
+        location.reload();
+    });
+
+    function llenarCamaras(select) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+        navigator.mediaDevices.enumerateDevices().then(function (lista) {
+            const camaras = lista.filter(function (d) { return d.kind === 'videoinput'; });
+            // el <video> de la cámara es el que trae imagen en vivo (srcObject);
+            // la escena tiene otros <video> de ejemplo en <a-assets>
+            const video = Array.from(document.querySelectorAll('video')).find(function (v) { return v.srcObject; });
+            const pista = video && video.srcObject.getVideoTracks()[0];
+            const enUso = pista && pista.getSettings().deviceId;
+            select.innerHTML = '';
+            camaras.forEach(function (d, i) {
+                const op = document.createElement('option');
+                op.value = d.deviceId;
+                op.textContent = d.label || ('Cámara ' + (i + 1));
+                if (d.deviceId === enUso) op.selected = true;
+                select.appendChild(op);
+            });
+            select.parentElement.style.display = camaras.length > 1 ? 'flex' : 'none';
+        });
+    }
+
+    // --- controles: cámara + barrita de tamaño ---
     function crearBarrita() {
         const caja = document.createElement('div');
         caja.id = 'barra-tamano';
         caja.style.cssText = 'position:fixed;right:12px;bottom:64px;z-index:20;background:rgba(20,20,30,.85);' +
             'color:#fff;font:13px "Segoe UI",sans-serif;padding:8px 12px;border-radius:10px;display:flex;' +
-            'align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.4)';
-        caja.innerHTML = '<label for="escala-ar">Tamaño</label>' +
+            'flex-direction:column;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:calc(100vw - 24px)';
+        caja.innerHTML =
+            '<div style="display:none;align-items:center;gap:8px"><label for="camara-ar">Cámara</label>' +
+            '<select id="camara-ar" style="flex:1;min-width:0;max-width:220px;font:inherit"></select></div>' +
+            '<div style="display:flex;align-items:center;gap:8px"><label for="escala-ar">Tamaño</label>' +
             '<input id="escala-ar" type="range" min="' + ESCALA_MIN + '" max="' + ESCALA_MAX + '" step="0.05" style="width:140px">' +
-            '<span id="escala-ar-valor" style="min-width:38px;text-align:right"></span>';
+            '<span id="escala-ar-valor" style="min-width:38px;text-align:right"></span></div>';
         document.body.appendChild(caja);
+
+        const selectCamara = caja.querySelector('#camara-ar');
+        selectCamara.addEventListener('change', function () {
+            try { localStorage.setItem('camaraAR', selectCamara.value); } catch (e) { /* no se recuerda */ }
+            location.reload();
+        });
+        // Los nombres de las cámaras aparecen recién cuando el navegador da permiso
+        window.addEventListener('camera-init', function () { setTimeout(function () { llenarCamaras(selectCamara); }, 500); });
+        if (navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange', function () { llenarCamaras(selectCamara); });
+        llenarCamaras(selectCamara);
 
         const barra = caja.querySelector('#escala-ar');
         const valor = caja.querySelector('#escala-ar-valor');
