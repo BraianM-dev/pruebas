@@ -15,6 +15,12 @@
     <!-- Requerido para que el gif funcione -->
     <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
     <!-- Nuestros propios archivos -->
+    <!-- Varias copias del mismo marcador a la vez (árboles del código 8) -->
+    <script src="js/multi-marcador.js"></script>
+    <!-- Modelos sin parpadeo (medio segundo de margen) + barrita de tamaño general -->
+    <script src="js/marcadores-estables.js"></script>
+    <!-- Click derecho: los personajes caminan; si quedan cara a cara, pelean -->
+    <script src="js/acciones.js"></script>
     <link rel="stylesheet" href="css/estilos.css">
     <!-- <script src="js/conexion.js" defer></script> -->
     <script src="js/utilidades.js" defer></script>
@@ -52,6 +58,8 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
+            <img id="arbol3" src="modelos/arbol3.png">
+            <img id="arbol4" src="modelos/arbol4.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
@@ -192,51 +200,42 @@
                 height="2">
             </a-video>
         </a-marker>  
-        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8 Árboles -->
-        <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
-        <!-- Árbol 1 -->
-        <a-entity position="-0.8 0 -0.3">        
-            <a-plane
-                src="#arbol1"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.65 0"
-                rotation="0 45 0">
-            </a-plane>
-            <a-plane
-                src="#arbol1"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.65 0"
-                rotation="0 -45 0">
-            </a-plane>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8: ÁRBOLES
+             Se pueden poner VARIAS copias impresas del código 8 a la vez.
+             Cada copia muestra UN árbol centrado, girando sobre sí mismo:
+               1 copia -> árbol A · 2 copias -> A y B · 3 -> A, B y C · 4 -> A, B, C y D
+             Para agregar más árboles: copiar un bloque "Árbol" y cambiar la imagen.
+             (lo maneja js/multi-marcador.js) -->
+        <a-entity id="Barcode_8" multi-marcador="valor: 8" registerevents>
+            <!-- Árbol A -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol B -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol C (otoño) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol D (cerezo) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
         </a-entity>
-        <!-- Árbol 2 -->
-        <a-entity position="0.9 0 0.5">
-            <a-plane
-                src="#arbol2"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.55 0"
-                rotation="0 45 0">
-            </a-plane>
-            <a-plane
-                src="#arbol2"
-                transparent="true"
-                alpha-test="0.5"
-                width="3"
-                height="3"
-                position="0 0.55 0"
-                rotation="0 -45 0">
-            </a-plane>     
-        </a-entity>
-        </a-marker>
         <!-- Marcador barcode 4x4 BCH 13,5,5, valor 9 -->
         <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity
@@ -285,7 +284,91 @@
                 animation-mixer="clip: *; loop: repeat">
             </a-entity>
         </a-marker> -->
-        <a-entity camera></a-entity>
+
+        <!-- ====== MODELOS KAYKIT (marcadores 12 a 31) ======
+             Pack gratuito de Kay Lousberg (CC0), todos del mismo estilo.
+             Archivos en modelos/kaykit/. Los personajes tienen su animación "Idle". -->
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 12: Caballero -->
+        <a-marker type="barcode" value="12" id="Barcode_12" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/caballero.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 13: Bárbaro -->
+        <a-marker type="barcode" value="13" id="Barcode_13" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/barbaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 14: Mago -->
+        <a-marker type="barcode" value="14" id="Barcode_14" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" data-hechizos="bola-de-fuego" gltf-model="url(modelos/kaykit/mago.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 15: Pícaro -->
+        <a-marker type="barcode" value="15" id="Barcode_15" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/picaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 16: Encapuchado -->
+        <a-marker type="barcode" value="16" id="Barcode_16" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/encapuchado.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 17: Esqueleto guerrero -->
+        <a-marker type="barcode" value="17" id="Barcode_17" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_guerrero.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 18: Esqueleto mago -->
+        <a-marker type="barcode" value="18" id="Barcode_18" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_mago.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 19: Esqueleto pícaro -->
+        <a-marker type="barcode" value="19" id="Barcode_19" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_picaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 20: Esqueleto esbirro -->
+        <a-marker type="barcode" value="20" id="Barcode_20" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_esbirro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 21: Cofre -->
+        <a-marker type="barcode" value="21" id="Barcode_21" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/cofre.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 22: Ataúd -->
+        <a-marker type="barcode" value="22" id="Barcode_22" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/ataud.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 23: Barril -->
+        <a-marker type="barcode" value="23" id="Barcode_23" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/barril.glb)" position="0 0 0" rotation="0 0 0" scale="0.45 0.45 0.45"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 24: Antorcha -->
+        <a-marker type="barcode" value="24" id="Barcode_24" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/antorcha.glb)" position="0 0.52 0" rotation="0 0 0" scale="1.3 1.3 1.3"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 25: Monedas -->
+        <a-marker type="barcode" value="25" id="Barcode_25" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/monedas.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 26: Espada y escudo -->
+        <a-marker type="barcode" value="26" id="Barcode_26" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/espada_escudo.glb)" position="0 0.58 0" rotation="0 0 0" scale="0.7 0.7 0.7"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 27: Llave -->
+        <a-marker type="barcode" value="27" id="Barcode_27" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/llave.glb)" position="0 0.3 0" rotation="0 0 0" scale="1.5 1.5 1.5"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 28: Árbol -->
+        <a-marker type="barcode" value="28" id="Barcode_28" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/arbol.glb)" position="0 0 0" rotation="0 0 0" scale="1.4 1.4 1.4"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 29: Pino de otoño -->
+        <a-marker type="barcode" value="29" id="Barcode_29" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/pino_otono.glb)" position="0 0 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 30: Árbol seco -->
+        <a-marker type="barcode" value="30" id="Barcode_30" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/arbol_seco.glb)" position="0 0 0" rotation="0 0 0" scale="0.35 0.35 0.35"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 31: Tumba -->
+        <a-marker type="barcode" value="31" id="Barcode_31" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/tumba.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+        </a-marker>
+        <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false" position="0 0 0"></a-entity>
     </a-scene>
     <script>
 document.addEventListener("click", () => {
