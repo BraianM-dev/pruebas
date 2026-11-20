@@ -1,20 +1,29 @@
 // js/marcadores-estables.js
 // ------------------------------------------------------------------
-// 1) MARCADORES ESTABLES
-//    AR.js esconde el modelo en el mismo cuadro en que no lee el código,
-//    y un código lejos o inclinado se lee en un cuadro sí y en otro no:
-//    por eso los modelos parpadean. Acá cada modelo se queda quieto en su
-//    último lugar durante MANTENER_MS antes de esconderse.
-//    (Los modelos NO tapan los códigos: AR.js lee la imagen de la cámara,
-//    no lo que se dibuja encima.)
+// 1) VARIAS COPIAS DE CUALQUIER CÓDIGO + SIN PARPADEO
+//    AR.js ubica un solo modelo por número: con dos esbirros impresos,
+//    el único esbirro salta de un código al otro. Acá seguimos nosotros
+//    TODAS las copias de cada código barcode:
+//      - la 1ra copia mueve el <a-marker> original (el DM lo sigue usando igual)
+//      - la 2da, 3ra y 4ta muestran un clon de su contenido
+//    Cada copia conserva su lugar aunque se muevan, y si un cuadro no se
+//    lee, el modelo se queda quieto MANTENER_MS antes de esconderse
+//    (antes parpadeaba). Los modelos NO tapan los códigos: AR.js lee la
+//    imagen de la cámara, no lo que se dibuja encima.
+//    (El código 8 de los árboles lo maneja multi-marcador.js: ahí cada
+//    copia muestra un árbol DISTINTO.)
 //
-// 2) TAMAÑO GENERAL
-//    Una barrita abajo a la derecha agranda o achica todo lo que se
-//    dibuja sobre los marcadores. Se recuerda en este navegador.
+// 2) TAMAÑO GENERAL: barrita abajo a la derecha (se recuerda).
+// 3) CÁMARA: selector si la PC tiene varias (se recuerda).
+// 4) UMBRAL AUTOMÁTICO y PROFUNDIDAD DE LA CÁMARA 3D (ver más abajo).
 // ------------------------------------------------------------------
 
 (function () {
-    const MANTENER_MS = 500;
+    const MANTENER_MS = 500;    // cuánto aguanta un modelo cuando su código no se lee
+    const MAX_COPIAS = 4;       // copias del mismo código a la vez
+    const DISTANCIA = 1.5;      // cuánto puede moverse una copia entre cuadros (en anchos de código)
+    const SUAVIZADO = 0.5;      // 0 = sin suavizar
+    const CONFIANZA = 0.6;      // igual que AR.js
     const ESCALA_MIN = 0.3, ESCALA_MAX = 2.5;
 
     // --- tamaño general (lo usa también multi-marcador.js) ---
@@ -39,34 +48,198 @@
         m[14] = PROF_B;
         camara.projectionMatrixInverse.copy(camara.projectionMatrix).invert();
     }
-    // AR.js vuelve a copiar la cámara en CADA cuadro (onResize dentro del tick
-    // de su sistema): corregimos justo después de esa copia.
+
+    // =================================================================
+    // SEGUIMIENTO PROPIO DE LOS CÓDIGOS BARCODE
+    // =================================================================
+    const seg = {
+        ctrl: null,
+        ctx: null,
+        detecciones: {},   // valor -> [{pos, quat}] del último cuadro procesado
+        marcadores: {},    // valor -> { el, pistas, copias, sucio, habia }
+        porElemento: new Map()
+    };
+    const rotX = new THREE.Matrix4().makeRotationX(Math.PI / 2);
+
+    function conectar(sceneEl) {
+        const sys = sceneEl.systems.arjs;
+        const ctx = sys && sys._arSession && sys._arSession.arContext;
+        if (!ctx || !ctx.arController) return;
+        seg.ctx = ctx;
+        seg.ctrl = ctx.arController;
+
+        // Umbral automático (Otsu): AR.js trae el umbral FIJO en 100 y con
+        // poca luz o el papel inclinado el negro se ve gris y no lo lee.
+        // Medido con cámara: un código pasó de leerse en el 7 % de los
+        // cuadros al 100 %, sin bajar la velocidad (el "adaptativo" la baja a la mitad).
+        seg.ctrl.setThresholdMode(2);   // 2 = AR_LABELING_THRESH_MODE_AUTO_OTSU
+
+        sceneEl.querySelectorAll('a-marker').forEach(function (el) {
+            const anchor = el.components['arjs-anchor'];
+            if (!anchor || anchor.data.type !== 'barcode') return;
+            const m = { el: el, valor: anchor.data.barcodeValue, pistas: [], copias: [], habia: false };
+            seg.marcadores[m.valor] = m;
+            seg.porElemento.set(el, m);
+        });
+        envolverDM();
+
+        seg.ctrl.addEventListener('getMarker', function (ev) {
+            const d = ev.data;
+            if (d.type !== 1) return;                                   // 1 = BARCODE_MARKER
+            if (!seg.marcadores[d.marker.idMatrix]) return;
+            if (d.marker.cfMatrix < CONFIANZA) return;
+            // Misma cuenta que hace AR.js para ubicar un <a-marker>
+            const mat = new THREE.Matrix4().copy(seg.ctx._artoolkitProjectionAxisTransformMatrix);
+            mat.multiply(new THREE.Matrix4().fromArray(d.matrix));
+            mat.multiply(rotX);
+            const pos = new THREE.Vector3(), quat = new THREE.Quaternion(), esc = new THREE.Vector3();
+            mat.decompose(pos, quat, esc);
+            (seg.detecciones[d.marker.idMatrix] = seg.detecciones[d.marker.idMatrix] || []).push({ pos: pos, quat: quat });
+        });
+    }
+
+    // Copia = entidad suelta en la escena con un clon de lo que tiene el <a-marker>
+    // El HTML original del <a-marker> (como está escrito en index.html)
+    function clonarContenido(m, destino) {
+        Array.from(m.el.children).forEach(function (hijo) {
+            if (hijo.classList.contains('stats-slot')) return;   // las stats las pone el DM (ver abajo)
+            const c = hijo.cloneNode(true);
+            c.removeAttribute('id');
+            c.querySelectorAll('[id]').forEach(function (x) { x.removeAttribute('id'); });
+            destino.appendChild(c);
+        });
+    }
+    function crearCopia(m) {
+        const copia = document.createElement('a-entity');
+        copia.className = 'copia-marcador';
+        copia.setAttribute('data-copia-de', m.el.id);
+        copia.setAttribute('visible', 'false');
+        clonarContenido(m, copia);
+        m.el.sceneEl.appendChild(copia);
+        aplicarLoDelDM(m, copia);
+        return copia;
+    }
+
+    // --- lo que el DM le cambia a un código, también a sus copias ---
+    // A-Frame no deja en el HTML el modelo que puso el DM (el atributo queda
+    // vacío), así que no alcanza con clonar: repetimos sobre cada copia las
+    // mismas funciones de Utilidades que usó el DM.
+    const FUNCIONES_DM = ['asignarModelo', 'asignarStats', 'limpiarStats', 'mostrarModelo'];
+    function enCopia(copia, fn, args) {
+        const buscar = Utilidades.markerElPorSlot;
+        Utilidades.markerElPorSlot = function () { return copia; };
+        try { fn.apply(Utilidades, args); } finally { Utilidades.markerElPorSlot = buscar; }
+    }
+    function envolverDM() {
+        if (!window.Utilidades || Utilidades._copiasEnvueltas) return;
+        Utilidades._copiasEnvueltas = true;
+        FUNCIONES_DM.forEach(function (nombre) {
+            const original = Utilidades[nombre];
+            if (typeof original !== 'function') return;
+            Utilidades['_' + nombre + 'Original'] = original;
+            Utilidades[nombre] = function (slot) {
+                const r = original.apply(this, arguments);
+                const m = seg.marcadores[slot];
+                const args = arguments;
+                if (m) m.copias.forEach(function (c) { if (c) enCopia(c, original, args); });
+                return r;
+            };
+        });
+    }
+    function aplicarLoDelDM(m, copia) {
+        if (!window.Utilidades || !Utilidades._copiasEnvueltas) return;
+        const slot = String(m.valor);
+        if (Utilidades.modelosAsignados[slot]) enCopia(copia, Utilidades._asignarModeloOriginal, [slot, Utilidades.modelosAsignados[slot]]);
+        if (Utilidades.statsAsignadas[slot]) enCopia(copia, Utilidades._asignarStatsOriginal, [slot, Utilidades.statsAsignadas[slot]]);
+    }
+
+    function ponerEn(obj3d, pista) {
+        if (!pista) { obj3d.visible = false; return; }
+        obj3d.position.copy(pista.pos);
+        obj3d.quaternion.copy(pista.quat);
+        obj3d.scale.setScalar(window.escalaAR);
+        obj3d.visible = true;
+    }
+    // slot 0 = el <a-marker> original; slot 1..3 = copias
+    function aplicar(m) {
+        const porSlot = [];
+        m.pistas.forEach(function (p) { porSlot[p.slot] = p; });
+        ponerEn(m.el.object3D, porSlot[0]);
+        for (let k = 1; k < MAX_COPIAS; k++) {
+            if (!porSlot[k] && !m.copias[k]) continue;
+            if (!m.copias[k]) m.copias[k] = crearCopia(m);
+            ponerEn(m.copias[k].object3D, porSlot[k]);
+        }
+    }
+
+    function actualizar() {
+        const ahora = performance.now();
+        Object.keys(seg.marcadores).forEach(function (v) {
+            const m = seg.marcadores[v];
+            const dets = seg.detecciones[v] || [];
+
+            // 1) Emparejar cada detección con la copia que ya veníamos siguiendo más cerca
+            const pares = [];
+            m.pistas.forEach(function (p, i) {
+                dets.forEach(function (d, j) { pares.push({ i: i, j: j, dist: p.pos.distanceTo(d.pos) }); });
+            });
+            pares.sort(function (a, b) { return a.dist - b.dist; });
+            const pistaUsada = {}, detUsada = {};
+            pares.forEach(function (par) {
+                if (pistaUsada[par.i] || detUsada[par.j] || par.dist > DISTANCIA) return;
+                pistaUsada[par.i] = detUsada[par.j] = true;
+                const p = m.pistas[par.i], d = dets[par.j];
+                p.pos.lerp(d.pos, 1 - SUAVIZADO);
+                p.quat.slerp(d.quat, 1 - SUAVIZADO);
+                p.visto = ahora;
+            });
+
+            // 2) Detecciones nuevas: toman el primer lugar libre (original, copia 1, 2, 3)
+            dets.forEach(function (d, j) {
+                if (detUsada[j]) return;
+                const ocupados = m.pistas.map(function (p) { return p.slot; });
+                let slot = 0;
+                while (ocupados.indexOf(slot) !== -1) slot++;
+                if (slot >= MAX_COPIAS) return;
+                m.pistas.push({ slot: slot, pos: d.pos.clone(), quat: d.quat.clone(), visto: ahora });
+            });
+
+            // 3) Las que hace rato no se leen, se liberan
+            m.pistas = m.pistas.filter(function (p) { return ahora - p.visto <= MANTENER_MS; });
+
+            aplicar(m);
+
+            // 4) Avisar al DM solo cuando aparece la primera copia o se va la última
+            const hay = m.pistas.length > 0;
+            if (hay && !m.habia) m.el.emit('markerFound');
+            if (!hay && m.habia) m.el.emit('markerLost');
+            m.habia = hay;
+        });
+        seg.detecciones = {};
+    }
+
+    // AR.js procesa la cámara (y vuelve a copiar la cámara 3D) en el tick de su
+    // sistema: justo después actualizamos el seguimiento y la profundidad.
     if (AFRAME.systems.arjs) {
         const tickSistema = AFRAME.systems.arjs.prototype.tick;
         AFRAME.systems.arjs.prototype.tick = function () {
             const r = tickSistema.apply(this, arguments);
             arreglarProfundidad(this.el.camera);
+            if (this.isReady) {
+                if (!seg.ctrl) conectar(this.el);
+                else actualizar();
+            }
             return r;
         };
     }
 
-    // --- marcadores estables: envolvemos el tick de AR.js ---
+    // --- el tick de cada <a-marker> de AR.js ---
     const Anchor = AFRAME.components['arjs-anchor'].Component;
     const tickOriginal = Anchor.prototype.tick;
 
     Anchor.prototype.tick = function () {
         if (!this.isReady || !this._arAnchor) return tickOriginal.apply(this, arguments);
         const el = this.el;
-
-        // Umbral automático (Otsu): AR.js trae el umbral FIJO en 100 y con
-        // poca luz o el papel inclinado el negro se ve gris y no lo lee.
-        // Medido con cámara: un código pasó de leerse en el 7 % de los
-        // cuadros al 100 %, sin bajar la velocidad (el "adaptativo" la baja a la mitad).
-        const ctx = this._arAnchor.arSession && this._arAnchor.arSession.arContext;
-        if (ctx && ctx.arController && !ctx._umbralAutomatico) {
-            ctx.arController.setThresholdMode(2);   // 2 = AR_LABELING_THRESH_MODE_AUTO_OTSU
-            ctx._umbralAutomatico = true;
-        }
 
         // El tick original avisa markerFound/markerLost cada vez que el
         // código aparece o se pierde un cuadro: lo silenciamos y avisamos
@@ -78,20 +251,24 @@
         };
         try { tickOriginal.apply(this, arguments); } finally { delete el.emit; }
 
+        // Códigos barcode: manda nuestro seguimiento (pisa lo que puso AR.js)
+        const m = seg.porElemento.get(el);
+        if (m) { aplicar(m); return; }
+
+        // Hiro / Kanji (patrones): solo el margen anti-parpadeo
         const ahora = performance.now();
         if (this._arAnchor.object3d.visible) this._ultimoVisto = ahora;
         const mostrar = !!this._ultimoVisto && (ahora - this._ultimoVisto) < MANTENER_MS;
-
-        // Si no se ve, AR.js deja la última posición: el modelo queda ahí quieto
         el.object3D.visible = mostrar;
         el.object3D.scale.multiplyScalar(window.escalaAR);
-
         if (mostrar && !this._mostrado) el.emit('markerFound');
         if (!mostrar && this._mostrado) el.emit('markerLost');
         this._mostrado = mostrar;
     };
 
-    // --- cámara elegida (si la PC tiene varias) ---
+    // =================================================================
+    // CÁMARA ELEGIDA (si la PC tiene varias)
+    // =================================================================
     // AR.js acepta "deviceId" en <a-scene arjs="...">: le pasamos la que
     // se eligió en el selector, guardada en este navegador.
     let camaraGuardada = null;
