@@ -92,6 +92,8 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
+            <img id="arbol3" src="modelos/arbol3.png">
+            <img id="arbol4" src="modelos/arbol4.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
@@ -263,18 +265,18 @@
                     <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
-            <!-- Árbol C -->
+            <!-- Árbol C (otoño) -->
             <a-entity>
                 <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
-                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
-            <!-- Árbol D -->
+            <!-- Árbol D (cerezo) -->
             <a-entity>
                 <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
-                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
         </a-entity>
