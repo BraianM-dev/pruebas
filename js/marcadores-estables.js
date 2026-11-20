@@ -24,6 +24,32 @@
         if (guardada >= ESCALA_MIN && guardada <= ESCALA_MAX) window.escalaAR = guardada;
     } catch (e) { /* sin localStorage: queda en 1 */ }
 
+    // --- profundidad de la cámara 3D ---
+    // AR.js arma la cámara con un rango de 0,0001 a 1000 (diez millones a uno):
+    // la tarjeta de video no distingue qué cara del modelo está adelante y las
+    // superficies cercanas (capa, cuerpo, arma) parpadean como "ruido".
+    // Lo dejamos en 0,1 a 200 (un código mide 1; la cámara suele estar a ~10).
+    const CERCA = 0.1, LEJOS = 200;
+    const PROF_A = -(LEJOS + CERCA) / (LEJOS - CERCA), PROF_B = -2 * LEJOS * CERCA / (LEJOS - CERCA);
+    function arreglarProfundidad(camara) {
+        if (!camara) return;
+        const m = camara.projectionMatrix.elements;
+        if (m[11] !== -1 || (m[10] === PROF_A && m[14] === PROF_B)) return;   // ya está, o no es perspectiva
+        m[10] = PROF_A;
+        m[14] = PROF_B;
+        camara.projectionMatrixInverse.copy(camara.projectionMatrix).invert();
+    }
+    // AR.js vuelve a copiar la cámara en CADA cuadro (onResize dentro del tick
+    // de su sistema): corregimos justo después de esa copia.
+    if (AFRAME.systems.arjs) {
+        const tickSistema = AFRAME.systems.arjs.prototype.tick;
+        AFRAME.systems.arjs.prototype.tick = function () {
+            const r = tickSistema.apply(this, arguments);
+            arreglarProfundidad(this.el.camera);
+            return r;
+        };
+    }
+
     // --- marcadores estables: envolvemos el tick de AR.js ---
     const Anchor = AFRAME.components['arjs-anchor'].Component;
     const tickOriginal = Anchor.prototype.tick;
