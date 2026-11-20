@@ -21,6 +21,8 @@
     <script src="js/marcadores-estables.js"></script>
     <!-- Click derecho: los personajes caminan; si quedan cara a cara, pelean -->
     <script src="js/acciones.js"></script>
+    <!-- Sonidos: pasos, golpes, bola de fuego, ambiente de mazmorra (botón "Sonido") -->
+    <script src="js/sonidos.js"></script>
     <link rel="stylesheet" href="css/estilos.css">
     <!-- <script src="js/conexion.js" defer></script> -->
     <script src="js/utilidades.js" defer></script>
@@ -371,9 +373,8 @@
         <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false" position="0 0 0"></a-entity>
     </a-scene>
     <script>
-document.addEventListener("click", () => {
-    Tablero.muted = !Tablero.muted;
-});
+// El sonido del video del tablero ahora lo maneja js/sonidos.js (botón "Sonido"):
+// antes cada click lo prendía o apagaba, y chocaba con los clicks del juego.
     </script>
 </body>
 </html>
