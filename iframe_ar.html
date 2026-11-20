@@ -15,10 +15,14 @@
     <!-- Requerido para que el gif funcione -->
     <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
 
-    <!-- Scripts propios de multi-marcador, estabilidad/tamaño y acciones -->
+    <!-- Varias copias del mismo marcador a la vez (árboles del código 8) -->
     <script src="js/multi-marcador.js"></script>
+    <!-- Modelos sin parpadeo (medio segundo de margen) + barrita de tamaño general -->
     <script src="js/marcadores-estables.js"></script>
+    <!-- Click derecho: los personajes caminan; si quedan cara a cara, pelean -->
     <script src="js/acciones.js"></script>
+    <!-- Sonidos: pasos, golpes, bola de fuego, ambiente de mazmorra (botón "Sonido") -->
+    <script src="js/sonidos.js"></script>
 
     <link rel="stylesheet" href="css/estilos.css">
 
@@ -56,7 +60,7 @@
 
     <div id="js-error"></div>
 
-    <!-- Panel de información en pantalla -->
+    <!-- Panel de información en pantalla (lo maneja utilidades.js) -->
     <div id="panel-info">
         <h3>Panel AR</h3>
         <p>Marcador: <span id="marcador-id">Ninguno</span></p>
@@ -79,7 +83,7 @@
               matrixCodeType: 4x4_BCH_13_5_5;
               trackingMethod:best;">
 
-        <a-assets>
+        <a-assets timeout="5000">
             <a-asset-item id="modelo-dragon-glb" src="modelos/dragon.glb"></a-asset-item>
             <a-asset-item id="modelo-mago-glb" src="modelos/mago.glb"></a-asset-item>
             <a-asset-item id="modelo-model-glb" src="modelos/model.glb"></a-asset-item>
@@ -89,8 +93,6 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
-            <img id="arbol3" src="modelos/arbol3.png">
-            <img id="arbol4" src="modelos/arbol4.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
@@ -216,18 +218,18 @@
                     <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
-            <!-- Árbol C (otoño) -->
+            <!-- Árbol C -->
             <a-entity>
                 <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
-                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
-            <!-- Árbol D (cerezo) -->
+            <!-- Árbol D -->
             <a-entity>
                 <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
-                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
         </a-entity>
@@ -376,20 +378,24 @@
 
     <script>
         // ==================================================
-        // CAPTURA DE ERRORES VISIBLE EN PANTALLA
+        // CAPTURA DE ERRORES (ignora eventos de assets 404)
         // ==================================================
         window.addEventListener('error', function (e) {
             const box = document.getElementById('js-error');
-            if (!box) return;
-            box.textContent = '❌ JS ERROR: ' + (e.message || e.error || 'desconocido') +
+            if (!box || !e.message) return;
+            box.textContent = '❌ JS ERROR: ' + e.message +
                 (e.filename ? '\n   en ' + e.filename + ':' + e.lineno : '');
             box.classList.add('visible');
             console.error('[AR] JS error:', e.message, e.filename, e.lineno);
         });
         window.addEventListener('unhandledrejection', function (e) {
+            const r = e.reason;
+            if (r instanceof Event) {
+                console.warn('[AR] Recurso no cargado en <a-assets>:', r.target && r.target.src ? r.target.src : r);
+                return;
+            }
             const box = document.getElementById('js-error');
             if (!box) return;
-            const r = e.reason;
             box.textContent = '❌ PROMISE REJECTION: ' + (r && r.message ? r.message : r);
             box.classList.add('visible');
             console.error('[AR] Unhandled rejection:', r);
@@ -429,7 +435,7 @@
         }
 
         // ==================================================
-        // OCULTAR / MOSTRAR PANEL AR + PANEL DE PASOS Y TAMAÑO
+        // OCULTAR / MOSTRAR PANEL AR + PANEL DE PASOS, TAMAÑO Y SONIDO
         // ==================================================
         function togglePanelesAR(visibleForzado) {
             const panelInfo = document.getElementById('panel-info');
@@ -448,11 +454,12 @@
 
             if (panelInfo) panelInfo.classList.toggle('ar-ui-oculta', ocultar);
 
-            // Oculta/muestra también el panel flotante de pasos/tamaño inyectado por js/marcadores-estables.js
+            // Oculta/muestra también el panel flotante de pasos/tamaño (marcadores-estables.js)
+            // y el botón/panel de Sonido (sonidos.js)
             const excluidos = new Set(['panel-info', 'panel-historia', 'js-error', 'camera-error']);
-            document.querySelectorAll('body > div, body > section, body > aside, body > fieldset').forEach(function (el) {
+            document.querySelectorAll('body > div, body > section, body > aside, body > fieldset, body > form, body > button').forEach(function (el) {
                 if (excluidos.has(el.id)) return;
-                if (el.classList.contains('panel-ar-control') || el.querySelector('input, button, select')) {
+                if (el.tagName === 'BUTTON' || el.classList.contains('panel-ar-control') || el.querySelector('input, button, select')) {
                     el.classList.toggle('ar-ui-oculta', ocultar);
                 }
             });
@@ -552,11 +559,6 @@
                 console.log('[AR] Cámara cargada OK');
             });
         }
-
-        document.addEventListener("click", function () {
-            const t = document.getElementById('Tablero');
-            if (t) t.muted = !t.muted;
-        });
     </script>
 </body>
 </html>
