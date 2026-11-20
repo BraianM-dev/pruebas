@@ -4,8 +4,8 @@
 
 # Solo los .fbx gigantes siguen en LFS: GitHub no acepta archivos de más de 100 MB
 # fuera de LFS. Esos NO cargan en GitHub Pages (y son muy pesados para un celular).
-*.fbx filter=lfs diff=lfs merge=lfs -text
-modelos/dragon.fbx !filter binary
-modelos/mago.fbx !filter binary
-modelos/evil.fbx !filter binary
-modelos/Guerrero_animado.fbx !filter binary
+#*.fbx filter=lfs diff=lfs merge=lfs -text
+#modelos/dragon.fbx !filter binary
+#modelos/mago.fbx !filter binary
+#modelos/evil.fbx !filter binary
+#modelos/Guerrero_animado.fbx !filter binary
