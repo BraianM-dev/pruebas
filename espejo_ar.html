@@ -158,10 +158,10 @@
 
     <div id="inicio">
       <h1>🪞 Espejo AR PRO · Calabozos &amp; Código</h1>
-      <p>🖐️ <b>Una mano</b>: el cursor sigue tu índice + pulgar. <b>Pellizcá</b> para hacer clic, o dejá el cursor quieto ~1 s. Para deslizar la lista, pellizcá sobre ella y arrastrá.</p>
+      <p>🖐️ <b>Una mano</b>: el cursor sigue tu índice + pulgar. <b>Pellizcá</b> para hacer clic, mover un objeto o <b>girar la mano</b> para rotarlo. También podés dejar el cursor quieto ~1 s o deslizar la lista.</p>
       <p>🙌 <b>Dos manos</b>: el sistema sigue las dos a la vez. Con un objeto elegido, pellizcá con ambas sobre la escena (cursores fucsia): acercá/alejá para <b>escalar</b> y movelas juntas para <b>desplazar</b>.</p>
       <p>🎨 <b>Fondos</b>: elegí un escenario de mazmorra; el sistema te recorta de la cámara y te mete en la escena.</p>
-      <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta sirve</b>: si tiene esqueleto humanoide se ajusta a tu torso y copia tus movimientos; si no, aparece como objeto. 🧍 <i>Modo</i> permite forzar.</p>
+      <p>🧍 <b>Cualquier .glb / .gltf / .fbx de la carpeta (incluyendo KayKit) sirve</b>: si tiene esqueleto humanoide se ajusta a tu torso, copia tus movimientos y rota si girás o te ponés de espalda; si no, aparece como objeto. 🧍 <i>Modo</i> permite forzar.</p>
       <p>💡 Si un modelo tarda en cargar, podés clickear hasta 3 veces más para cancelarlo y cargar otro. Los .fbx que sean ZIPs renombrados se extraen automáticamente.</p>
       <button type="button" id="btnIniciar">Iniciar cámara</button>
       <div id="error"></div>
@@ -196,6 +196,52 @@ const REPO = 'BraianM-dev/pruebas';
 const RAMA = 'main';
 const CARPETA = 'modelos/';
 
+const MODELOS_KAYKIT = [
+  'kaykit/antorcha.glb',
+  'kaykit/arbol.glb',
+  'kaykit/arbol_seco.glb',
+  'kaykit/ataud.glb',
+  'kaykit/barbaro.glb',
+  'kaykit/barril.glb',
+  'kaykit/caballero.glb',
+  'kaykit/cofre.glb',
+  'kaykit/encapuchado.glb',
+  'kaykit/espada_escudo.glb',
+  'kaykit/esqueleto_esbirro.glb',
+  'kaykit/esqueleto_guerrero.glb',
+  'kaykit/esqueleto_mago.glb',
+  'kaykit/esqueleto_picaro.glb',
+  'kaykit/lapida.glb',
+  'kaykit/llave.glb',
+  'kaykit/mago.glb',
+  'kaykit/monedas.glb',
+  'kaykit/picaro.glb',
+  'kaykit/pino_otono.glb',
+  'kaykit/tumba.glb'
+];
+
+const MODELOS_RAIZ_FALLBACK = [
+  'Azrathor_el_Eterno.fbx',
+  'Bearded_Buccaneer.fbx',
+  'Crystalforged_Colossus.fbx',
+  'Desierto.glb',
+  'dragon.fbx',
+  'dragon.glb',
+  'Dwarven_Warbringer.fbx',
+  'esqueleto_animado.glb',
+  'evil.glb',
+  'Fox_Statue.fbx',
+  'Ironclad_Oathbearer.fbx',
+  'Ivorywyrm_Lancer.fbx',
+  'Jade_Antler_Guardian_.fbx',
+  'mago.fbx',
+  'mago.glb',
+  'model.glb',
+  'Naturaleza.glb',
+  'Regal_Ronaldo_Realmsuit.fbx',
+  'Ronaldo_the_Royal_Knight.fbx'
+];
+
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const HAND_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const POSE_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -203,6 +249,10 @@ const SEG_URL  = 'https://storage.googleapis.com/mediapipe-models/image_segmente
 
 const EJE = { x: new THREE.Vector3(1,0,0), y: new THREE.Vector3(0,1,0), z: new THREE.Vector3(0,0,1) };
 const qTmp = new THREE.Quaternion();
+
+function anguloCorto(actual, objetivo) {
+  return ((objetivo - actual + Math.PI * 3) % TAU) - Math.PI;
+}
 
 function mkCanvas(w = 2, h = 2) {
   const c = document.createElement('canvas');
@@ -828,7 +878,7 @@ const personTempCv = mkCanvas(640, 480), ptctx = personTempCv.getContext('2d');
 
 let W = 640, H = 480, mapa = { ox: 0, oy: 0, vw: 640, vh: 480, s: 1 }, rotacion = 0;
 let hand = null, pose = null, segmenter = null;
-let handLm = [null, null], poseLm = null;
+let handLm = [null, null], poseLm = null, worldPoseLm = null;
 let defs = [], def = null, cfg = null, clon = null, mixer = null, rig = null, tipo = null;
 let herramienta = 'mover', autoGiro = false, mostrarPuntos = false, fondoActual = 'camara';
 let prefs = JSON.parse(localStorage.getItem('espejo-prefs') || '{"lista":true,"ajustes":true,"fondo":"camara","persona":true,"vista":"llenar"}');
@@ -946,9 +996,12 @@ const fbxLoader = new FBXLoader();
 
 function esModelo(n) { return /\.(glb|gltf|fbx)$/i.test(n); }
 function bonito(n) {
-  return n.replace(/\.(glb|gltf|fbx)$/i, '')
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, c => c.toUpperCase());
+  const esKaykit = /^kaykit\//i.test(n);
+  const limpio = n.replace(/^kaykit\//i, '')
+                  .replace(/\.(glb|gltf|fbx)$/i, '')
+                  .replace(/[-_]/g, ' ')
+                  .replace(/\b\w/g, c => c.toUpperCase());
+  return esKaykit ? `${limpio} (KayKit)` : limpio;
 }
 function infoIcono(arch) {
   const i = infoCache[arch];
@@ -1224,6 +1277,7 @@ function limpiarModelo() {
   clon = null; mixer = null; rig = null; tipo = null;
   stage.dataset.modo = '';
   anclaje.visible = false; objeto.visible = false;
+  anclaje.quaternion.identity();
 }
 
 async function seleccionar(d, btn) {
@@ -1314,6 +1368,7 @@ function construir(d, base) {
   if (tipo === 'hum' && !rig.rigido && cfg.mocap) volverAReposo();
   stage.dataset.modo = tipo;
   suave.init = false;
+  suave.yaw = 0;
 
   if (d.archivo) {
     infoCache[d.archivo] = {
@@ -1355,6 +1410,8 @@ const ACCIONES = {
   rotz() { rotarMundo(EJE.z, Math.PI / 2); },
   reset() {
     cfg = cfgPorDefecto();
+    suave.yaw = 0;
+    anclaje.quaternion.identity();
     const b = cache.get(def.src);
     if (b) construir(def, b);
   },
@@ -1630,21 +1687,28 @@ function actualizarThumb() {
 lista.addEventListener('scroll', actualizarThumb);
 
 /* =====================================================================
-   ENTRADA UNIFICADA (MOUSE + 1 MANO + 2 MANOS)
+   ENTRADA UNIFICADA (MOUSE + 1 MANO + 2 MANOS + ROTACIÓN POR GIRO DE MANO)
    ===================================================================== */
-const crearPuntero = () => ({
-  activo: false, modo: null, el: null, fuente: null,
+const crearPuntero = (idx = -1) => ({
+  idx, activo: false, modo: null, el: null, fuente: null,
   sx: 0, sy: 0, lx: 0, ly: 0, arrastrando: false,
-  scroll0: 0, enTrack: false, ultRep: 0, repetido: false
+  scroll0: 0, enTrack: false, ultRep: 0, repetido: false,
+  hasRot: false, lRoll: 0, lYaw: 0
 });
-const ptrM = crearPuntero(), ptrs = [crearPuntero(), crearPuntero()];
+const ptrM = crearPuntero(-1), ptrs = [crearPuntero(0), crearPuntero(1)];
 
 function pDown(p, x, y, info, fuente) {
   Object.assign(p, {
     activo: true, fuente, sx: x, sy: y, lx: x, ly: y,
     arrastrando: false, repetido: false, enTrack: false,
-    el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop
+    el: info?.el || null, modo: 'escena', scroll0: lista.scrollTop,
+    hasRot: false, lRoll: 0, lYaw: 0
   });
+  if (fuente === 'mano' && p.idx >= 0 && curs[p.idx]?.hasRot) {
+    p.hasRot = true;
+    p.lRoll = curs[p.idx].roll;
+    p.lYaw = curs[p.idx].yaw;
+  }
   if (info?.scroll) {
     p.modo = 'scroll';
     p.enTrack = !!info.track;
@@ -1684,6 +1748,31 @@ function pMove(p, x, y) {
     } else {
       cfg.s = Math.min(12, Math.max(0.04, cfg.s * Math.exp(-dy * 0.006)));
     }
+
+    // Rotar el objeto al girar / inclinar la mano frente a la cámara
+    if (p.fuente === 'mano' && p.idx >= 0 && curs[p.idx]?.hasRot) {
+      const c = curs[p.idx];
+      if (!p.hasRot) {
+        p.hasRot = true;
+        p.lRoll = c.roll;
+        p.lYaw = c.yaw;
+      } else {
+        const dRoll = Math.max(-0.25, Math.min(0.25, anguloCorto(p.lRoll, c.roll)));
+        const dYaw  = Math.max(-0.25, Math.min(0.25, anguloCorto(p.lYaw, c.yaw)));
+        let roto = false;
+        if (Math.abs(dYaw) > 0.008) {
+          ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.y, dYaw * 1.45));
+          roto = true;
+        }
+        if (Math.abs(dRoll) > 0.008) {
+          ajuste.quaternion.premultiply(qTmp.setFromAxisAngle(EJE.z, -dRoll * 1.25));
+          roto = true;
+        }
+        if (roto) cfg.q = ajuste.quaternion.toArray();
+        p.lRoll = c.roll;
+        p.lYaw = c.yaw;
+      }
+    }
   }
 }
 function pTick(p, now) {
@@ -1698,6 +1787,7 @@ function pUp(p) {
   else if (p.modo === 'boton' && !p.repetido && p.el) p.el.click();
   else if (p.modo === 'escena') guardarCfg();
   p.activo = false;
+  p.hasRot = false;
 }
 
 stage.addEventListener('pointerdown', e => {
@@ -1724,7 +1814,8 @@ stage.addEventListener('wheel', e => {
 
 const curs = [0, 1].map(() => ({
   x: 0, y: 0, visible: false, ultimo: 0,
-  pinch: false, bajada: false, subida: false
+  pinch: false, bajada: false, subida: false,
+  roll: 0, yaw: 0, hasRot: false
 }));
 const cursorEls = [$('#cursor0'), $('#cursor1')];
 const hoverState = [
@@ -1767,6 +1858,7 @@ function procesarUnaMano(lm, c) {
   if (!lm) {
     if (performance.now() - c.ultimo > 300) {
       c.visible = false;
+      c.hasRot = false;
       if (c.pinch) { c.pinch = false; c.subida = true; }
     }
     return;
@@ -1778,10 +1870,28 @@ function procesarUnaMano(lm, c) {
   );
   const tx = sx((lm[4].x + lm[8].x) / 2);
   const ty = sy((lm[4].y + lm[8].y) / 2);
-  if (!c.visible) { c.x = tx; c.y = ty; }
+  const estabaVisible = c.visible;
+  if (!estabaVisible) { c.x = tx; c.y = ty; }
   c.x += (tx - c.x) * 0.45;
   c.y += (ty - c.y) * 0.45;
   c.visible = true;
+
+  // Orientación de la mano (inclinación roll 0->9 y giro de palma yaw 5->17)
+  if (lm[0] && lm[9] && lm[5] && lm[17]) {
+    const rawRoll = Math.atan2(sy(lm[9].y) - sy(lm[0].y), sx(lm[9].x) - sx(lm[0].x));
+    const palmDx = sx(lm[17].x) - sx(lm[5].x);
+    const palmDz = ((lm[17].z || 0) - (lm[5].z || 0)) * mapa.vw * mapa.s;
+    const rawYaw = Math.atan2(palmDz, palmDx);
+    if (!c.hasRot || !estabaVisible) {
+      c.roll = rawRoll;
+      c.yaw = rawYaw;
+      c.hasRot = true;
+    } else {
+      c.roll += anguloCorto(c.roll, rawRoll) * 0.35;
+      c.yaw  += anguloCorto(c.yaw, rawYaw) * 0.35;
+    }
+  }
+
   const ratio = d(4, 8) / (d(0, 9) || 1);
   if (!c.pinch && ratio < PINCH_ON) { c.pinch = true; c.bajada = true; }
   else if (c.pinch && ratio > PINCH_OFF) { c.pinch = false; c.subida = true; }
@@ -1869,7 +1979,7 @@ function actualizarCursores(now) {
     const rawMidY = (P.y + Q.y) / 2;
     if (!twoHand.activo) {
       twoHand.activo = true;
-      for (const p of ptrs) if (p.fuente === 'mano') p.activo = false;
+      for (const p of ptrs) if (p.fuente === 'mano') { p.activo = false; p.hasRot = false; }
       P.bajada = Q.bajada = P.subida = Q.subida = false;
       twoHand.smDist = twoHand.lastDist = rawDist;
       twoHand.smMidX = twoHand.lastMidX = rawMidX;
@@ -1917,20 +2027,46 @@ function actualizarCursores(now) {
 }
 
 /* =====================================================================
-   POSE → RIG + SEGMENTACIÓN DE PERSONA + MODO IDLE
+   POSE → RIG + ROTACIÓN DEL CUERPO + SEGMENTACIÓN + MODO IDLE
    ===================================================================== */
-const poseState = { midX: 0, midY: 0, torso: 0, hasData: false };
+const poseState = { midX: 0, midY: 0, torso: 0, yaw: 0, hasYaw: false, hasData: false };
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
 const _qDelta = new THREE.Quaternion(), _qParent = new THREE.Quaternion(), _qParentInv = new THREE.Quaternion();
 
-function aplicarPose(landmarks) {
+function aplicarPose(landmarks, worldLandmarks) {
   if (!landmarks) return;
   poseLm = landmarks;
+  worldPoseLm = worldLandmarks || null;
   const p11 = landmarks[11], p12 = landmarks[12];
   const p23 = landmarks[23], p24 = landmarks[24];
   if (p11 && p12) {
     poseState.midX = (sx(p11.x) + sx(p12.x)) * 0.5;
     poseState.midY = (sy(p11.y) + sy(p12.y)) * 0.5;
+
+    // Calcular rotación Y (yaw) del torso para que el modelo gire si la persona gira o se pone de espalda
+    const w11 = worldLandmarks?.[11], w12 = worldLandmarks?.[12];
+    const w23 = worldLandmarks?.[23], w24 = worldLandmarks?.[24];
+    const signX = MIRROR ? 1 : -1;
+    const signZ = MIRROR ? 1 : -1;
+    if (w11 && w12) {
+      let vx = signX * (w11.x - w12.x);
+      let vz = signZ * (w12.z - w11.z);
+      if (w23 && w24 && ((p23?.visibility ?? 0) > 0.35) && ((p24?.visibility ?? 0) > 0.35)) {
+        vx = vx * 0.72 + signX * (w23.x - w24.x) * 0.28;
+        vz = vz * 0.72 + signZ * (w24.z - w23.z) * 0.28;
+      }
+      if (Math.hypot(vx, vz) > 0.04) {
+        poseState.yaw = Math.atan2(vz, vx);
+        poseState.hasYaw = true;
+      }
+    } else {
+      const vx = sx(p12.x) - sx(p11.x);
+      const vz = signZ * (p12.z - p11.z) * mapa.vw * mapa.s;
+      if (Math.hypot(vx, vz) > 4) {
+        poseState.yaw = Math.atan2(vz, vx);
+        poseState.hasYaw = true;
+      }
+    }
   }
   if (p11 && p12 && p23 && p24) {
     const hx = (sx(p23.x) + sx(p24.x)) * 0.5;
@@ -1950,15 +2086,22 @@ function aplicarPose(landmarks) {
     b.quaternion.copy(q);
     b.scale.copy(s);
   }
+  anclaje.quaternion.setFromAxisAngle(EJE.y, suave.yaw);
   anclaje.updateMatrixWorld(true);
 
+  const signW = MIRROR ? -1 : 1;
   for (const ch of rig.cadenas) {
     const { hueso, hijo, la, lb } = ch;
-    const lmA = landmarks[la], lmB = landmarks[lb];
-    if (!lmA || !lmB) continue;
-    const ax = sx(lmA.x), ay = -sy(lmA.y);
-    const bx = sx(lmB.x), by = -sy(lmB.y);
-    _v1.set(bx - ax, by - ay, 0);
+    const wA = worldLandmarks?.[la], wB = worldLandmarks?.[lb];
+    if (wA && wB) {
+      _v1.set(signW * (wB.x - wA.x), -(wB.y - wA.y), -(wB.z - wA.z));
+    } else {
+      const lmA = landmarks[la], lmB = landmarks[lb];
+      if (!lmA || !lmB) continue;
+      const ax = sx(lmA.x), ay = -sy(lmA.y);
+      const bx = sx(lmB.x), by = -sy(lmB.y);
+      _v1.set(bx - ax, by - ay, 0);
+    }
     if (_v1.lengthSq() < 1e-8) continue;
     _v1.normalize();
     hueso.getWorldPosition(_v2);
@@ -1977,7 +2120,7 @@ function aplicarPose(landmarks) {
   }
 }
 
-const suave = { init: false, x: 0, y: 0, s: 1 };
+const suave = { init: false, x: 0, y: 0, s: 1, yaw: 0 };
 function aplicarTransformacionesAnclaje(dt) {
   if (tipo !== 'hum' || !cfg) return;
   if (poseState.hasData) {
@@ -1987,22 +2130,26 @@ function aplicarTransformacionesAnclaje(dt) {
     const targetX = poseState.midX - W / 2;
     const targetY = -poseState.midY + H / 2 + (cfg.dy || 0) * H;
     const targetS = s ?? (Math.min(W, H) * 0.28 / Math.max(rig?.torso || 0.3, 0.01));
+    const targetYaw = poseState.hasYaw ? poseState.yaw : 0;
     if (!suave.init) {
-      suave.x = targetX; suave.y = targetY; suave.s = targetS;
+      suave.x = targetX; suave.y = targetY; suave.s = targetS; suave.yaw = targetYaw;
       suave.init = true;
     } else {
       const k = Math.min(1, dt * 10);
       suave.x += (targetX - suave.x) * k;
       suave.y += (targetY - suave.y) * k;
       suave.s += (targetS - suave.s) * k;
+      suave.yaw += anguloCorto(suave.yaw, targetYaw) * k;
     }
   } else if (!suave.init) {
     suave.x = 0;
     suave.y = 0;
     suave.s = (Math.min(W, H) * 0.28) / Math.max(rig?.torso || 0.3, 0.01);
+    suave.yaw = 0;
     suave.init = true;
   }
   anclaje.position.set(suave.x, suave.y, 0);
+  anclaje.quaternion.setFromAxisAngle(EJE.y, suave.yaw);
   anclaje.scale.setScalar(cfg.s * suave.s);
   anclaje.visible = true;
 }
@@ -2121,7 +2268,7 @@ function loop() {
   if (video.readyState >= 2 && pose && ahora - ultimoPose > 50) {
     try {
       const r = pose.detectForVideo(video, ahora);
-      if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0]);
+      if (r.landmarks && r.landmarks[0]) aplicarPose(r.landmarks[0], r.worldLandmarks?.[0]);
     } catch {}
     ultimoPose = ahora;
   }
@@ -2215,13 +2362,17 @@ function loop() {
 }
 
 /* =====================================================================
-   DESCUBRIMIENTO Y SINCRONIZACIÓN DE MODELOS DESDE GITHUB
+   DESCUBRIMIENTO Y SINCRONIZACIÓN DE MODELOS DESDE GITHUB (INCLUYE KAYKIT)
    ===================================================================== */
 const ICONOS = [
   [/mago|wizard|brujo/i,'🧙'],[/evil|demon|diablo/i,'😈'],[/esquelet|skelet/i,'💀'],
   [/dragon|dragón/i,'🐉'],[/cofre|chest/i,'📦'],[/diamante|gem|cristal/i,'💎'],
-  [/pilar|column/i,'🏛️'],[/arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],
-  [/desierto|desert/i,'🏜️'],[/naturaleza|nature/i,'🌿'],[/guerrero|warrior|knight/i,'⚔️'],
+  [/pilar|column/i,'🏛️'],[/pino|arbol|árbol|tree/i,'🌳'],[/roca|rock|stone/i,'🪨'],
+  [/desierto|desert/i,'🏜️'],[/naturaleza|nature/i,'🌿'],
+  [/caballero|guerrero|warrior|knight/i,'⚔️'],[/barbaro|bárbaro|barbarian/i,'🪓'],
+  [/picaro|pícaro|rogue|encapuchado|hood/i,'🗡️'],[/espada|escudo|sword|shield/i,'🛡️'],
+  [/antorcha|torch/i,'🔥'],[/llave|key/i,'🗝️'],[/monedas|coin|gold/i,'🪙'],
+  [/ataud|ataúd|lapida|lápida|tumba|grave|coffin/i,'⚰️'],[/barril|barrel/i,'🛢️'],
   [/casa|house|castillo|castle/i,'🏰'],[/doctor/i,'🩺'],[/gato|cat/i,'🐱'],[/perro|dog/i,'🐶'],
   [/ogro|ogre/i,'👹'],[/hechicera|witch/i,'🧙‍♀️'],[/robot/i,'🤖'],[/zorro|fox/i,'🦊']
 ];
@@ -2242,42 +2393,57 @@ function agregarItem(d, alInicio = false) {
 
 async function descubrirModelos(forzar = false) {
   let nombres = [];
-  const k = 'espejo-lista-v6';
+  const k = 'espejo-lista-v7';
   let c = null;
   try { c = JSON.parse(localStorage.getItem(k) || 'null'); } catch {}
   if (!forzar && c && Date.now() - c.t < 300000 && Array.isArray(c.n) && c.n.length) {
     nombres = c.n;
   } else {
+    // 1. Obtener árbol recursivo (incluye modelos/ y subcarpeta modelos/kaykit/)
     try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${CARPETA.replace(/\/$/, '')}?ref=${RAMA}`);
-      if (r.ok) {
-        const items = await r.json();
-        if (Array.isArray(items)) {
-          nombres = items.filter(f => f.type === 'file').map(f => f.name);
-        }
+      const rTree = await fetch(`https://api.github.com/repos/${REPO}/git/trees/${RAMA}?recursive=1`);
+      if (rTree.ok) {
+        const data = await rTree.json();
+        nombres = (data.tree || [])
+          .filter(f => f.type === 'blob' && f.path.startsWith(CARPETA))
+          .map(f => f.path.slice(CARPETA.length));
       }
     } catch {}
 
+    // 2. Respaldo por Contents API (raíz modelos/ + carpeta modelos/kaykit/)
     if (!nombres.length) {
-      try {
-        const r2 = await fetch(`https://api.github.com/repos/${REPO}/git/trees/${RAMA}?recursive=1`);
-        if (r2.ok) {
-          const data = await r2.json();
-          nombres = (data.tree || [])
-            .filter(f => f.type === 'blob' && f.path.startsWith(CARPETA))
-            .map(f => f.path.slice(CARPETA.length));
-        }
-      } catch {}
+      for (const sub of ['', 'kaykit']) {
+        try {
+          const ruta = CARPETA.replace(/\/$/, '') + (sub ? '/' + sub : '');
+          const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${ruta}?ref=${RAMA}`);
+          if (r.ok) {
+            const items = await r.json();
+            if (Array.isArray(items)) {
+              for (const f of items) {
+                if (f.type === 'file') nombres.push(sub ? `${sub}/${f.name}` : f.name);
+              }
+            }
+          }
+        } catch {}
+      }
     }
 
     nombres = nombres.filter(esModelo);
     if (nombres.length) {
+      // Asegurar también que todos los modelos conocidos de kaykit estén presentes
+      for (const mk of MODELOS_KAYKIT) {
+        if (!nombres.includes(mk)) nombres.push(mk);
+      }
       try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), n: nombres })); } catch {}
     } else if (c?.n?.length) {
       nombres = c.n;
+    } else {
+      nombres = [...MODELOS_RAIZ_FALLBACK, ...MODELOS_KAYKIT];
     }
   }
-  return [...new Set(nombres.filter(esModelo))].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+  return [...new Set(nombres.filter(esModelo))].sort((a, b) =>
+    bonito(a).localeCompare(bonito(b), 'es', { sensitivity: 'base' })
+  );
 }
 
 async function sincronizar(forzar = false) {
