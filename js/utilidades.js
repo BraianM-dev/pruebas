@@ -41,7 +41,27 @@ const Utilidades = {
         '8': 'Árboles',
         '9': 'Naturaleza',
         '10': 'Esqueleto',
-        '11': 'Evil'
+        '11': 'Evil',
+        '12': 'Caballero',
+        '13': 'Bárbaro',
+        '14': 'Mago',
+        '15': 'Pícaro',
+        '16': 'Encapuchado',
+        '17': 'Esqueleto guerrero',
+        '18': 'Esqueleto mago',
+        '19': 'Esqueleto pícaro',
+        '20': 'Esqueleto esbirro',
+        '21': 'Cofre',
+        '22': 'Ataúd',
+        '23': 'Barril',
+        '24': 'Antorcha',
+        '25': 'Monedas',
+        '26': 'Espada y escudo',
+        '27': 'Llave',
+        '28': 'Árbol',
+        '29': 'Pino de otoño',
+        '30': 'Árbol seco',
+        '31': 'Tumba'
     },
 
     togglePanel: function (visible) {
