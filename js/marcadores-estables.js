@@ -33,6 +33,14 @@
         if (guardada >= ESCALA_MIN && guardada <= ESCALA_MAX) window.escalaAR = guardada;
     } catch (e) { /* sin localStorage: queda en 1 */ }
 
+    // --- largo de un paso al caminar (lo usa acciones.js), en anchos de código ---
+    const PASO_MIN = 0.5, PASO_MAX = 3;
+    window.pasoAR = 1;
+    try {
+        const guardado = parseFloat(localStorage.getItem('pasoAR'));
+        if (guardado >= PASO_MIN && guardado <= PASO_MAX) window.pasoAR = guardado;
+    } catch (e) { /* sin localStorage: queda en 1 */ }
+
     // --- profundidad de la cámara 3D ---
     // AR.js arma la cámara con un rango de 0,0001 a 1000 (diez millones a uno):
     // la tarjeta de video no distingue qué cara del modelo está adelante y las
@@ -153,9 +161,14 @@
         if (Utilidades.statsAsignadas[slot]) enCopia(copia, Utilidades._asignarStatsOriginal, [slot, Utilidades.statsAsignadas[slot]]);
     }
 
+    const adelante = new THREE.Vector3();
     function ponerEn(obj3d, pista) {
         if (!pista) { obj3d.visible = false; return; }
         obj3d.position.copy(pista.pos);
+        // Personaje que caminó (acciones.js): queda corrido hacia adelante de su
+        // código, en anchos de código (largo físico: no depende de la barrita Tamaño)
+        const avance = obj3d.el && obj3d.el._avance;
+        if (avance) obj3d.position.add(adelante.set(0, 0, avance).applyQuaternion(pista.quat));
         obj3d.quaternion.copy(pista.quat);
         obj3d.scale.setScalar(window.escalaAR);
         obj3d.visible = true;
@@ -321,8 +334,23 @@
             '<select id="camara-ar" style="flex:1;min-width:0;max-width:220px;font:inherit"></select></div>' +
             '<div style="display:flex;align-items:center;gap:8px"><label for="escala-ar">Tamaño</label>' +
             '<input id="escala-ar" type="range" min="' + ESCALA_MIN + '" max="' + ESCALA_MAX + '" step="0.05" style="width:140px">' +
-            '<span id="escala-ar-valor" style="min-width:38px;text-align:right"></span></div>';
+            '<span id="escala-ar-valor" style="min-width:38px;text-align:right"></span></div>' +
+            '<div style="display:flex;align-items:center;gap:8px" title="Cuánto avanza un personaje con click derecho (en anchos de código)">' +
+            '<label for="paso-ar">Paso</label>' +
+            '<input id="paso-ar" type="range" min="' + PASO_MIN + '" max="' + PASO_MAX + '" step="0.05" style="width:140px;margin-left:14px">' +
+            '<span id="paso-ar-valor" style="min-width:38px;text-align:right"></span></div>' +
+            '<div style="font-size:11px;opacity:.75">Click derecho: avanza · Shift + click derecho: vuelve</div>';
         document.body.appendChild(caja);
+
+        const paso = caja.querySelector('#paso-ar');
+        const pasoValor = caja.querySelector('#paso-ar-valor');
+        paso.value = window.pasoAR;
+        pasoValor.textContent = window.pasoAR.toFixed(2);
+        paso.addEventListener('input', function () {
+            window.pasoAR = parseFloat(paso.value);
+            pasoValor.textContent = window.pasoAR.toFixed(2);
+            try { localStorage.setItem('pasoAR', String(window.pasoAR)); } catch (e) { /* no se recuerda */ }
+        });
 
         const selectCamara = caja.querySelector('#camara-ar');
         selectCamara.addEventListener('change', function () {
