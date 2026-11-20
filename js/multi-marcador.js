@@ -27,7 +27,7 @@ AFRAME.registerComponent('multi-marcador', {
     schema: {
         valor:      { type: 'int',    default: 8 },    // número del código barcode
         confianza:  { type: 'number', default: 0.6 },  // igual que AR.js (minConfidence)
-        perderTras: { type: 'number', default: 500 },  // ms sin verlo antes de ocultar su objeto (igual que marcadores-estables.js)
+        perderTras: { type: 'number', default: 1000 }, // ms sin verlo antes de ocultar su objeto (igual que marcadores-estables.js)
         distancia:  { type: 'number', default: 1.5 },  // cuánto puede moverse entre cuadros (en anchos de marcador)
         suavizado:  { type: 'number', default: 0.5 }   // 0 = sin suavizar, 0.9 = muy suave (más lento)
     },

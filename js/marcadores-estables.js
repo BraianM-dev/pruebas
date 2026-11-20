@@ -19,7 +19,7 @@
 // ------------------------------------------------------------------
 
 (function () {
-    const MANTENER_MS = 500;    // cuánto aguanta un modelo cuando su código no se lee
+    const MANTENER_MS = 1000;   // cuánto aguanta un modelo cuando su código no se lee
     const MAX_COPIAS = 4;       // copias del mismo código a la vez
     const DISTANCIA = 1.5;      // cuánto puede moverse una copia entre cuadros (en anchos de código)
     const SUAVIZADO = 0.5;      // 0 = sin suavizar
