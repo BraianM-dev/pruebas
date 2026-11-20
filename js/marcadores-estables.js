@@ -231,6 +231,53 @@
         seg.detecciones = {};
     }
 
+    // --- video y dibujo alineados ---
+    // AR.js solo acomoda el dibujo 3D sobre el video cuando la ventana cambia de
+    // tamaño (y unos segundos al arrancar). Si la cámara tarda en abrir, quedan
+    // desalineados y TODOS los modelos aparecen corridos de sus códigos.
+    // Medido: video arriba en -232 y dibujo en 8 hasta el próximo "resize".
+    let ultimaRevision = 0;
+    function revisarAlineacion(escenaEl, sesion) {
+        const ahora = performance.now();
+        if (ahora - ultimaRevision < 250) return;
+        ultimaRevision = ahora;
+        const fuente = sesion && sesion.arSource;
+        const video = fuente && fuente.domElement;
+        const lienzo = escenaEl.canvas;
+        if (!video || !lienzo || !video.videoWidth) return;
+        const a = video.getBoundingClientRect(), b = lienzo.getBoundingClientRect();
+        const corrido = Math.abs(a.top - b.top) > 2 || Math.abs(a.left - b.left) > 2 || Math.abs(a.height - b.height) > 2 || Math.abs(a.width - b.width) > 2;
+        // La imagen interna del dibujo tiene que tener la misma proporción que como
+        // se muestra: si A-Frame la midió antes de que AR.js acomodara la página,
+        // queda estirada (medido: 1920x720 mostrada en 1280x960 = el doble de alta)
+        // y los modelos se ven deformados.
+        const estirado = b.height > 0 && lienzo.height > 0 &&
+            Math.abs((lienzo.width / lienzo.height) / (b.width / b.height) - 1) > 0.02;
+        if (corrido || estirado) {
+            // Lo mismo que pasa al cambiar el tamaño de la ventana: AR.js copia
+            // el tamaño del video al <body> y A-Frame reacomoda el dibujo.
+            window.dispatchEvent(new Event('resize'));
+        }
+    }
+
+    // --- cámara 3D fija en el centro ---
+    // A-Frame le agrega a la cámara una altura de ojos de 1,6 y los controles de
+    // realidad virtual (look-controls: arrastrar la gira; wasd-controls: W/A/S/D la
+    // mueve). En AR la cámara tiene que quedarse en (0,0,0) mirando de frente: si
+    // no, TODOS los modelos se ven corridos de sus códigos (medido: 1,6 hacia abajo).
+    function fijarCamara(camara) {
+        const el = camara && camara.el;
+        if (!el) return;
+        ['look-controls', 'wasd-controls'].forEach(function (c) {
+            if (el.components[c] && el.components[c].data.enabled !== false) el.setAttribute(c, 'enabled', false);
+        });
+        const o = el.object3D;
+        if (o.position.lengthSq() > 0 || o.rotation.x || o.rotation.y || o.rotation.z) {
+            o.position.set(0, 0, 0);
+            o.rotation.set(0, 0, 0);
+        }
+    }
+
     // AR.js procesa la cámara (y vuelve a copiar la cámara 3D) en el tick de su
     // sistema: justo después actualizamos el seguimiento y la profundidad.
     if (AFRAME.systems.arjs) {
@@ -238,6 +285,8 @@
         AFRAME.systems.arjs.prototype.tick = function () {
             const r = tickSistema.apply(this, arguments);
             arreglarProfundidad(this.el.camera);
+            fijarCamara(this.el.camera);
+            if (this.isReady) revisarAlineacion(this.el, this._arSession);
             if (this.isReady) {
                 if (!seg.ctrl) conectar(this.el);
                 else actualizar();
@@ -284,22 +333,36 @@
     // =================================================================
     // AR.js acepta "deviceId" en <a-scene arjs="...">: le pasamos la que
     // se eligió en el selector, guardada en este navegador.
-    let camaraGuardada = null;
-    try { camaraGuardada = localStorage.getItem('camaraAR'); } catch (e) { /* sin localStorage */ }
+    let camaraGuardada = null, saltearGuardada = false;
+    try {
+        camaraGuardada = localStorage.getItem('camaraAR');
+        saltearGuardada = sessionStorage.getItem('camaraSaltear') === '1';
+        sessionStorage.removeItem('camaraSaltear');
+    } catch (e) { /* sin storage */ }
     const SistemaAR = AFRAME.systems.arjs;
-    if (SistemaAR && camaraGuardada) {
+    if (SistemaAR && camaraGuardada && !saltearGuardada) {
         const initOriginal = SistemaAR.prototype.init;
         SistemaAR.prototype.init = function () {
             this.data.deviceId = camaraGuardada;
             return initOriginal.apply(this, arguments);
         };
     }
-    // Si la cámara guardada ya no está enchufada, volvemos a la de siempre
+    // Si la cámara elegida no está enchufada, por esta vez usamos la de siempre,
+    // pero NO olvidamos la elegida: cuando se enchufe, la página se cambia sola.
     window.addEventListener('camera-error', function () {
-        if (!camaraGuardada) return;
-        try { localStorage.removeItem('camaraAR'); } catch (e) { /* nada */ }
+        if (!camaraGuardada || saltearGuardada) return;
+        try { sessionStorage.setItem('camaraSaltear', '1'); } catch (e) { /* nada */ }
         location.reload();
     });
+    function camaraEnUso() {
+        const video = Array.from(document.querySelectorAll('video')).find(function (v) { return v.srcObject; });
+        const pista = video && video.srcObject.getVideoTracks()[0];
+        return pista && pista.getSettings().deviceId;
+    }
+    function siVolvioLaElegida(lista) {
+        if (!camaraGuardada || camaraEnUso() === camaraGuardada) return;
+        if (lista.some(function (d) { return d.kind === 'videoinput' && d.deviceId === camaraGuardada; })) location.reload();
+    }
 
     function llenarCamaras(select) {
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
@@ -307,9 +370,7 @@
             const camaras = lista.filter(function (d) { return d.kind === 'videoinput'; });
             // el <video> de la cámara es el que trae imagen en vivo (srcObject);
             // la escena tiene otros <video> de ejemplo en <a-assets>
-            const video = Array.from(document.querySelectorAll('video')).find(function (v) { return v.srcObject; });
-            const pista = video && video.srcObject.getVideoTracks()[0];
-            const enUso = pista && pista.getSettings().deviceId;
+            const enUso = camaraEnUso();
             select.innerHTML = '';
             camaras.forEach(function (d, i) {
                 const op = document.createElement('option');
@@ -359,7 +420,10 @@
         });
         // Los nombres de las cámaras aparecen recién cuando el navegador da permiso
         window.addEventListener('camera-init', function () { setTimeout(function () { llenarCamaras(selectCamara); }, 500); });
-        if (navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange', function () { llenarCamaras(selectCamara); });
+        if (navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange', function () {
+            llenarCamaras(selectCamara);
+            navigator.mediaDevices.enumerateDevices().then(siVolvioLaElegida);   // enchufaron la elegida: cambiar
+        });
         llenarCamaras(selectCamara);
 
         const barra = caja.querySelector('#escala-ar');
