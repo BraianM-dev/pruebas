@@ -1,0 +1,11 @@
+Modelos 3D de los marcadores 12 a 31 (cargados desde index.html).
+
+Origen: packs KayKit de Kay Lousberg (www.kaylousberg.com)
+  - Adventurers Character Pack 1.0, Skeletons Character Pack 1.0
+  - Dungeon Remastered 1.0, Medieval Hexagon Pack 1.0, Halloween Bits 1.0
+Licencia: Creative Commons Zero (CC0) - libre para uso personal, educativo y comercial.
+
+Cambios hechos para que carguen rapido en el celular:
+  - personajes: solo la animacion "Idle" (traian 76 a 95) y un solo equipo de armas
+  - esqueletos: se les colgo su arma del mismo pack en la mano
+  - todo convertido a .glb de un solo archivo (los 20 suman ~3,6 MB)
