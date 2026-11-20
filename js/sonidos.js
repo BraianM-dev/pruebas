@@ -8,7 +8,7 @@
 //  - Los navegadores no dejan sonar nada hasta que la persona toca la página:
 //    el sonido arranca con el primer click o toque.
 //  - Fila "Sonido" en la caja de controles: prender/apagar y volumen
-//    (se recuerda). También maneja el sonido del video del tablero (código 7).
+//    (se recuerda).
 // Lo usa acciones.js a través de window.Sonidos.
 // ------------------------------------------------------------------
 
@@ -54,8 +54,6 @@
         if (!ctx) return;
         if (ctx.state === 'suspended') ctx.resume();
         if (!ambiente) ambiente = crearAmbiente();
-        const tablero = document.getElementById('Tablero');
-        if (tablero) tablero.muted = !activo;
     }
     ['pointerdown', 'touchstart', 'keydown', 'contextmenu'].forEach(function (ev) {
         window.addEventListener(ev, destrabar, { capture: true });
@@ -206,8 +204,6 @@
     // --- prender/apagar y volumen ---
     function aplicar() {
         if (maestro) maestro.gain.setTargetAtTime(activo ? volumen : 0, ctx.currentTime, 0.05);
-        const tablero = document.getElementById('Tablero');
-        if (tablero && ctx) tablero.muted = !activo;
         try {
             localStorage.setItem('sonidoAR', activo ? 'si' : 'no');
             localStorage.setItem('volumenAR', String(volumen));
