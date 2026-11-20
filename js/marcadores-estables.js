@@ -111,6 +111,7 @@
     function clonarContenido(m, destino) {
         Array.from(m.el.children).forEach(function (hijo) {
             if (hijo.classList.contains('stats-slot')) return;   // las stats las pone el DM (ver abajo)
+            if (hijo.classList.contains('dinamico')) return;     // barra de vida, lápida, carteles: cada copia tiene los suyos
             const c = hijo.cloneNode(true);
             c.removeAttribute('id');
             c.querySelectorAll('[id]').forEach(function (x) { x.removeAttribute('id'); });
@@ -400,7 +401,7 @@
             '<label for="paso-ar">Paso</label>' +
             '<input id="paso-ar" type="range" min="' + PASO_MIN + '" max="' + PASO_MAX + '" step="0.05" style="width:140px;margin-left:14px">' +
             '<span id="paso-ar-valor" style="min-width:38px;text-align:right"></span></div>' +
-            '<div style="font-size:11px;opacity:.75">Click derecho: avanza · Shift + click derecho: vuelve</div>';
+            '<div style="font-size:11px;opacity:.75;line-height:1.4">Click derecho: avanza · Shift + click derecho: vuelve<br>Shift + click derecho en una lápida: revive</div>';
         document.body.appendChild(caja);
 
         const paso = caja.querySelector('#paso-ar');
