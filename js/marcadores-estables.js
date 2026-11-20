@@ -1,4 +1,4 @@
-// js/marcadores-estables.js
+// js/marcadores-estables.js   
 // ------------------------------------------------------------------
 // 1) VARIAS COPIAS DE CUALQUIER CÓDIGO + SIN PARPADEO
 //    AR.js ubica un solo modelo por número: con dos esbirros impresos,
