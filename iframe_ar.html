@@ -7,10 +7,18 @@
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!-- Requerido por FBXLoader para descomprimir geometría -->
     <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <!-- Requerido para seguir la cámara -->
     <script src="https://unpkg.com/aframe-look-at-component@1.0.0/dist/aframe-look-at-component.min.js"></script>
+    <!-- Requerido para que el gif funcione -->
     <script src="https://unpkg.com/aframe-gif-shader/dist/aframe-gif-shader.min.js"></script>
+
+    <!-- Scripts propios de multi-marcador, estabilidad/tamaño y acciones -->
+    <script src="js/multi-marcador.js"></script>
+    <script src="js/marcadores-estables.js"></script>
+    <script src="js/acciones.js"></script>
 
     <link rel="stylesheet" href="css/estilos.css">
 
@@ -38,13 +46,17 @@
         }
         #js-error.visible { display: block; }
 
-        #panel-info.hidden { display: none !important; }
+        #panel-info.hidden,
+        .ar-ui-oculta {
+            display: none !important;
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
     <div id="js-error"></div>
 
+    <!-- Panel de información en pantalla -->
     <div id="panel-info">
         <h3>Panel AR</h3>
         <p>Marcador: <span id="marcador-id">Ninguno</span></p>
@@ -53,6 +65,7 @@
         <p>FPS: <span id="fps-id">0</span></p>
     </div>
 
+    <!-- Panel para el texto del Dungeon Master -->
     <div id="panel-historia" style="position:fixed; bottom:0; left:0; right:0; max-height:30%; overflow-y:auto; background:rgba(0,0,0,0.7); color:#fff; padding:10px; font-family:sans-serif;"></div>
 
     <div id="camera-error">⚠️ No se pudo acceder a la cámara.<br>Verificá los permisos del navegador y que estés usando HTTPS.</div>
@@ -76,12 +89,15 @@
             <video id="Tablero" src="modelos/tablero.mp4" preload="auto" autoplay loop muted playsinline crossorigin="anonymous"></video>
             <img id="arbol1" src="modelos/arbol1.png">
             <img id="arbol2" src="modelos/arbol2.png">
+            <img id="arbol3" src="modelos/arbol3.png">
+            <img id="arbol4" src="modelos/arbol4.png">
             <a-asset-item id="modelo-naturaleza-glb" src="modelos/Naturaleza.glb"></a-asset-item>
             <a-asset-item id="desierto-glb" src="modelos/Desierto.glb"></a-asset-item>
             <a-asset-item id="esqueleto-glb" src="modelos/esqueleto_animado.glb"></a-asset-item>
             <a-asset-item id="evil-glb" src="modelos/evil.glb"></a-asset-item>
         </a-assets>
 
+        <!-- Marcador de patrón: Hiro -->
         <a-marker preset="hiro" id="Hiro" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#modelo-dragon-glb"
@@ -91,6 +107,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador de patrón: Kanji -->
         <a-marker preset="kanji" id="Kanji" registerevents>
             <a-entity class="model-entity"
                 fbx-model="src: url(modelos/dragon.fbx)"
@@ -100,7 +117,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <!-- ✅ Barcode_0: se eliminaron el <a-plane> y <a-text> hardcodeados -->
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 0 -->
         <a-marker type="barcode" value="0" id="Barcode_0" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#modelo-mago-glb"
@@ -111,7 +128,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <!-- ✅ Barcode_1: se eliminó el <a-text> "Mago" -->
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 1 -->
         <a-marker type="barcode" value="1" id="Barcode_1" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity class="model-entity"
                 fbx-model="src: url(modelos/mago.fbx)"
@@ -122,6 +139,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 2 -->
         <a-marker type="barcode" value="2" id="Barcode_2" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#modelo-model-glb"
@@ -132,6 +150,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 3 -->
         <a-marker type="barcode" value="3" id="Barcode_3" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 1; height: 1"
@@ -141,6 +160,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 4 Imagen PNG -->
         <a-marker type="barcode" value="4" id="Barcode_4" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 1.5; height: 1.5"
@@ -150,7 +170,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <!-- ✅ Barcode_5: se eliminó el <a-text> "Ejemplo.mp4" -->
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 5 Video MP4 -->
         <a-marker type="barcode" value="5" id="Barcode_5" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 2; height: 1.2"
@@ -160,6 +180,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 6 Video MP4 desde URL -->
         <a-marker type="barcode" value="6" id="Barcode_6" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 2; height: 1.2"
@@ -169,6 +190,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 7 Video Tablero -->
         <a-marker type="barcode" value="7" id="Barcode_7" registerevents>
             <a-entity class="model-entity"
                 geometry="primitive: plane; width: 1.125; height: 2"
@@ -178,20 +200,39 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-marker type="barcode" value="8" id="Barcode_8" registerevents>
-            <a-entity class="model-entity">
-                <a-entity position="-0.8 0 -0.3">
-                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.65 0" rotation="0 -45 0"></a-plane>
-                </a-entity>
-                <a-entity position="0.9 0 0.5">
-                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 45 0"></a-plane>
-                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" width="3" height="3" position="0 0.55 0" rotation="0 -45 0"></a-plane>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 8: ÁRBOLES (multi-marcador) -->
+        <a-entity id="Barcode_8" multi-marcador="valor: 8" registerevents>
+            <!-- Árbol A -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol1" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
                 </a-entity>
             </a-entity>
-            <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
-        </a-marker>
+            <!-- Árbol B -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol2" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol C (otoño) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol3" transparent="true" alpha-test="0.5" side="double" width="2" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+            <!-- Árbol D (cerezo) -->
+            <a-entity>
+                <a-entity animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 45 0"></a-plane>
+                    <a-plane src="#arbol4" transparent="true" alpha-test="0.5" side="double" width="1.86" height="2" position="0 1 0" rotation="0 -45 0"></a-plane>
+                </a-entity>
+            </a-entity>
+        </a-entity>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 9 -->
         <a-marker type="barcode" value="9" id="Barcode_9" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#modelo-naturaleza-glb"
@@ -202,6 +243,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 10 -->
         <a-marker type="barcode" value="10" id="Barcode_10" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#esqueleto-glb"
@@ -212,6 +254,7 @@
             <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
         </a-marker>
 
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 11 -->
         <a-marker type="barcode" value="11" id="Barcode_11" smooth="true" smoothCount="15" smoothTolerance="0.1" smoothThreshold="3" registerevents>
             <a-entity class="model-entity"
                 gltf-model="#evil-glb"
@@ -222,10 +265,112 @@
             <a-entity class="stats-slot" position="0 2 0" look-at="[camera]"></a-entity>
         </a-marker>
 
-        <a-entity camera></a-entity>
+        <!-- ====== MODELOS KAYKIT (marcadores 12 a 31) ====== -->
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 12: Caballero -->
+        <a-marker type="barcode" value="12" id="Barcode_12" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/caballero.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 13: Bárbaro -->
+        <a-marker type="barcode" value="13" id="Barcode_13" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/barbaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 14: Mago -->
+        <a-marker type="barcode" value="14" id="Barcode_14" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" data-hechizos="bola-de-fuego" gltf-model="url(modelos/kaykit/mago.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 15: Pícaro -->
+        <a-marker type="barcode" value="15" id="Barcode_15" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/picaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 16: Encapuchado -->
+        <a-marker type="barcode" value="16" id="Barcode_16" registerevents>
+            <a-entity class="model-entity personaje" data-bando="heroe" gltf-model="url(modelos/kaykit/encapuchado.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 17: Esqueleto guerrero -->
+        <a-marker type="barcode" value="17" id="Barcode_17" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_guerrero.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 18: Esqueleto mago -->
+        <a-marker type="barcode" value="18" id="Barcode_18" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_mago.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 19: Esqueleto pícaro -->
+        <a-marker type="barcode" value="19" id="Barcode_19" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_picaro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 20: Esqueleto esbirro -->
+        <a-marker type="barcode" value="20" id="Barcode_20" registerevents>
+            <a-entity class="model-entity personaje" data-bando="malo" gltf-model="url(modelos/kaykit/esqueleto_esbirro.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: Quieto"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 21: Cofre -->
+        <a-marker type="barcode" value="21" id="Barcode_21" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/cofre.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 22: Ataúd -->
+        <a-marker type="barcode" value="22" id="Barcode_22" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/ataud.glb)" position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 23: Barril -->
+        <a-marker type="barcode" value="23" id="Barcode_23" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/barril.glb)" position="0 0 0" rotation="0 0 0" scale="0.45 0.45 0.45"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 24: Antorcha -->
+        <a-marker type="barcode" value="24" id="Barcode_24" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/antorcha.glb)" position="0 0.52 0" rotation="0 0 0" scale="1.3 1.3 1.3"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 25: Monedas -->
+        <a-marker type="barcode" value="25" id="Barcode_25" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/monedas.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 26: Espada y escudo -->
+        <a-marker type="barcode" value="26" id="Barcode_26" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/espada_escudo.glb)" position="0 0.58 0" rotation="0 0 0" scale="0.7 0.7 0.7"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 27: Llave -->
+        <a-marker type="barcode" value="27" id="Barcode_27" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/llave.glb)" position="0 0.3 0" rotation="0 0 0" scale="1.5 1.5 1.5"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 28: Árbol -->
+        <a-marker type="barcode" value="28" id="Barcode_28" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/arbol.glb)" position="0 0 0" rotation="0 0 0" scale="1.4 1.4 1.4"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 29: Pino de otoño -->
+        <a-marker type="barcode" value="29" id="Barcode_29" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/pino_otono.glb)" position="0 0 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 30: Árbol seco -->
+        <a-marker type="barcode" value="30" id="Barcode_30" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/arbol_seco.glb)" position="0 0 0" rotation="0 0 0" scale="0.35 0.35 0.35"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+        <!-- Marcador barcode 4x4 BCH 13,5,5, valor 31: Tumba -->
+        <a-marker type="barcode" value="31" id="Barcode_31" registerevents>
+            <a-entity class="model-entity" gltf-model="url(modelos/kaykit/tumba.glb)" position="0 0 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+            <a-entity class="stats-slot" position="0 1.5 0" look-at="[camera]"></a-entity>
+        </a-marker>
+
+        <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false" position="0 0 0"></a-entity>
     </a-scene>
 
-    <!-- ✅ Scripts al final del body, en orden garantizado -->
+    <!-- Scripts al final del body, en orden garantizado -->
     <script src="js/utilidades.js"></script>
     <script src="js/eventos.js"></script>
 
@@ -270,10 +415,7 @@
         }
 
         // ==================================================
-        // ✅ NUEVO: Limpiar hijos sueltos del marker
-        // (etiquetas viejas tipo <a-text>/<a-plane>) que no sean
-        // .model-entity ni .stats-slot. Se llama antes de asignar
-        // o limpiar un modelo para no dejar restos de pruebas.
+        // LIMPIAR HIJOS SUELTOS DEL MARKER
         // ==================================================
         function limpiarHijosSueltos(slot) {
             if (typeof Utilidades === 'undefined') return;
@@ -287,12 +429,47 @@
         }
 
         // ==================================================
+        // OCULTAR / MOSTRAR PANEL AR + PANEL DE PASOS Y TAMAÑO
+        // ==================================================
+        function togglePanelesAR(visibleForzado) {
+            const panelInfo = document.getElementById('panel-info');
+
+            if (typeof Utilidades !== 'undefined' && Utilidades.togglePanel) {
+                Utilidades.togglePanel(visibleForzado);
+            } else if (panelInfo) {
+                if (visibleForzado === undefined) panelInfo.classList.toggle('hidden');
+                else panelInfo.classList.toggle('hidden', !visibleForzado);
+            }
+
+            const estaOculto = panelInfo
+                ? (panelInfo.classList.contains('hidden') || panelInfo.style.display === 'none')
+                : false;
+            const ocultar = visibleForzado !== undefined ? !visibleForzado : estaOculto;
+
+            if (panelInfo) panelInfo.classList.toggle('ar-ui-oculta', ocultar);
+
+            // Oculta/muestra también el panel flotante de pasos/tamaño inyectado por js/marcadores-estables.js
+            const excluidos = new Set(['panel-info', 'panel-historia', 'js-error', 'camera-error']);
+            document.querySelectorAll('body > div, body > section, body > aside, body > fieldset').forEach(function (el) {
+                if (excluidos.has(el.id)) return;
+                if (el.classList.contains('panel-ar-control') || el.querySelector('input, button, select')) {
+                    el.classList.toggle('ar-ui-oculta', ocultar);
+                }
+            });
+        }
+
+        // ==================================================
         // LISTENER DE COMANDOS DEL DM (padre)
         // ==================================================
         window.addEventListener('message', function (e) {
             if (!e.data || e.data.target !== 'ar-frame') return;
             const cmd = e.data;
             console.log('[AR] Comando recibido del DM:', cmd);
+
+            if (cmd.action === 'toggle-panel') {
+                togglePanelesAR(cmd.visible);
+                return;
+            }
 
             if (typeof Utilidades === 'undefined') {
                 console.warn('[AR] Utilidades no disponible, ignorando:', cmd.action);
@@ -302,7 +479,6 @@
             try {
                 switch (cmd.action) {
                     case 'assign-model':
-                        // ✅ Limpiar etiquetas viejas antes de asignar el nuevo modelo
                         limpiarHijosSueltos(cmd.slot);
                         Utilidades.asignarModelo(cmd.slot, {
                             type: cmd.modelType || 'gltf',
@@ -319,11 +495,9 @@
                     case 'assign-stats': Utilidades.asignarStats(cmd.slot, cmd.stats); break;
                     case 'clear-stats': Utilidades.limpiarStats(cmd.slot); break;
                     case 'clear-model':
-                        // ✅ También limpia etiquetas viejas
                         limpiarHijosSueltos(cmd.slot);
                         Utilidades.limpiarModelo(cmd.slot);
                         break;
-                    case 'toggle-panel': Utilidades.togglePanel(cmd.visible); break;
                     case 'stop-camera':
                         try {
                             const video = document.getElementById('arjs-video') || document.querySelector('video');
