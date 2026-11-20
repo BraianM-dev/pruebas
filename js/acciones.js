@@ -5,7 +5,8 @@
 //  - Barra de vida arriba de cada personaje (verde -> amarilla -> roja).
 //  - Click derecho sobre un personaje: camina un paso hacia adelante
 //    (el largo del paso se ajusta con la barrita "Paso").
-//  - Shift + click derecho: vuelve a su código. Sobre una lápida: revive.
+//  - Doble click izquierdo: vuelve a su código. Sobre una lápida: revive.
+//    (también funciona Shift + click derecho, para el que tenga teclado)
 //  - Si un personaje queda a un paso de uno del OTRO bando (porque caminó o
 //    porque lo acercaron con la mano; data-bando="heroe" / "malo") y los dos
 //    se miran de frente: pelean por
@@ -491,6 +492,19 @@
 
     // Para usar desde la consola o desde el DM más adelante
     window.AccionesAR = { caminar: caminar, pelear: pelear, morir: morir, revivir: revivir, bolaDeFuego: bolaDeFuego, buscarRival: buscarRival, ficha: ficha, personajesVisibles: personajesVisibles };
+
+    // --- doble click izquierdo: vuelve a su código (sobre una lápida: revive) ---
+    window.addEventListener('dblclick', function (ev) {
+        const s = escena();
+        const lienzo = s && s.canvas;
+        if (!lienzo || ev.target !== lienzo || apuntando) return;
+        ev.preventDefault();
+        cerrarMenu();
+        const raiz = personajeEn(ev.clientX, ev.clientY, lienzo);
+        if (!raiz || raiz._accion) return;
+        if (raiz._muerto) { revivir(raiz); return; }
+        if (raiz._avance) caminar(raiz, 0);
+    });
 
     // --- click derecho ---
     window.addEventListener('contextmenu', function (ev) {

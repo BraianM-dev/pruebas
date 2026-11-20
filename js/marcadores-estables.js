@@ -401,7 +401,7 @@
             '<label for="paso-ar">Paso</label>' +
             '<input id="paso-ar" type="range" min="' + PASO_MIN + '" max="' + PASO_MAX + '" step="0.05" style="width:140px;margin-left:14px">' +
             '<span id="paso-ar-valor" style="min-width:38px;text-align:right"></span></div>' +
-            '<div style="font-size:11px;opacity:.75;line-height:1.4">Click derecho: avanza · Shift + click derecho: vuelve<br>Shift + click derecho en una lápida: revive</div>';
+            '<div style="font-size:11px;opacity:.75;line-height:1.4">Click derecho: avanza · Doble click: vuelve a su código<br>Doble click en una lápida: revive</div>';
         document.body.appendChild(caja);
 
         const paso = caja.querySelector('#paso-ar');
