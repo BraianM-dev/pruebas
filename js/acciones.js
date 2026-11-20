@@ -15,6 +15,7 @@
 //  - Vida y ataque: si el DM le cargó stats al código (hp, hpMax, atk) se
 //    usan esas; si no, los valores de abajo (el malo cae primero).
 //  - Al DM se le avisa { action: 'pelea', slots } y { action: 'muerte', slot }.
+//  - Sonidos: pasos, cortes, golpes, bola de fuego, muerte... (js/sonidos.js).
 //
 // Animaciones de los personajes: Quieto, Caminar, Atacar, Golpe y Morir.
 // El corrimiento lo aplica marcadores-estables.js con el._avance.
@@ -36,6 +37,7 @@
     const ALTURA_SIN_CABEZA = 1.4;
 
     function escena() { return document.querySelector('a-scene'); }
+    function sonar(nombre, arg) { if (window.Sonidos && Sonidos[nombre]) Sonidos[nombre](arg); }   // js/sonidos.js
     function modeloDe(raiz) { return raiz.querySelector('.personaje'); }
     function slotDe(raiz) {
         const id = raiz.id || raiz.getAttribute('data-copia-de') || '';
@@ -181,6 +183,7 @@
         const t0 = performance.now();
         raiz._accion = 'caminar';
         animar(raiz, 'Caminar');
+        sonar('pasos', DURACION_PASO);
         (function paso() {
             const t = Math.min(1, (performance.now() - t0) / DURACION_PASO);
             raiz._avance = desde + (hasta - desde) * t;
@@ -224,11 +227,14 @@
     function pelear(a, b) {
         a._accion = b._accion = 'pelea';
         const aviso = cartel(a, '¡PELEA!', '#ffcc00', false);
+        sonar('desenvainar');
         if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'pelea', slots: [slotDe(a), slotDe(b)] });
         let atacante = a, defensor = b;
         (function turno() {
             animar(atacante, 'Atacar', true);
+            sonar('corte');
             setTimeout(function () {
+                sonar('golpe');
                 const dano = ficha(atacante).ataque;
                 const fd = ficha(defensor);
                 fd.vida = Math.max(0, fd.vida - dano);
@@ -256,6 +262,7 @@
         raiz._muerto = true;
         raiz._accion = 'muerte';
         animar(raiz, 'Morir', true);
+        sonar('muerte');
         if (window.Comunicacion) Comunicacion.enviarAlPadre({ action: 'muerte', slot: slotDe(raiz) });
         const m = modeloDe(raiz);
         setTimeout(function () {
@@ -273,6 +280,7 @@
                 lapida.setAttribute('scale', '0.01 0.01 0.01');
                 lapida.setAttribute('animation', 'property: scale; to: 0.5 0.5 0.5; dur: 500; easing: easeOutBack');
                 raiz.appendChild(lapida);
+                sonar('lapida');
                 raiz._accion = null;
             })();
         }, 1400);
@@ -290,6 +298,7 @@
         raiz._accion = null;
         animar(raiz, 'Quieto');
         cartel(raiz, '+' + f.vidaMax, '#69f0ae', true);
+        sonar('revivir');
     }
 
     // =================================================================
@@ -365,6 +374,7 @@
             bola.object3D.position.copy(desde);
             escenaEl.appendChild(bola);
             const t0 = performance.now(), DUR = 650;
+            sonar('zumbidoFuego', DUR / 1000);
             let ultimaChispa = 0;
             (function volar() {
                 const ahora = performance.now();
@@ -385,6 +395,7 @@
                 if (t < 1) { requestAnimationFrame(volar); return; }
                 // impacto
                 bola.parentNode.removeChild(bola);
+                sonar('explosion');
                 const explosion = esferaDeFuego(0.3 * escala, '#ff6d00', 0.85);
                 explosion.object3D.position.copy(hasta);
                 explosion.setAttribute('animation__crece', 'property: scale; to: 3.2 3.2 3.2; dur: 450; easing: easeOutQuad');

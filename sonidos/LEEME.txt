@@ -1,0 +1,5 @@
+Sonidos de los personajes (pasos, cortes, golpes). Los usa js/sonidos.js.
+Origen: "RPG Audio" de Kenney (www.kenney.nl) - licencia Creative Commons CC0
+(libre para uso personal, educativo y comercial). Convertidos de .ogg a .mp3.
+La bola de fuego, la explosion, la muerte, revivir y el ambiente de mazmorra
+no son archivos: los genera el navegador con Web Audio (ver js/sonidos.js).
